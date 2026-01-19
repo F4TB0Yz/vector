@@ -1,0 +1,2 @@
+[info] 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss (C:\Users\jfdua\OneDrive\Documents\Proyectos\vector\lib\src\features\auth\presentation\widgets\custom_text_field.dart:81:33)
+[info] 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss (C:\Users\jfdua\OneDrive\Documents\Proyectos\vector\lib\src\features\auth\presentation\widgets\custom_text_field.dart:86:35)
