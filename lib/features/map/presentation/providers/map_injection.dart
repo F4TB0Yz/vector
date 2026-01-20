@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vector/core/database/database_service.dart';
 import 'package:vector/features/map/data/datasources/map_datasource.dart';
+import 'package:vector/features/map/data/datasources/route_remote_datasource.dart';
 import 'package:vector/features/map/data/datasources/stop_local_datasource.dart';
 import 'package:vector/features/map/data/repositories/map_repository_impl.dart';
 import 'package:vector/features/map/data/repositories/stop_repository_impl.dart';
@@ -23,10 +24,19 @@ final mapDataSourceProvider = Provider<MapDataSource>((ref) {
   return MapLocalDataSourceImpl(databaseService);
 });
 
+// Route Remote Data Source Provider (Mapbox Directions API)
+final routeRemoteDataSourceProvider = Provider<RouteRemoteDataSource>((ref) {
+  return RouteRemoteDataSource();
+});
+
 // Map Repository Provider
 final mapRepositoryProvider = Provider<MapRepository>((ref) {
   final dataSource = ref.watch(mapDataSourceProvider);
-  return MapRepositoryImpl(remoteDataSource: dataSource);
+  final routeRemoteDataSource = ref.watch(routeRemoteDataSourceProvider);
+  return MapRepositoryImpl(
+    remoteDataSource: dataSource,
+    routeRemoteDataSource: routeRemoteDataSource,
+  );
 });
 
 // Stop Data Source Provider

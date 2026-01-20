@@ -4,6 +4,7 @@ import 'package:vector/core/database/database_service.dart';
 import 'package:vector/core/error/exceptions.dart';
 import 'package:vector/core/error/failures.dart';
 import 'package:vector/features/map/data/datasources/map_datasource.dart';
+import 'package:vector/features/map/data/datasources/route_remote_datasource.dart';
 import 'package:vector/features/map/data/models/route_model.dart';
 import 'package:vector/features/map/data/models/stop_model.dart';
 import 'package:vector/features/map/domain/entities/route_entity.dart';
@@ -13,21 +14,42 @@ import 'package:vector/features/map/domain/repositories/map_repository.dart';
 // Repository Implementation
 class MapRepositoryImpl implements MapRepository {
   final MapDataSource remoteDataSource;
-  // final MapDataSource localDataSource; // Could also have a local data source
+  final RouteRemoteDataSource routeRemoteDataSource;
   // final NetworkInfo networkInfo; // To check for connectivity
 
   MapRepositoryImpl({
     required this.remoteDataSource,
+    required this.routeRemoteDataSource,
   });
 
   @override
   Future<Either<Failure, RouteEntity>> getActiveRoute() async {
     // Here you would check networkInfo.isConnected
     try {
+      // 1. Get route with stops from local datasource
       final route = await remoteDataSource.getActiveRoute();
-      return Right(route);
+      
+      // 2. Extract stop coordinates
+      final stopPositions = route.stops.map((stop) => stop.coordinates).toList();
+      
+      // 3. Fetch detailed polyline from Mapbox Directions API
+      // This replaces straight lines with road-following geometry
+      final detailedPolyline = await routeRemoteDataSource.getRoutePolyline(stopPositions);
+      
+      // 4. Create new RouteEntity with detailed polyline
+      final routeWithDetailedPolyline = RouteEntity(
+        id: route.id,
+        name: route.name,
+        polyline: detailedPolyline, // ¡Ahora sigue las carreteras!
+        stops: route.stops,
+        progress: route.progress,
+      );
+      
+      return Right(routeWithDetailedPolyline);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Failed to get active route: $e'));
     }
   }
 }
@@ -74,5 +96,12 @@ class MapLocalDataSourceImpl implements MapDataSource {
     } catch (e) {
       throw ServerException('Failed to get active route: $e');
     }
+  }
+  
+  /// Fetches detailed route polyline from Mapbox Directions API
+  Future<List<Position>> getDetailedPolyline(List<Position> stopPositions) async {
+    // This would be injected if we had RouteRemoteDataSource here
+    // For now, return stops as-is (will be handled in repository)
+    return stopPositions;
   }
 }

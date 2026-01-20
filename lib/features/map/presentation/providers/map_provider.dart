@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:turf/turf.dart' as turf;
 import 'package:vector/core/utils/permission_handler.dart';
 import 'package:vector/features/map/domain/entities/route_entity.dart';
 import 'package:vector/features/map/presentation/providers/map_injection.dart';
@@ -61,7 +62,9 @@ class MapState {
 // --- NOTIFIER ---
 class MapNotifier extends Notifier<MapState> {
   StreamSubscription<geo.Position>? _locationSubscription;
-  PointAnnotationManager? _stopAnnotationManager;
+  bool _isUpdatingMapData = false;
+  bool _sourcesInitialized = false;
+  bool _routeProgressSourcesInitialized = false;
 
   @override
   MapState build() {
@@ -80,13 +83,13 @@ class MapNotifier extends Notifier<MapState> {
       startTracking();
     }
 
-    await loadActiveRoute();
+    // Load route asynchronously without blocking initialization
+    // ignore: unawaited_futures
+    loadActiveRoute();
   }
 
   Future<void> onMapCreated(MapboxMap mapboxMap) async {
     state = state.copyWith(mapController: mapboxMap, isMapReady: true);
-    
-    _stopAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
 
     _configureMap(mapboxMap);
     await _enableLocationPuck();
@@ -95,7 +98,7 @@ class MapNotifier extends Notifier<MapState> {
     await Future.delayed(const Duration(milliseconds: 500));
     
     if (state.activeRoute != null) {
-      await _drawRoute(state.activeRoute!);
+      await _updateMapData(state.activeRoute!);
     }
   }
 
@@ -131,6 +134,9 @@ class MapNotifier extends Notifier<MapState> {
       if (firstLocation) {
          centerOnUserLocation();
       }
+      
+      // Update route progress in real-time
+      _updateRouteProgress(position);
     }, onError: (e) {
       state = state.copyWith(error: "Error en stream de ubicación: $e", isTracking: false);
     });
@@ -150,94 +156,190 @@ class MapNotifier extends Notifier<MapState> {
       (failure) => state = state.copyWith(error: failure.message, isLoadingRoute: false),
       (route) async {
         state = state.copyWith(activeRoute: route, isLoadingRoute: false);
-        // If map is already ready, draw the route.
+        // If map is already ready, update map data.
         // The delay in onMapCreated should prevent most race conditions.
         if (state.isMapReady) {
-          await _drawRoute(route);
+          await _updateMapData(route);
         }
       },
     );
   }
   
-  Future<void> _drawRoute(RouteEntity route) async {
-    await _drawPolyline(route);
-    await _drawStops(route);
-    await _zoomToRoute(route);
+  /// Updates map data using GeoJSON sources (declarative approach)
+  Future<void> _updateMapData(RouteEntity route) async {
+    if (!state.isMapReady || state.mapController == null) return;
+    
+    // Prevenir llamadas concurrentes
+    if (_isUpdatingMapData) return;
+    _isUpdatingMapData = true;
+    
+    try {
+      await _performMapDataUpdate(route);
+    } finally {
+      _isUpdatingMapData = false;
+    }
   }
-
-  Future<void> _drawPolyline(RouteEntity route) async {
-    if (!state.isMapReady) return;
+  
+  Future<void> _performMapDataUpdate(RouteEntity route) async {
     final mapboxMap = state.mapController!;
 
+    // 1. Preparar datos de LA RUTA (Línea)
     final routeGeoJSON = {
       'type': 'Feature',
+      'properties': {},
       'geometry': LineString(coordinates: route.polyline).toJson(),
     };
 
-    // Verificar si el source ya existe
-    final sourceExists = await mapboxMap.style.styleSourceExists('route-source');
+    // 2. Preparar datos de LAS PARADAS (Puntos con propiedades)
+    final features = route.stops.map((stop) {
+      return {
+        'type': 'Feature',
+        'id': stop.id,
+        'properties': {
+          'stopOrder': stop.stopOrder.toString(),
+          'status': stop.status.name,
+          'customer': stop.name,
+          'address': stop.address,
+        },
+        'geometry': Point(coordinates: stop.coordinates).toJson(),
+      };
+    }).toList();
+
+    final stopsGeoJSON = {
+      'type': 'FeatureCollection',
+      'features': features,
+    };
+
+    // --- ACTUALIZACIÓN DE SOURCES ---
     
-    if (sourceExists) {
-      // Actualizar datos del source existente usando setStyleSourceProperty
+    if (!_sourcesInitialized) {
+      // Primera vez: crear sources
+      await mapboxMap.style.addSource(
+        GeoJsonSource(id: 'route-source', data: jsonEncode(routeGeoJSON)),
+      );
+      await mapboxMap.style.addSource(
+        GeoJsonSource(id: 'stops-source', data: jsonEncode(stopsGeoJSON)),
+      );
+      _sourcesInitialized = true;
+    } else {
+      // Actualizaciones subsecuentes: solo actualizar datos
       await mapboxMap.style.setStyleSourceProperty(
         'route-source',
         'data',
         jsonEncode(routeGeoJSON),
       );
-    } else {
-      // Crear el source por primera vez
-      await mapboxMap.style.addSource(
-        GeoJsonSource(id: 'route-source', data: jsonEncode(routeGeoJSON)),
+      await mapboxMap.style.setStyleSourceProperty(
+        'stops-source',
+        'data',
+        jsonEncode(stopsGeoJSON),
       );
     }
+
+    // Llamamos a la creación de capas solo si no existen
+    await _buildLayers(mapboxMap);
     
-    // Verificar si la capa ya existe antes de agregarla
-    final layerExists = await mapboxMap.style.styleLayerExists('route-layer');
-    
-    if (!layerExists) {
+    // Zoom to route
+    await _zoomToRoute(route);
+  }
+
+  /// Builds map layers for route and stops (only if they don't exist)
+  Future<void> _buildLayers(MapboxMap mapboxMap) async {
+    // Route Passed Layer (Gray - where we've been)
+    if (!await mapboxMap.style.styleLayerExists('route-passed-layer')) {
       await mapboxMap.style.addLayer(LineLayer(
-        id: 'route-layer',
-        sourceId: 'route-source',
-        lineColor: Colors.blue.toARGB32(),
-        lineWidth: 5.0,
-        lineOpacity: 0.8,
+        id: 'route-passed-layer',
+        sourceId: 'route-passed-source',
+        lineColor: Colors.grey[800]!.toARGB32(),
+        lineWidth: 4.0,
+        lineOpacity: 0.5,
+        lineCap: LineCap.ROUND,
+        lineJoin: LineJoin.ROUND,
+      ));
+    }
+
+    // Route Active Layer (Neon - where we need to go)
+    if (!await mapboxMap.style.styleLayerExists('route-active-layer')) {
+      await mapboxMap.style.addLayer(LineLayer(
+        id: 'route-active-layer',
+        sourceId: 'route-active-source',
+        lineColor: const Color(0xFF00FFFF).toARGB32(), // Neon cyan
+        lineWidth: 6.0,
+        lineOpacity: 1.0,
+        lineCap: LineCap.ROUND,
+        lineJoin: LineJoin.ROUND,
+      ));
+    }
+
+    // Stops Layer (Circles with data-driven styling)
+    if (!await mapboxMap.style.styleLayerExists('stops-layer')) {
+      await mapboxMap.style.addLayer(CircleLayer(
+        id: 'stops-layer',
+        sourceId: 'stops-source',
+        circleRadius: 12.0,
+        circleColor: Colors.orange.toARGB32(),
+        circleStrokeColor: Colors.white.toARGB32(),
+        circleStrokeWidth: 2.0,
+      ));
+      
+      // Apply data-driven styling for circle color based on status
+      await mapboxMap.style.setStyleLayerProperty(
+        'stops-layer',
+        'circle-color',
+        jsonEncode([
+          'match',
+          ['get', 'status'],
+          'pending', '#FF9800',  // Orange
+          'completed', '#4CAF50', // Green
+          'failed', '#F44336',    // Red
+          '#9E9E9E',              // Grey (default)
+        ]),
+      );
+    }
+
+    // Stops Labels Layer (Numbers)
+    if (!await mapboxMap.style.styleLayerExists('stops-labels-layer')) {
+      await mapboxMap.style.addLayer(SymbolLayer(
+        id: 'stops-labels-layer',
+        sourceId: 'stops-source',
+        textField: '{stopOrder}',
+        textSize: 12.0,
+        textColor: Colors.white.toARGB32(),
+        textHaloColor: Colors.black.toARGB32(),
+        textHaloWidth: 1.0,
       ));
     }
   }
 
-  Future<void> _drawStops(RouteEntity route) async {
-    if (_stopAnnotationManager == null) return;
-    
-    await _stopAnnotationManager!.deleteAll();
-    final options = route.stops.map((stop) {
-      return PointAnnotationOptions(
-        geometry: Point(coordinates: stop.coordinates),
-        textField: stop.name,
-        textColor: Colors.white.toARGB32(),
-        iconImage: "marker-icon",
-      );
-    }).toList();
-    for (final option in options) {
-      await _stopAnnotationManager!.create(option);
-    }
-  }
-
   Future<void> _zoomToRoute(RouteEntity route) async {
-     if (route.polyline.isEmpty || !state.isMapReady) return;
-     try {
-       final bounds = await state.mapController!.cameraForCoordinates(
-         route.polyline.map((p) => Point(coordinates: p)).toList(),
-         MbxEdgeInsets(top: 50, left: 50, bottom: 50, right: 50),
-         null,
-         null,
-       );
-       await state.mapController!.easeTo(
-         bounds,
-         MapAnimationOptions(duration: 1500),
-       );
-     } catch(e) {
-       state = state.copyWith(error: "Error al hacer zoom a la ruta: $e");
-     }
+    if (route.polyline.isEmpty || !state.isMapReady) return;
+    try {
+      // Calculate bounds manually
+      double minLat = route.polyline.first.lat.toDouble();
+      double maxLat = route.polyline.first.lat.toDouble();
+      double minLng = route.polyline.first.lng.toDouble();
+      double maxLng = route.polyline.first.lng.toDouble();
+
+      for (final point in route.polyline) {
+        if (point.lat < minLat) minLat = point.lat.toDouble();
+        if (point.lat > maxLat) maxLat = point.lat.toDouble();
+        if (point.lng < minLng) minLng = point.lng.toDouble();
+        if (point.lng > maxLng) maxLng = point.lng.toDouble();
+      }
+
+      // Calculate center
+      final centerLat = (minLat + maxLat) / 2;
+      final centerLng = (minLng + maxLng) / 2;
+
+      await state.mapController!.easeTo(
+        CameraOptions(
+          center: Point(coordinates: Position(centerLng, centerLat)),
+          zoom: 13.0,
+        ),
+        MapAnimationOptions(duration: 1500),
+      );
+    } catch (e) {
+      state = state.copyWith(error: "Error al hacer zoom a la ruta: $e");
+    }
   }
 
 
@@ -263,6 +365,111 @@ class MapNotifier extends Notifier<MapState> {
 
   Future<void> zoomOut() async {
     // ...
+  }
+
+  /// Updates route progress by splitting geometry into past and future segments
+  Future<void> _updateRouteProgress(geo.Position userLocation) async {
+    if (state.activeRoute == null || 
+        !state.isMapReady || 
+        state.activeRoute!.polyline.isEmpty) {
+      return;
+    }
+
+    try {
+      // 1. Convert Mapbox Polyline to Turf LineString
+      final routeCoordinates = state.activeRoute!.polyline
+          .map((p) => turf.Position.named(
+                lat: p.lat.toDouble(),
+                lng: p.lng.toDouble(),
+              ))
+          .toList();
+      final routeLine = turf.LineString(coordinates: routeCoordinates);
+
+      // 2. User point (Turf)
+      final userPoint = turf.Point(
+        coordinates: turf.Position.named(
+          lat: userLocation.latitude,
+          lng: userLocation.longitude,
+        ),
+      );
+
+      // 3. Find nearest point on line (snap to road)
+      final sliced = turf.nearestPointOnLine(routeLine, userPoint);
+
+      // Access index from properties
+      final index = sliced.properties?['index'] as int?;
+      if (index == null) return;
+
+      // 4. Split coordinates into two parts
+      final splitIndex = index;
+
+      // PAST: From start to split index + exact projected point
+      final pastCoords = routeCoordinates.sublist(0, splitIndex + 1);
+      pastCoords.add(sliced.geometry!.coordinates);
+
+      // FUTURE: From exact projected point to end
+      final futureCoords = <turf.Position>[sliced.geometry!.coordinates];
+      futureCoords.addAll(routeCoordinates.sublist(splitIndex + 1));
+
+      // 5. Update sources in Mapbox
+      await _updateLayerSource('route-passed-source', pastCoords);
+      await _updateLayerSource('route-active-source', futureCoords);
+    } catch (e) {
+      // Silently fail to avoid spamming errors during GPS updates
+      // Only log in debug mode
+      // ignore: avoid_print
+      // print('Route progress update error: $e');
+    }
+  }
+
+  /// Helper to update layer source without code duplication
+  Future<void> _updateLayerSource(
+    String sourceId,
+    List<turf.Position> coords,
+  ) async {
+    if (!state.isMapReady || state.mapController == null) return;
+
+    final mapboxMap = state.mapController!;
+
+    // Convert Turf positions back to Mapbox format for GeoJSON
+    final coordinates = coords
+        .map((p) => [p.lng, p.lat]) // GeoJSON standard is [lng, lat]
+        .toList();
+
+    final geoJSON = {
+      'type': 'Feature',
+      'properties': {},
+      'geometry': {
+        'type': 'LineString',
+        'coordinates': coordinates,
+      },
+    };
+
+    try {
+      if (!_routeProgressSourcesInitialized) {
+        // First time: create sources
+        if (!await mapboxMap.style.styleSourceExists(sourceId)) {
+          await mapboxMap.style.addSource(
+            GeoJsonSource(id: sourceId, data: jsonEncode(geoJSON)),
+          );
+        }
+        // Mark as initialized after both sources are created
+        if (sourceId == 'route-active-source') {
+          _routeProgressSourcesInitialized = true;
+        }
+      } else {
+        // Subsequent updates: only update data
+        await mapboxMap.style.setStyleSourceProperty(
+          sourceId,
+          'data',
+          jsonEncode(geoJSON),
+        );
+      }
+    } catch (e) {
+      // Silently handle errors to avoid spamming console
+      // ignore: avoid_print
+      // print('Error updating layer source $sourceId: $e');
+    }
   }
 }
 
