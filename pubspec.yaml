@@ -33,6 +33,10 @@ dependencies:
   path: ^1.9.0
   uuid: ^4.5.1
   dio: ^5.4.0
+  device_info_plus: ^12.3.0
+  package_info_plus: ^9.0.0
+  android_id: ^0.5.1
+  crypto: ^3.0.7
 
 dev_dependencies:
   flutter_test:
