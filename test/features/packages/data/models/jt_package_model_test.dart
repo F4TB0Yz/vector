@@ -9,7 +9,8 @@ void main() {
         "waybillId": "881711458990198784",
         "receiverName": "Santiago Moreno",
         "phone": "3133724672",
-        "address": "carrera 4A #19-21, barrio fusacatan, conjunto la arboleda portería casa 00, FUSAGASUGA",
+        "address":
+            "carrera 4A #19-21, barrio fusacatan, conjunto la arboleda portería casa 00, FUSAGASUGA",
         "city": "FUSAGASUGA",
         "area": "252211",
         "taskStatus": 3,
@@ -18,7 +19,7 @@ void main() {
         "signTime": null,
         "deliverStaff": "FELIPE DUARTE.pcp",
         "distance": 10000.0,
-        "lngLat": null
+        "lngLat": null,
       };
 
       final model = JTPackageModel.fromJson(json);
@@ -36,7 +37,7 @@ void main() {
     test('should handle missing fields gracefully', () {
       final json = <String, dynamic>{};
       final model = JTPackageModel.fromJson(json);
-      
+
       expect(model.waybillNo, '');
       expect(model.taskStatus, 0);
     });

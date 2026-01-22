@@ -16,14 +16,20 @@ class JTPackagesDataSourceImpl implements JTPackagesDataSource {
   Future<List<JTPackageModel>> getPackages(String authToken) async {
     final deviceData = await DeviceUtils.getJtDeviceData();
     final now = DateTime.now();
-    final startTime = now.subtract(const Duration(days: 7)).toString().substring(0, 19);
-    final endTime = now.add(const Duration(days: 1)).toString().substring(0, 19);
+    final startTime = now
+        .subtract(const Duration(days: 7))
+        .toString()
+        .substring(0, 19);
+    final endTime = now
+        .add(const Duration(days: 1))
+        .toString()
+        .substring(0, 19);
 
     final headers = {
       'Host': 'gw.jtexpress.co',
       'Appid': 'AhW1qjZi',
       'Timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
-      'Signature': 'RjcyMkE5RkY2NDgyMDMwODBBNkJERTkzNTc4NTE3RTA=', 
+      'Signature': 'RjcyMkE5RkY2NDgyMDMwODBBNkJERTkzNTc4NTE3RTA=',
       'Device-Id': deviceData.deviceId,
       'Device-Version': 'Android-${deviceData.androidVersion}',
       'Device-Name': deviceData.model,
@@ -47,8 +53,8 @@ class JTPackagesDataSourceImpl implements JTPackagesDataSource {
       'phone': '',
       'orderFlag': 11,
       'waybillId': '',
-      'staffLngLat': '0.0,0.0', 
-      'startTime': startTime, 
+      'staffLngLat': '0.0,0.0',
+      'startTime': startTime,
       'endTime': endTime,
       'pageNum': 1,
       'taskStatus': 3,
@@ -60,7 +66,10 @@ class JTPackagesDataSourceImpl implements JTPackagesDataSource {
     _debugLog('HEADERS:', color: _AnsiColor.cyan);
     headers.forEach((key, value) {
       if (key == 'Authtoken' || key == 'Signature') {
-        _debugLog('  $key: ${value.toString().substring(0, 5)}...', color: _AnsiColor.cyan);
+        _debugLog(
+          '  $key: ${value.toString().substring(0, 5)}...',
+          color: _AnsiColor.cyan,
+        );
       } else {
         _debugLog('  $key: $value', color: _AnsiColor.cyan);
       }
@@ -80,63 +89,97 @@ class JTPackagesDataSourceImpl implements JTPackagesDataSource {
 
       if (response.statusCode == 200 && response.data != null) {
         dynamic data = response.data;
-        _debugLog('Response Data Type: ${data.runtimeType}', color: _AnsiColor.cyan);
-        
+        _debugLog(
+          'Response Data Type: ${data.runtimeType}',
+          color: _AnsiColor.cyan,
+        );
+
         // If data is String, try to decode it
         if (data is String) {
           try {
-            _debugLog('ℹ️ Response is String. Attempting to decode JSON...', color: _AnsiColor.yellow);
+            _debugLog(
+              'ℹ️ Response is String. Attempting to decode JSON...',
+              color: _AnsiColor.yellow,
+            );
             data = jsonDecode(data);
-             _debugLog('✅ JSON Decoded successfully', color: _AnsiColor.green);
+            _debugLog('✅ JSON Decoded successfully', color: _AnsiColor.green);
           } catch (e) {
-            _debugLog('❌ Failed to decode JSON string: $e', color: _AnsiColor.red);
+            _debugLog(
+              '❌ Failed to decode JSON string: $e',
+              color: _AnsiColor.red,
+            );
             throw Exception('Invalid JSON response from server');
           }
         }
 
         // Log snippet after potential decoding
-        _debugLog('Response Data Snippet: ${data.toString().substring(0, data.toString().length > 200 ? 200 : data.toString().length)}...', color: _AnsiColor.cyan);
+        _debugLog(
+          'Response Data Snippet: ${data.toString().substring(0, data.toString().length > 200 ? 200 : data.toString().length)}...',
+          color: _AnsiColor.cyan,
+        );
 
         if (data is Map) {
           // Check for specific error codes
           // 135010037 = "没有访问权限" (No access permission) -> Token expired or invalid
           if (data['code'] == 135010037) {
-            _debugLog('❌ AUTH ERROR: Session expired/Invalid token (Code 135010037)', color: _AnsiColor.red);
-            throw Exception('Sesión expirada. Por favor inicia sesión nuevamente.');
+            _debugLog(
+              '❌ AUTH ERROR: Session expired/Invalid token (Code 135010037)',
+              color: _AnsiColor.red,
+            );
+            throw Exception(
+              'Sesión expirada. Por favor inicia sesión nuevamente.',
+            );
           }
 
           if (data['code'] == 1 && data['data'] != null) {
-              final dynamic innerData = data['data'];
-              List<dynamic> list = [];
+            final dynamic innerData = data['data'];
+            List<dynamic> list = [];
 
-              if (innerData is List) {
-                 _debugLog('ℹ️ data["data"] is a List. Using it directly.', color: _AnsiColor.yellow);
-                 list = innerData;
-              } else if (innerData is Map && innerData['list'] != null) {
-                 _debugLog('ℹ️ data["data"] is a Map. Accessing ["list"].', color: _AnsiColor.yellow);
-                 list = innerData['list'];
-              }
+            if (innerData is List) {
+              _debugLog(
+                'ℹ️ data["data"] is a List. Using it directly.',
+                color: _AnsiColor.yellow,
+              );
+              list = innerData;
+            } else if (innerData is Map && innerData['list'] != null) {
+              _debugLog(
+                'ℹ️ data["data"] is a Map. Accessing ["list"].',
+                color: _AnsiColor.yellow,
+              );
+              list = innerData['list'];
+            }
 
-              if (list.isNotEmpty) {
-                _debugLog('✅ PACKAGES FOUND: ${list.length}', color: _AnsiColor.green);
-                return list.map((e) => JTPackageModel.fromJson(e)).toList();
-              } 
+            if (list.isNotEmpty) {
+              _debugLog(
+                '✅ PACKAGES FOUND: ${list.length}',
+                color: _AnsiColor.green,
+              );
+              return list.map((e) => JTPackageModel.fromJson(e)).toList();
+            }
           }
-          
-           // If we are here, it means success code but no list, or error code
-           if (data['code'] != 1) {
-               _debugLog('❌ API ERROR: ${data['msg']}', color: _AnsiColor.red);
-               throw Exception(data['msg'] ?? 'Unknown API error');
-           }
-           _debugLog('⚠️ NO PACKAGES FOUND (Empty List)', color: _AnsiColor.yellow);
-           return [];
 
+          // If we are here, it means success code but no list, or error code
+          if (data['code'] != 1) {
+            _debugLog('❌ API ERROR: ${data['msg']}', color: _AnsiColor.red);
+            throw Exception(data['msg'] ?? 'Unknown API error');
+          }
+          _debugLog(
+            '⚠️ NO PACKAGES FOUND (Empty List)',
+            color: _AnsiColor.yellow,
+          );
+          return [];
         } else {
-             _debugLog('⚠️ Unexpected root structure: ${data.runtimeType}', color: _AnsiColor.red);
-             return [];
+          _debugLog(
+            '⚠️ Unexpected root structure: ${data.runtimeType}',
+            color: _AnsiColor.red,
+          );
+          return [];
         }
       } else {
-        _debugLog('❌ HTTP ERROR: ${response.statusCode}', color: _AnsiColor.red);
+        _debugLog(
+          '❌ HTTP ERROR: ${response.statusCode}',
+          color: _AnsiColor.red,
+        );
         throw Exception('Failed to load packages: ${response.statusCode}');
       }
     } catch (e) {
@@ -152,12 +195,18 @@ class JTPackagesDataSourceImpl implements JTPackagesDataSource {
 
   String _getColorCode(_AnsiColor color) {
     switch (color) {
-      case _AnsiColor.green: return '\x1B[32m';
-      case _AnsiColor.yellow: return '\x1B[33m';
-      case _AnsiColor.cyan: return '\x1B[36m';
-      case _AnsiColor.magenta: return '\x1B[35m';
-      case _AnsiColor.red: return '\x1B[31m';
-      case _AnsiColor.white: return '\x1B[37m';
+      case _AnsiColor.green:
+        return '\x1B[32m';
+      case _AnsiColor.yellow:
+        return '\x1B[33m';
+      case _AnsiColor.cyan:
+        return '\x1B[36m';
+      case _AnsiColor.magenta:
+        return '\x1B[35m';
+      case _AnsiColor.red:
+        return '\x1B[31m';
+      case _AnsiColor.white:
+        return '\x1B[37m';
     }
   }
 }

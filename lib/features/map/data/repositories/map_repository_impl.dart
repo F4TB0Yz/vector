@@ -27,14 +27,18 @@ class MapRepositoryImpl implements MapRepository {
     try {
       // 1. Get route with stops from local datasource
       final route = await remoteDataSource.getActiveRoute();
-      
+
       // 2. Extract stop coordinates
-      final stopPositions = route.stops.map((stop) => stop.coordinates).toList();
-      
+      final stopPositions = route.stops
+          .map((stop) => stop.coordinates)
+          .toList();
+
       // 3. Fetch detailed polyline from Mapbox Directions API
       // This replaces straight lines with road-following geometry
-      final detailedPolyline = await routeRemoteDataSource.getRoutePolyline(stopPositions);
-      
+      final detailedPolyline = await routeRemoteDataSource.getRoutePolyline(
+        stopPositions,
+      );
+
       // 4. Create new RouteEntity with detailed polyline
       final routeWithDetailedPolyline = RouteEntity(
         id: route.id,
@@ -43,7 +47,7 @@ class MapRepositoryImpl implements MapRepository {
         stops: route.stops,
         progress: route.progress,
       );
-      
+
       return Right(routeWithDetailedPolyline);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
@@ -56,17 +60,19 @@ class MapRepositoryImpl implements MapRepository {
   Future<Either<Failure, RouteEntity>> getRouteById(String id) async {
     try {
       final route = await remoteDataSource.getRouteById(id);
-      final stopPositions = route.stops.map((stop) => stop.coordinates).toList();
-      
+      final stopPositions = route.stops
+          .map((stop) => stop.coordinates)
+          .toList();
+
       // Intentar obtener polyline detallado (puede fallar si no hay internet, deberíamos manejar eso)
       List<Position> polyline;
       try {
-         polyline = await routeRemoteDataSource.getRoutePolyline(stopPositions);
+        polyline = await routeRemoteDataSource.getRoutePolyline(stopPositions);
       } catch (e) {
-         // Fallback a líneas rectas si falla Mapbox
-         polyline = stopPositions; 
+        // Fallback a líneas rectas si falla Mapbox
+        polyline = stopPositions;
       }
-      
+
       final routeWithDetailedPolyline = RouteEntity(
         id: route.id,
         name: route.name,
@@ -74,7 +80,7 @@ class MapRepositoryImpl implements MapRepository {
         stops: route.stops,
         progress: route.progress,
       );
-      
+
       return Right(routeWithDetailedPolyline);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
@@ -83,7 +89,6 @@ class MapRepositoryImpl implements MapRepository {
     }
   }
 }
-
 
 // Repository Implementation using database
 class MapLocalDataSourceImpl implements MapDataSource {
@@ -127,35 +132,35 @@ class MapLocalDataSourceImpl implements MapDataSource {
       throw ServerException('Failed to get active route: $e');
     }
   }
-  
+
   @override
   Future<RouteEntity> getRouteById(String id) async {
     try {
       final db = await databaseService.database;
-  
+
       final routeResults = await db.query(
         'routes',
         where: 'id = ?',
         whereArgs: [id],
       );
-  
+
       if (routeResults.isEmpty) {
         throw ServerException('Route not found');
       }
-  
+
       final routeMap = routeResults.first;
-  
+
       final stopResults = await db.query(
         'stops',
         where: 'route_id = ?',
         whereArgs: [id],
         orderBy: 'stop_order ASC',
       );
-  
+
       final stops = stopResults
           .map((stopMap) => StopModel.fromMap(stopMap))
           .toList();
-  
+
       final routeModel = RouteModel.fromMap(routeMap, stops: stops);
       return routeModel.toEntity();
     } catch (e) {
@@ -164,7 +169,9 @@ class MapLocalDataSourceImpl implements MapDataSource {
   }
 
   /// Fetches detailed route polyline from Mapbox Directions API
-  Future<List<Position>> getDetailedPolyline(List<Position> stopPositions) async {
+  Future<List<Position>> getDetailedPolyline(
+    List<Position> stopPositions,
+  ) async {
     // This would be injected if we had RouteRemoteDataSource here
     // For now, return stops as-is (will be handled in repository)
     return stopPositions;

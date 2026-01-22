@@ -76,11 +76,7 @@ class StopLocalDataSource {
   Future<void> deleteStop(String stopId) async {
     try {
       final db = await databaseService.database;
-      await db.delete(
-        'stops',
-        where: 'id = ?',
-        whereArgs: [stopId],
-      );
+      await db.delete('stops', where: 'id = ?', whereArgs: [stopId]);
     } catch (e) {
       throw VectorDatabaseException('Failed to delete stop: $e');
     }

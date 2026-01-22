@@ -52,7 +52,7 @@ class RoutesLocalDataSourceImpl implements RoutesLocalDataSource {
       for (final routeMap in routeMaps) {
         final routeId = routeMap['id'] as String;
         final routeStops = stopsByRouteId[routeId] ?? [];
-        
+
         // Use the fromMap factory to construct the RouteModel with its stops
         routes.add(RouteModel.fromMap(routeMap, stops: routeStops));
       }
@@ -81,7 +81,10 @@ class RoutesLocalDataSourceImpl implements RoutesLocalDataSource {
 
       await db.insert(
         'routes',
-        route.toJson()..['date'] = date.millisecondsSinceEpoch..['created_at'] = now..['updated_at'] = now,
+        route.toJson()
+          ..['date'] = date.millisecondsSinceEpoch
+          ..['created_at'] = now
+          ..['updated_at'] = now,
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
 

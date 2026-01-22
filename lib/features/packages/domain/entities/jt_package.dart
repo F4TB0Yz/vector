@@ -14,9 +14,9 @@ class JTPackage extends Equatable {
   final String? signTime;
   final String deliverStaff;
   final double distance;
-  // lngLat is often null or "0.0,0.0" in string format based on usage, 
+  // lngLat is often null or "0.0,0.0" in string format based on usage,
   // keeping it as String? for flexibility mapping from API
-  final String? lngLat; 
+  final String? lngLat;
 
   const JTPackage({
     required this.waybillNo,
@@ -37,19 +37,19 @@ class JTPackage extends Equatable {
 
   @override
   List<Object?> get props => [
-        waybillNo,
-        waybillId,
-        receiverName,
-        phone,
-        address,
-        city,
-        area,
-        taskStatus,
-        isAbnormal,
-        scanTime,
-        signTime,
-        deliverStaff,
-        distance,
-        lngLat,
-      ];
+    waybillNo,
+    waybillId,
+    receiverName,
+    phone,
+    address,
+    city,
+    area,
+    taskStatus,
+    isAbnormal,
+    scanTime,
+    signTime,
+    deliverStaff,
+    distance,
+    lngLat,
+  ];
 }

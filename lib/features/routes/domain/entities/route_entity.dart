@@ -21,5 +21,13 @@ class RouteEntity extends Equatable {
   });
 
   @override
-  List<Object?> get props => [id, name, date, progress, createdAt, updatedAt, stops];
+  List<Object?> get props => [
+    id,
+    name,
+    date,
+    progress,
+    createdAt,
+    updatedAt,
+    stops,
+  ];
 }

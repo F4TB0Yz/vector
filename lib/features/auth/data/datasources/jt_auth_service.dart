@@ -11,7 +11,7 @@ class JtAuthService {
 
   Future<User> login(String account, String password) async {
     final deviceData = await DeviceUtils.getJtDeviceData();
-    
+
     // MD5 Hash password
     final bytes = utf8.encode(password);
     final passwordMd5 = md5.convert(bytes).toString();
@@ -77,11 +77,23 @@ class JtAuthService {
         _debugLog('✅ LOGIN SUCCESS!', color: _AnsiColor.green);
         _debugLog('User Info:', color: _AnsiColor.green);
         _debugLog('  Name: ${userData['name']}', color: _AnsiColor.green);
-        _debugLog('  Staff No: ${userData['staffNo']}', color: _AnsiColor.green);
-        _debugLog('  Network: ${userData['networkName']}', color: _AnsiColor.green);
-        _debugLog('  Department: ${userData['deptName']}', color: _AnsiColor.green);
-        _debugLog('  Token: ${userData['token']?.substring(0, 20) ?? 'N/A'}...', color: _AnsiColor.green);
-        
+        _debugLog(
+          '  Staff No: ${userData['staffNo']}',
+          color: _AnsiColor.green,
+        );
+        _debugLog(
+          '  Network: ${userData['networkName']}',
+          color: _AnsiColor.green,
+        );
+        _debugLog(
+          '  Department: ${userData['deptName']}',
+          color: _AnsiColor.green,
+        );
+        _debugLog(
+          '  Token: ${userData['token']?.substring(0, 20) ?? 'N/A'}...',
+          color: _AnsiColor.green,
+        );
+
         return User(
           account: account,
           token: userData['token'] ?? '',

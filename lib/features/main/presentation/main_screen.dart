@@ -54,11 +54,8 @@ class _MainScreenState extends State<MainScreen> {
         child: Stack(
           children: [
             // IndexedStack mantiene el estado de las páginas vivas
-            IndexedStack(
-              index: _currentIndex,
-              children: _pages,
-            ),
-            
+            IndexedStack(index: _currentIndex, children: _pages),
+
             // Floating Navy Bar ubicada en la parte inferior
             AnimatedPositioned(
               duration: const Duration(milliseconds: 300),
@@ -67,7 +64,7 @@ class _MainScreenState extends State<MainScreen> {
               right: 0,
               // Si es visible, se posiciona arriba del padding del sistema + 16px de margen
               // Si no, se esconde completamente (-150 px para asegurar)
-              bottom: _isNavBarVisible ? (bottomPadding + 16) : -150, 
+              bottom: _isNavBarVisible ? (bottomPadding + 16) : -150,
               child: FloatingNavBar(
                 currentIndex: _currentIndex,
                 onTap: _onTabTapped,
@@ -79,5 +76,3 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 }
-
-

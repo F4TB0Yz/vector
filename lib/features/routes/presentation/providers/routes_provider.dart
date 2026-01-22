@@ -46,7 +46,8 @@ class RoutesNotifier extends AsyncNotifier<List<RouteEntity>> {
     final getRoutesUseCase = ref.read(getRoutesUseCaseProvider);
     final result = await getRoutesUseCase();
     return result.fold(
-      (failure) => [], // Return empty list on failure for simplicity or handle error state
+      (failure) =>
+          [], // Return empty list on failure for simplicity or handle error state
       (routes) => routes,
     );
   }
@@ -57,10 +58,11 @@ class RoutesNotifier extends AsyncNotifier<List<RouteEntity>> {
     final result = await createRouteUseCase(name, date);
 
     result.fold(
-      (failure) => state = AsyncValue.error(failure.message, StackTrace.current),
+      (failure) =>
+          state = AsyncValue.error(failure.message, StackTrace.current),
       (route) async {
-         // Refresh list
-         state = await AsyncValue.guard(() => _getRoutes());
+        // Refresh list
+        state = await AsyncValue.guard(() => _getRoutes());
       },
     );
   }
@@ -72,7 +74,9 @@ class RoutesNotifier extends AsyncNotifier<List<RouteEntity>> {
   }
 }
 
-final routesProvider = AsyncNotifierProvider<RoutesNotifier, List<RouteEntity>>(RoutesNotifier.new);
+final routesProvider = AsyncNotifierProvider<RoutesNotifier, List<RouteEntity>>(
+  RoutesNotifier.new,
+);
 
 // Provider to hold the currently selected route for viewing its packages/stops
 final selectedRouteProvider = StateProvider<RouteEntity?>((ref) => null);

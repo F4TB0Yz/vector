@@ -35,25 +35,27 @@ class ScannerOverlay extends StatelessWidget {
                 child: Container(
                   width: scanZoneWidth,
                   height: scanZoneHeight,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.all(Radius.circular(4)),
                   ),
                 ),
               ),
             ],
           ),
         ),
-        
+
         // Neon Corners (Rectangular Shape)
         Align(
           alignment: Alignment.center,
           child: Container(
             width: scanZoneWidth,
             height: scanZoneHeight,
-            decoration: BoxDecoration(
-              border: Border.all(color: AppColors.accent.withAlpha(77), width: 1),
-              borderRadius: BorderRadius.circular(4),
+            decoration: const BoxDecoration(
+              border: Border.fromBorderSide(
+                BorderSide(color: Color(0x4D00E676), width: 1),
+              ),
+              borderRadius: BorderRadius.all(Radius.circular(4)),
             ),
             child: const NeonCorners(),
           ),
@@ -68,10 +70,13 @@ class ScannerOverlay extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 32),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: const BoxDecoration(
                     color: Colors.black54,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.all(Radius.circular(20)),
                   ),
                   child: const Text(
                     'Alinea el código dentro del marco',
@@ -101,7 +106,9 @@ class ScannerOverlay extends StatelessWidget {
                         // Flash Toggle
                         Container(
                           decoration: BoxDecoration(
-                            color: isFlashOn ? AppColors.accent.withAlpha(51) : Colors.black45,
+                            color: isFlashOn
+                                ? const Color(0x3300E676)
+                                : Colors.black45,
                             shape: BoxShape.circle,
                           ),
                           child: IconButton(
@@ -114,7 +121,9 @@ class ScannerOverlay extends StatelessWidget {
                             },
                             icon: Icon(
                               isFlashOn ? Icons.flash_on : Icons.flash_off,
-                              color: isFlashOn ? AppColors.accent : Colors.white,
+                              color: isFlashOn
+                                  ? AppColors.accent
+                                  : Colors.white,
                               size: 28,
                             ),
                             tooltip: 'Alternar Flash',
@@ -124,14 +133,18 @@ class ScannerOverlay extends StatelessWidget {
                         // Zoom Toggle (Cycle 0.0 -> 0.5 -> 0.0)
                         Container(
                           decoration: BoxDecoration(
-                            color: isZoomed ? AppColors.accent.withAlpha(51) : Colors.black45,
+                            color: isZoomed
+                                ? const Color(0x3300E676)
+                                : Colors.black45,
                             shape: BoxShape.circle,
                           ),
                           child: IconButton(
                             onPressed: () async {
                               try {
                                 // Simple logic: if zoomed in, zoom out. If zoomed out, zoom in.
-                                final newZoom = isZoomed ? 0.0 : 0.6; // 0.6 is a good "reading" zoom
+                                final newZoom = isZoomed
+                                    ? 0.0
+                                    : 0.6; // 0.6 is a good "reading" zoom
                                 await controller.setZoomScale(newZoom);
                               } catch (e) {
                                 debugPrint('Error setting zoom: $e');

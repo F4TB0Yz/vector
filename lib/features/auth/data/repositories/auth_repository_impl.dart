@@ -18,10 +18,10 @@ class AuthRepositoryImpl implements AuthRepository {
   }) async {
     try {
       final user = await _authService.login(account, password);
-      
+
       // Save user and token locally
       await _localDataSource.saveUser(user);
-      
+
       return Right(user);
     } catch (e) {
       return Left(ServerFailure(e.toString()));

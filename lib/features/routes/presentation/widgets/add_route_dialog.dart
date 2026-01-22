@@ -48,10 +48,7 @@ class _AddRouteDialogState extends ConsumerState<AddRouteDialog> {
       backgroundColor: const Color(0xFF1E1E24), // Dark Slate
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8), // Sharp corners
-        side: BorderSide(
-          color: Colors.white.withValues(alpha: 0.1),
-          width: 1,
-        ),
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.1), width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -67,14 +64,18 @@ class _AddRouteDialogState extends ConsumerState<AddRouteDialog> {
                   Text(
                     'NUEVA RUTA',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.0,
-                        ),
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(LucideIcons.x, color: Colors.grey, size: 20),
+                    icon: const Icon(
+                      LucideIcons.x,
+                      color: Colors.grey,
+                      size: 20,
+                    ),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     style: IconButton.styleFrom(
@@ -83,26 +84,26 @@ class _AddRouteDialogState extends ConsumerState<AddRouteDialog> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 24),
 
               TextFormField(
                 controller: _dateController,
                 style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Fecha',
-                  labelStyle: TextStyle(color: Colors.grey[400]),
+                  labelStyle: TextStyle(color: Color(0xFFBDBDBD)),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: BorderSide(color: Colors.grey[800]!),
+                    borderRadius: BorderRadius.all(Radius.circular(6)),
+                    borderSide: BorderSide(color: Color(0xFF424242)),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: const BorderSide(color: AppColors.primary),
+                    borderRadius: BorderRadius.all(Radius.circular(6)),
+                    borderSide: BorderSide(color: AppColors.primary),
                   ),
                   filled: true,
-                  fillColor: const Color(0xFF2C2C35),
-                  prefixIcon: const Icon(LucideIcons.calendar, color: Colors.grey),
+                  fillColor: Color(0xFF2C2C35),
+                  prefixIcon: Icon(LucideIcons.calendar, color: Colors.grey),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -127,14 +128,18 @@ class _AddRouteDialogState extends ConsumerState<AddRouteDialog> {
                             surface: Color(0xFF1E1E24),
                             onSurface: Colors.white,
                           ),
-                          dialogBackgroundColor: const Color(0xFF1E1E24),
+                          dialogTheme: const DialogThemeData(
+                            backgroundColor: Color(0xFF1E1E24),
+                          ),
                         ),
                         child: child!,
                       );
                     },
                   );
                   if (picked != null) {
-                    _dateController.text = DateFormat('yyyy-MM-dd').format(picked);
+                    _dateController.text = DateFormat(
+                      'yyyy-MM-dd',
+                    ).format(picked);
                   }
                 },
               ),
@@ -142,19 +147,19 @@ class _AddRouteDialogState extends ConsumerState<AddRouteDialog> {
               TextFormField(
                 controller: _nameController,
                 style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Nombre de la ruta',
-                  labelStyle: TextStyle(color: Colors.grey[400]),
+                  labelStyle: TextStyle(color: Color(0xFFBDBDBD)),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: BorderSide(color: Colors.grey[800]!),
+                    borderRadius: BorderRadius.all(Radius.circular(6)),
+                    borderSide: BorderSide(color: Color(0xFF424242)),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: const BorderSide(color: AppColors.primary),
+                    borderRadius: BorderRadius.all(Radius.circular(6)),
+                    borderSide: BorderSide(color: AppColors.primary),
                   ),
                   filled: true,
-                  fillColor: const Color(0xFF2C2C35),
+                  fillColor: Color(0xFF2C2C35),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {

@@ -15,10 +15,12 @@ class AddPackageDetailsDialog extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<AddPackageDetailsDialog> createState() => _AddPackageDetailsDialogState();
+  ConsumerState<AddPackageDetailsDialog> createState() =>
+      _AddPackageDetailsDialogState();
 }
 
-class _AddPackageDetailsDialogState extends ConsumerState<AddPackageDetailsDialog> {
+class _AddPackageDetailsDialogState
+    extends ConsumerState<AddPackageDetailsDialog> {
   late TextEditingController _nameController;
   late TextEditingController _addressController;
   late TextEditingController _phoneController;
@@ -28,9 +30,15 @@ class _AddPackageDetailsDialogState extends ConsumerState<AddPackageDetailsDialo
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.prefillData?.receiverName ?? '');
-    _addressController = TextEditingController(text: widget.prefillData?.address ?? '');
-    _phoneController = TextEditingController(text: widget.prefillData?.phone ?? '');
+    _nameController = TextEditingController(
+      text: widget.prefillData?.receiverName ?? '',
+    );
+    _addressController = TextEditingController(
+      text: widget.prefillData?.address ?? '',
+    );
+    _phoneController = TextEditingController(
+      text: widget.prefillData?.phone ?? '',
+    );
     _notesController = TextEditingController();
   }
 
@@ -66,7 +74,11 @@ class _AddPackageDetailsDialogState extends ConsumerState<AddPackageDetailsDialo
       ),
       title: Row(
         children: [
-          const Icon(LucideIcons.packagePlus, color: AppColors.primary, size: 24),
+          const Icon(
+            LucideIcons.packagePlus,
+            color: AppColors.primary,
+            size: 24,
+          ),
           const SizedBox(width: 12),
           const Text('Añadir Paquete', style: TextStyle(color: Colors.white)),
         ],
@@ -79,7 +91,10 @@ class _AddPackageDetailsDialogState extends ConsumerState<AddPackageDetailsDialo
             children: [
               Text(
                 'Ingresa los detalles para el paquete ${widget.trackingCode}',
-                style: TextStyle(color: Colors.white.withAlpha(200), fontSize: 14),
+                style: TextStyle(
+                  color: Colors.white.withAlpha(200),
+                  fontSize: 14,
+                ),
               ),
               const SizedBox(height: 24),
               _buildTextField(
@@ -141,11 +156,11 @@ class _AddPackageDetailsDialogState extends ConsumerState<AddPackageDetailsDialo
       keyboardType: keyboardType,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
-        prefixIcon: Icon(icon, color: AppColors.textSecondary, size: 20),
+        prefixIcon: Icon(icon, color: const Color(0xFF9AB0BC), size: 20),
         labelText: labelText,
         labelStyle: const TextStyle(color: AppColors.textSecondary),
         filled: true,
-        fillColor: Colors.black.withAlpha(50),
+        fillColor: const Color(0x32000000),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide.none,

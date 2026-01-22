@@ -34,14 +34,13 @@ class CustomCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Determine background color
-    final bgColor = backgroundColor ??
-        (isDarkBackground
-            ? AppColors.surfaceDark
-            : AppColors.surface);
+    final bgColor =
+        backgroundColor ??
+        (isDarkBackground ? AppColors.surfaceDark : AppColors.surface);
 
     // Determine final border color
-    final finalBorderColor = borderColor ??
-        (showBorder ? AppColors.border : null);
+    final finalBorderColor =
+        borderColor ?? (showBorder ? AppColors.border : null);
 
     final border = finalBorderColor != null
         ? Border.all(color: finalBorderColor, width: 1)
@@ -68,9 +67,7 @@ class CustomCard extends StatelessWidget {
                   top: 0,
                   bottom: 0,
                   width: 4,
-                  child: Container(
-                    color: leftStripColor,
-                  ),
+                  child: Container(color: leftStripColor),
                 ),
             ],
           ),

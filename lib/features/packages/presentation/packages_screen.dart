@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vector/core/theme/app_colors.dart';
+import 'package:vector/features/packages/domain/entities/jt_package.dart';
 import 'package:vector/features/routes/domain/entities/route_entity.dart';
 import 'package:vector/features/map/domain/entities/stop_entity.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:vector/features/packages/presentation/widgets/package_card.dart';
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
 import 'providers/jt_package_providers.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
+
 import 'package:vector/features/home/presentation/widgets/floating_scan_button.dart';
 import 'package:vector/shared/presentation/widgets/smart_scanner/smart_scanner_widget.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -78,18 +79,30 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                         child: TextField(
                           controller: manualCodeController,
                           autofocus: true,
-                          style: const TextStyle(color: Colors.white, fontSize: 16, letterSpacing: 1.5),
-                          decoration: InputDecoration(
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            letterSpacing: 1.5,
+                          ),
+                          decoration: const InputDecoration(
                             hintText: 'Ingresar código manualmente...',
-                            hintStyle: TextStyle(color: Colors.white.withAlpha(150)),
-                            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white.withAlpha(100))),
-                            focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.primary)),
+                            hintStyle: TextStyle(color: Color(0x96FFFFFF)),
+                            enabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Color(0x64FFFFFF)),
+                            ),
+                            focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: AppColors.primary),
+                            ),
                           ),
                         ),
                       ),
                       const SizedBox(width: 12),
                       IconButton(
-                        icon: const Icon(LucideIcons.arrowRightCircle, color: AppColors.primary, size: 32),
+                        icon: const Icon(
+                          LucideIcons.arrowRightCircle,
+                          color: AppColors.primary,
+                          size: 32,
+                        ),
                         onPressed: () {
                           if (manualCodeController.text.isNotEmpty) {
                             final code = manualCodeController.text;
@@ -97,11 +110,11 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                             _showDetailsDialog(code);
                           }
                         },
-                      )
+                      ),
                     ],
                   ),
                 ),
-              )
+              ),
             ],
           ),
         ),
@@ -120,10 +133,8 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
 
     final result = await showDialog<Map<String, String>>(
       context: context,
-      builder: (context) => AddPackageDetailsDialog(
-        trackingCode: code,
-        prefillData: prefillData,
-      ),
+      builder: (context) =>
+          AddPackageDetailsDialog(trackingCode: code, prefillData: prefillData),
     );
 
     if (result != null) {
@@ -135,7 +146,10 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
     final selectedRoute = ref.read(selectedRouteProvider);
     if (selectedRoute == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error: No hay ruta seleccionada para guardar.'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Error: No hay ruta seleccionada para guardar.'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -153,22 +167,31 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
     try {
       final useCase = ref.read(addStopToRouteUseCaseProvider);
       await useCase(AddStopParams(routeId: selectedRoute.id, stop: stop));
-      
+
       ref.invalidate(routesProvider);
       await ref.read(routesProvider.future);
-      
-      final updatedRoute = ref.read(routesProvider).asData?.value.firstWhere((r) => r.id == selectedRoute.id);
+
+      final updatedRoute = ref
+          .read(routesProvider)
+          .asData
+          ?.value
+          .firstWhere((r) => r.id == selectedRoute.id);
       if (updatedRoute != null) {
         ref.read(selectedRouteProvider.notifier).state = updatedRoute;
       }
-      
+
       if (mounted) {
-        _showToast("Paquete ${packageData['code']} agregado a ${selectedRoute.name}");
+        _showToast(
+          "Paquete ${packageData['code']} agregado a ${selectedRoute.name}",
+        );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error al agregar paquete: $e"), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text("Error al agregar paquete: $e"),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -189,12 +212,18 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
           child: Material(
             color: Colors.transparent,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-              decoration: BoxDecoration(
-                color: Colors.black.withAlpha(191),
-                borderRadius: BorderRadius.circular(8.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 12.0,
               ),
-              child: Text(message, style: const TextStyle(color: Colors.white, fontSize: 14)),
+              decoration: const BoxDecoration(
+                color: Color(0xBF000000),
+                borderRadius: BorderRadius.all(Radius.circular(8.0)),
+              ),
+              child: Text(
+                message,
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+              ),
             ),
           ),
         );
@@ -210,7 +239,7 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
 
     // --- DEBUGGING ---
     debugPrint("--- Building PackagesScreen ---");
-    if(selectedRoute != null) {
+    if (selectedRoute != null) {
       debugPrint("Selected route: ${selectedRoute.name}");
       debugPrint("Stops from routeStopsProvider: ${stops.length}");
     } else {
@@ -233,7 +262,6 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
       }
     }).toList();
 
-
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
       body: SafeArea(
@@ -242,7 +270,11 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
           children: [
             // Header
             Padding(
-              padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0),
+              padding: const EdgeInsets.only(
+                left: 16.0,
+                right: 16.0,
+                top: 16.0,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -252,7 +284,8 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                       children: [
                         Text(
                           'Paradas de la Ruta',
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -260,7 +293,8 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                         const SizedBox(height: 4),
                         Text(
                           selectedRoute?.name ?? 'Ninguna ruta seleccionada',
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
                                 color: AppColors.textSecondary,
                                 letterSpacing: 1.5,
                                 fontWeight: FontWeight.w600,
@@ -276,23 +310,35 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                       Consumer(
                         builder: (context, ref, child) {
                           final routesAsync = ref.watch(routesProvider);
-                          final selectedRoute = ref.watch(selectedRouteProvider);
-                          
+                          final selectedRoute = ref.watch(
+                            selectedRouteProvider,
+                          );
+
                           return routesAsync.when(
                             data: (routes) {
-                              if (routes.isEmpty) return const SizedBox.shrink();
+                              if (routes.isEmpty) {
+                                return const SizedBox.shrink();
+                              }
                               return PopupMenuButton<RouteEntity>(
-                                tooltip: selectedRoute?.name ?? 'Seleccionar Ruta',
+                                tooltip:
+                                    selectedRoute?.name ?? 'Seleccionar Ruta',
                                 icon: Icon(
-                                  LucideIcons.map, 
-                                  color: selectedRoute != null ? AppColors.primary : Colors.grey,
+                                  LucideIcons.map,
+                                  color: selectedRoute != null
+                                      ? AppColors.primary
+                                      : Colors.grey,
                                 ),
                                 color: const Color(0xFF2C2C35),
                                 onSelected: (route) {
-                                  ref.read(selectedRouteProvider.notifier).state = route;
+                                  ref
+                                          .read(selectedRouteProvider.notifier)
+                                          .state =
+                                      route;
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text('Ruta seleccionada: ${route.name}'),
+                                      content: Text(
+                                        'Ruta seleccionada: ${route.name}',
+                                      ),
                                       backgroundColor: AppColors.primary,
                                       duration: const Duration(seconds: 1),
                                     ),
@@ -303,24 +349,35 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                                     value: route,
                                     child: Text(
                                       route.name,
-                                      style: const TextStyle(color: Colors.white),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   );
                                 }).toList(),
                               );
                             },
-                            loading: () => const SizedBox(width: 48), // Placeholder for icon button size
-                            error: (_, __) => const Icon(LucideIcons.alertCircle, color: Colors.red),
+                            loading: () => const SizedBox(
+                              width: 48,
+                            ), // Placeholder for icon button size
+                            error: (_, __) => const Icon(
+                              LucideIcons.alertCircle,
+                              color: Colors.red,
+                            ),
                           );
                         },
                       ),
                       IconButton(
                         tooltip: 'Importar Paquetes de J&T',
                         onPressed: () {
-                          ref.read(jtPackagesProvider.notifier).importPackages();
+                          ref
+                              .read(jtPackagesProvider.notifier)
+                              .importPackages();
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Importando paquetes de J&T en segundo plano...'),
+                              content: Text(
+                                'Importando paquetes de J&T en segundo plano...',
+                              ),
                               backgroundColor: AppColors.primary,
                             ),
                           );
@@ -359,10 +416,14 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                           vertical: 10,
                         ),
                         decoration: BoxDecoration(
-                          color: isSelected ? AppColors.primary : const Color(0xFF2C2C35),
+                          color: isSelected
+                              ? AppColors.primary
+                              : const Color(0xFF2C2C35),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: isSelected ? Colors.transparent : Colors.white.withAlpha(25),
+                            color: isSelected
+                                ? Colors.transparent
+                                : Colors.white.withAlpha(25),
                           ),
                         ),
                         child: Text(
@@ -380,94 +441,104 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                 }),
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            Divider(
-              height: 1,
-              thickness: 1,
-              color: Colors.white.withAlpha(25),
-            ),
-            
+            Divider(height: 1, thickness: 1, color: Colors.white.withAlpha(25)),
+
             Expanded(
               child: selectedRoute == null
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(LucideIcons.map, size: 64, color: Colors.grey[800]),
+                          Icon(
+                            LucideIcons.map,
+                            size: 64,
+                            color: Colors.grey[800],
+                          ),
                           const SizedBox(height: 16),
                           Text(
                             'Selecciona una ruta en la pantalla anterior',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey[400], fontSize: 16),
+                            style: TextStyle(
+                              color: Colors.grey[400],
+                              fontSize: 16,
+                            ),
                           ),
                         ],
                       ),
                     )
                   : filteredStops.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(LucideIcons.package, size: 64, color: Colors.grey[800]),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No hay paradas en esta ruta',
-                                style: TextStyle(color: Colors.grey[400], fontSize: 16),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Puedes escanear paquetes para agregarlos',
-                                style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                              ),
-                            ],
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            LucideIcons.package,
+                            size: 64,
+                            color: Colors.grey[800],
                           ),
-                        )
-                      : ListView.separated(
-                          padding: const EdgeInsets.only(
-                            left: 16.0,
-                            right: 16.0,
-                            top: 16.0,
-                            bottom: 100.0,
+                          const SizedBox(height: 16),
+                          Text(
+                            'No hay paradas en esta ruta',
+                            style: TextStyle(
+                              color: Colors.grey[400],
+                              fontSize: 16,
+                            ),
                           ),
-                          itemCount: filteredStops.length,
-                          separatorBuilder: (context, index) => const SizedBox(height: 16),
-                          itemBuilder: (context, index) {
-                            final stop = filteredStops[index];
-                            
-                            String statusInSpanish;
-                            switch (stop.status) {
-                              case StopStatus.pending:
-                                statusInSpanish = 'PENDIENTE';
-                                break;
-                              case StopStatus.completed:
-                                statusInSpanish = 'ENTREGADO';
-                                break;
-                              case StopStatus.failed:
-                                statusInSpanish = 'FALLIDO';
-                                break;
-                              default:
-                                statusInSpanish = 'DESCONOCIDO';
-                            }
+                          const SizedBox(height: 8),
+                          Text(
+                            'Puedes escanear paquetes para agregarlos',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.only(
+                        left: 16.0,
+                        right: 16.0,
+                        top: 16.0,
+                        bottom: 100.0,
+                      ),
+                      itemCount: filteredStops.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 16),
+                      itemBuilder: (context, index) {
+                        final stop = filteredStops[index];
 
-                            return PackageCard(
-                              trackingId: stop.id,
-                              status: statusInSpanish,
-                              address: stop.address,
-                              customerName: stop.name,
-                              timeWindow: 'N/A', // This info is not in StopEntity
-                            );
-                          },
-                        ),
+                        String statusInSpanish;
+                        switch (stop.status) {
+                          case StopStatus.pending:
+                            statusInSpanish = 'PENDIENTE';
+                            break;
+                          case StopStatus.completed:
+                            statusInSpanish = 'ENTREGADO';
+                            break;
+                          case StopStatus.failed:
+                            statusInSpanish = 'FALLIDO';
+                            break;
+                        }
+
+                        return PackageCard(
+                          trackingId: stop.id,
+                          status: statusInSpanish,
+                          address: stop.address,
+                          customerName: stop.name,
+                          timeWindow: 'N/A', // This info is not in StopEntity
+                        );
+                      },
+                    ),
             ),
           ],
         ),
       ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 80.0),
-        child: FloatingScanButton(
-          onTap: () => _openScanner(context),
-        ),
+        child: FloatingScanButton(onTap: () => _openScanner(context)),
       ),
     );
   }

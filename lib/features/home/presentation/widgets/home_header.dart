@@ -19,8 +19,10 @@ class HomeHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final date = DateTime.now();
-    final formattedDate =
-        DateFormat('EEEE, MMMM d', 'es').format(date).toUpperCase();
+    final formattedDate = DateFormat(
+      'EEEE, MMMM d',
+      'es',
+    ).format(date).toUpperCase();
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -33,18 +35,18 @@ class HomeHeader extends StatelessWidget {
               Text(
                 formattedDate,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.5,
-                    ),
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.5,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
                 "Hola, $userName",
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: AppColors.text,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  color: AppColors.text,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
@@ -56,7 +58,9 @@ class HomeHeader extends StatelessWidget {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Datos de ejemplo cargados. Refresca las pantallas.'),
+                  content: Text(
+                    'Datos de ejemplo cargados. Refresca las pantallas.',
+                  ),
                   backgroundColor: Colors.green,
                 ),
               );
@@ -108,7 +112,10 @@ class _StatusSelector extends ConsumerWidget {
           children: [
             ListTile(
               leading: const Icon(LucideIcons.refreshCw, color: Colors.blue),
-              title: const Text('Sincronizar Datos', style: TextStyle(color: Colors.white)),
+              title: const Text(
+                'Sincronizar Datos',
+                style: TextStyle(color: Colors.white),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 // TODO: Implement Sync
@@ -116,7 +123,10 @@ class _StatusSelector extends ConsumerWidget {
             ),
             ListTile(
               leading: const Icon(LucideIcons.logOut, color: Colors.red),
-              title: const Text('Cerrar Sesión', style: TextStyle(color: Colors.white)),
+              title: const Text(
+                'Cerrar Sesión',
+                style: TextStyle(color: Colors.white),
+              ),
               onTap: () {
                 ref.read(authProvider.notifier).logout();
                 Navigator.pop(context);
@@ -132,15 +142,17 @@ class _StatusSelector extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
-    
+
     final bool isAuthenticated = authState.when(
-        data: (option) => option.isSome(),
-        error: (_, __) => false,
-        loading: () => false,
+      data: (option) => option.isSome(),
+      error: (_, __) => false,
+      loading: () => false,
     );
 
     // Definir colores según estado
-    final statusColor = isAuthenticated ? const Color(0xFF00E676) : const Color(0xFFFF5252);
+    final statusColor = isAuthenticated
+        ? const Color(0xFF00E676)
+        : const Color(0xFFFF5252);
     final backgroundColor = statusColor.withValues(alpha: 0.1);
     final borderColor = statusColor.withValues(alpha: 0.3);
     final text = isAuthenticated ? 'J&T LINKED' : 'OFFLINE';
@@ -160,7 +172,7 @@ class _StatusSelector extends ConsumerWidget {
               color: statusColor.withValues(alpha: 0.2),
               blurRadius: 12,
               spreadRadius: -2,
-            )
+            ),
           ],
         ),
         child: Row(

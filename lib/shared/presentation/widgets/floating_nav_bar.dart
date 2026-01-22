@@ -2,7 +2,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-
 class FloatingNavBar extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
@@ -17,61 +16,61 @@ class FloatingNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 70,
-      margin: const EdgeInsets.symmetric(horizontal: 24), // Margen lateral solamente
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E).withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(35),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.1),
-          width: 1,
+      margin: const EdgeInsets.symmetric(
+        horizontal: 24,
+      ), // Margen lateral solamente
+      decoration: const BoxDecoration(
+        color: Color(0xCC1E1E1E),
+        borderRadius: BorderRadius.all(Radius.circular(35)),
+        border: Border.fromBorderSide(
+          BorderSide(color: Color(0x1AFFFFFF), width: 1),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.4),
+            color: Color(0x66000000),
             blurRadius: 20,
-            offset: const Offset(0, 10),
+            offset: Offset(0, 10),
           ),
         ],
       ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(35),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _NavBarItem(
-                  icon: LucideIcons.home,
-                  label: 'Inicio',
-                  isSelected: currentIndex == 0,
-                  onTap: () => onTap(0),
-                ),
-                _NavBarItem(
-                  icon: LucideIcons.navigation,
-                  label: 'Rutas',
-                  isSelected: currentIndex == 1,
-                  onTap: () => onTap(1),
-                ),
-                _NavBarItem(
-                  icon: LucideIcons.package,
-                  label: 'Paquetes',
-                  isSelected: currentIndex == 2,
-                  onTap: () => onTap(2),
-                ),
-                _NavBarItem(
-                  icon: LucideIcons.map,
-                  label: 'Mapa',
-                  isSelected: currentIndex == 3,
-                  onTap: () => onTap(3),
-                ),
-              ],
-            ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(35),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _NavBarItem(
+                icon: LucideIcons.home,
+                label: 'Inicio',
+                isSelected: currentIndex == 0,
+                onTap: () => onTap(0),
+              ),
+              _NavBarItem(
+                icon: LucideIcons.navigation,
+                label: 'Rutas',
+                isSelected: currentIndex == 1,
+                onTap: () => onTap(1),
+              ),
+              _NavBarItem(
+                icon: LucideIcons.package,
+                label: 'Paquetes',
+                isSelected: currentIndex == 2,
+                onTap: () => onTap(2),
+              ),
+              _NavBarItem(
+                icon: LucideIcons.map,
+                label: 'Mapa',
+                isSelected: currentIndex == 3,
+                onTap: () => onTap(3),
+              ),
+            ],
           ),
         ),
+      ),
     );
   }
 }
-
 
 class _NavBarItem extends StatelessWidget {
   final IconData icon;
@@ -103,11 +102,7 @@ class _NavBarItem extends StatelessWidget {
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               decoration: const BoxDecoration(), // No glow/shadow
-              child: Icon(
-                icon,
-                color: color,
-                size: 26,
-              ),
+              child: Icon(icon, color: color, size: 26),
             ),
             const SizedBox(height: 4),
             AnimatedDefaultTextStyle(
@@ -129,12 +124,7 @@ class _NavBarItem extends StatelessWidget {
               decoration: BoxDecoration(
                 color: color,
                 shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: color,
-                    blurRadius: 4,
-                  )
-                ],
+                boxShadow: [BoxShadow(color: color, blurRadius: 4)],
               ),
             ),
           ],

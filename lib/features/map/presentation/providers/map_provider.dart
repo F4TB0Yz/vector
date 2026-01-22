@@ -96,7 +96,7 @@ class MapNotifier extends Notifier<MapState> {
 
     // Workaround for style loading issue: wait a bit before drawing.
     await Future.delayed(const Duration(milliseconds: 500));
-    
+
     if (state.activeRoute != null) {
       await _updateMapData(state.activeRoute!);
     }
@@ -111,10 +111,9 @@ class MapNotifier extends Notifier<MapState> {
   Future<void> _enableLocationPuck() async {
     if (state.mapController == null) return;
     try {
-      await state.mapController!.location.updateSettings(LocationComponentSettings(
-        enabled: true,
-        pulsingEnabled: true,
-      ));
+      await state.mapController!.location.updateSettings(
+        LocationComponentSettings(enabled: true, pulsingEnabled: true),
+      );
     } catch (e) {
       state = state.copyWith(error: 'Error enabling location puck: $e');
     }
@@ -126,20 +125,27 @@ class MapNotifier extends Notifier<MapState> {
       accuracy: geo.LocationAccuracy.high,
       distanceFilter: 10,
     );
-    _locationSubscription = geo.Geolocator.getPositionStream(
-      locationSettings: locationSettings,
-    ).listen((position) {
-      final firstLocation = state.userLocation == null;
-      state = state.copyWith(userLocation: position, isTracking: true);
-      if (firstLocation) {
-         centerOnUserLocation();
-      }
-      
-      // Update route progress in real-time
-      _updateRouteProgress(position);
-    }, onError: (e) {
-      state = state.copyWith(error: "Error en stream de ubicación: $e", isTracking: false);
-    });
+    _locationSubscription =
+        geo.Geolocator.getPositionStream(
+          locationSettings: locationSettings,
+        ).listen(
+          (position) {
+            final firstLocation = state.userLocation == null;
+            state = state.copyWith(userLocation: position, isTracking: true);
+            if (firstLocation) {
+              centerOnUserLocation();
+            }
+
+            // Update route progress in real-time
+            _updateRouteProgress(position);
+          },
+          onError: (e) {
+            state = state.copyWith(
+              error: "Error en stream de ubicación: $e",
+              isTracking: false,
+            );
+          },
+        );
   }
 
   void stopTracking() {
@@ -153,7 +159,8 @@ class MapNotifier extends Notifier<MapState> {
     final result = await repo.getActiveRoute();
 
     result.fold(
-      (failure) => state = state.copyWith(error: failure.message, isLoadingRoute: false),
+      (failure) =>
+          state = state.copyWith(error: failure.message, isLoadingRoute: false),
       (route) async {
         state = state.copyWith(activeRoute: route, isLoadingRoute: false);
         // If map is already ready, update map data.
@@ -171,7 +178,8 @@ class MapNotifier extends Notifier<MapState> {
     final result = await repo.getRouteById(id);
 
     result.fold(
-      (failure) => state = state.copyWith(error: failure.message, isLoadingRoute: false),
+      (failure) =>
+          state = state.copyWith(error: failure.message, isLoadingRoute: false),
       (route) async {
         state = state.copyWith(activeRoute: route, isLoadingRoute: false);
         if (state.isMapReady) {
@@ -180,22 +188,22 @@ class MapNotifier extends Notifier<MapState> {
       },
     );
   }
-  
+
   /// Updates map data using GeoJSON sources (declarative approach)
   Future<void> _updateMapData(RouteEntity route) async {
     if (!state.isMapReady || state.mapController == null) return;
-    
+
     // Prevenir llamadas concurrentes
     if (_isUpdatingMapData) return;
     _isUpdatingMapData = true;
-    
+
     try {
       await _performMapDataUpdate(route);
     } finally {
       _isUpdatingMapData = false;
     }
   }
-  
+
   Future<void> _performMapDataUpdate(RouteEntity route) async {
     final mapboxMap = state.mapController!;
 
@@ -221,13 +229,10 @@ class MapNotifier extends Notifier<MapState> {
       };
     }).toList();
 
-    final stopsGeoJSON = {
-      'type': 'FeatureCollection',
-      'features': features,
-    };
+    final stopsGeoJSON = {'type': 'FeatureCollection', 'features': features};
 
     // --- ACTUALIZACIÓN DE SOURCES ---
-    
+
     if (!_sourcesInitialized) {
       // Primera vez: crear sources
       await mapboxMap.style.addSource(
@@ -253,7 +258,7 @@ class MapNotifier extends Notifier<MapState> {
 
     // Llamamos a la creación de capas solo si no existen
     await _buildLayers(mapboxMap);
-    
+
     // Zoom to route
     await _zoomToRoute(route);
   }
@@ -262,41 +267,47 @@ class MapNotifier extends Notifier<MapState> {
   Future<void> _buildLayers(MapboxMap mapboxMap) async {
     // Route Passed Layer (Gray - where we've been)
     if (!await mapboxMap.style.styleLayerExists('route-passed-layer')) {
-      await mapboxMap.style.addLayer(LineLayer(
-        id: 'route-passed-layer',
-        sourceId: 'route-passed-source',
-        lineColor: Colors.grey[800]!.toARGB32(),
-        lineWidth: 4.0,
-        lineOpacity: 0.5,
-        lineCap: LineCap.ROUND,
-        lineJoin: LineJoin.ROUND,
-      ));
+      await mapboxMap.style.addLayer(
+        LineLayer(
+          id: 'route-passed-layer',
+          sourceId: 'route-passed-source',
+          lineColor: Colors.grey[800]!.toARGB32(),
+          lineWidth: 4.0,
+          lineOpacity: 0.5,
+          lineCap: LineCap.ROUND,
+          lineJoin: LineJoin.ROUND,
+        ),
+      );
     }
 
     // Route Active Layer (Neon - where we need to go)
     if (!await mapboxMap.style.styleLayerExists('route-active-layer')) {
-      await mapboxMap.style.addLayer(LineLayer(
-        id: 'route-active-layer',
-        sourceId: 'route-active-source',
-        lineColor: const Color(0xFF00FFFF).toARGB32(), // Neon cyan
-        lineWidth: 6.0,
-        lineOpacity: 1.0,
-        lineCap: LineCap.ROUND,
-        lineJoin: LineJoin.ROUND,
-      ));
+      await mapboxMap.style.addLayer(
+        LineLayer(
+          id: 'route-active-layer',
+          sourceId: 'route-active-source',
+          lineColor: const Color(0xFF00FFFF).toARGB32(), // Neon cyan
+          lineWidth: 6.0,
+          lineOpacity: 1.0,
+          lineCap: LineCap.ROUND,
+          lineJoin: LineJoin.ROUND,
+        ),
+      );
     }
 
     // Stops Layer (Circles with data-driven styling)
     if (!await mapboxMap.style.styleLayerExists('stops-layer')) {
-      await mapboxMap.style.addLayer(CircleLayer(
-        id: 'stops-layer',
-        sourceId: 'stops-source',
-        circleRadius: 12.0,
-        circleColor: Colors.orange.toARGB32(),
-        circleStrokeColor: Colors.white.toARGB32(),
-        circleStrokeWidth: 2.0,
-      ));
-      
+      await mapboxMap.style.addLayer(
+        CircleLayer(
+          id: 'stops-layer',
+          sourceId: 'stops-source',
+          circleRadius: 12.0,
+          circleColor: Colors.orange.toARGB32(),
+          circleStrokeColor: Colors.white.toARGB32(),
+          circleStrokeWidth: 2.0,
+        ),
+      );
+
       // Apply data-driven styling for circle color based on status
       await mapboxMap.style.setStyleLayerProperty(
         'stops-layer',
@@ -304,25 +315,27 @@ class MapNotifier extends Notifier<MapState> {
         jsonEncode([
           'match',
           ['get', 'status'],
-          'pending', '#FF9800',  // Orange
+          'pending', '#FF9800', // Orange
           'completed', '#4CAF50', // Green
-          'failed', '#F44336',    // Red
-          '#9E9E9E',              // Grey (default)
+          'failed', '#F44336', // Red
+          '#9E9E9E', // Grey (default)
         ]),
       );
     }
 
     // Stops Labels Layer (Numbers)
     if (!await mapboxMap.style.styleLayerExists('stops-labels-layer')) {
-      await mapboxMap.style.addLayer(SymbolLayer(
-        id: 'stops-labels-layer',
-        sourceId: 'stops-source',
-        textField: '{stopOrder}',
-        textSize: 12.0,
-        textColor: Colors.white.toARGB32(),
-        textHaloColor: Colors.black.toARGB32(),
-        textHaloWidth: 1.0,
-      ));
+      await mapboxMap.style.addLayer(
+        SymbolLayer(
+          id: 'stops-labels-layer',
+          sourceId: 'stops-source',
+          textField: '{stopOrder}',
+          textSize: 12.0,
+          textColor: Colors.white.toARGB32(),
+          textHaloColor: Colors.black.toARGB32(),
+          textHaloWidth: 1.0,
+        ),
+      );
     }
   }
 
@@ -358,13 +371,17 @@ class MapNotifier extends Notifier<MapState> {
     }
   }
 
-
   Future<void> centerOnUserLocation() async {
     if (!state.isMapReady || state.userLocation == null) return;
     try {
       await state.mapController!.easeTo(
         CameraOptions(
-          center: Point(coordinates: Position(state.userLocation!.longitude, state.userLocation!.latitude)),
+          center: Point(
+            coordinates: Position(
+              state.userLocation!.longitude,
+              state.userLocation!.latitude,
+            ),
+          ),
           zoom: 16.0,
           pitch: 45.0,
         ),
@@ -376,7 +393,7 @@ class MapNotifier extends Notifier<MapState> {
   }
 
   Future<void> zoomIn() async {
-     // ...
+    // ...
   }
 
   Future<void> zoomOut() async {
@@ -385,8 +402,8 @@ class MapNotifier extends Notifier<MapState> {
 
   /// Updates route progress by splitting geometry into past and future segments
   Future<void> _updateRouteProgress(geo.Position userLocation) async {
-    if (state.activeRoute == null || 
-        !state.isMapReady || 
+    if (state.activeRoute == null ||
+        !state.isMapReady ||
         state.activeRoute!.polyline.isEmpty) {
       return;
     }
@@ -394,10 +411,12 @@ class MapNotifier extends Notifier<MapState> {
     try {
       // 1. Convert Mapbox Polyline to Turf LineString
       final routeCoordinates = state.activeRoute!.polyline
-          .map((p) => turf.Position.named(
-                lat: p.lat.toDouble(),
-                lng: p.lng.toDouble(),
-              ))
+          .map(
+            (p) => turf.Position.named(
+              lat: p.lat.toDouble(),
+              lng: p.lng.toDouble(),
+            ),
+          )
           .toList();
       final routeLine = turf.LineString(coordinates: routeCoordinates);
 
@@ -455,10 +474,7 @@ class MapNotifier extends Notifier<MapState> {
     final geoJSON = {
       'type': 'Feature',
       'properties': {},
-      'geometry': {
-        'type': 'LineString',
-        'coordinates': coordinates,
-      },
+      'geometry': {'type': 'LineString', 'coordinates': coordinates},
     };
 
     try {

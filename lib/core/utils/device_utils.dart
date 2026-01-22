@@ -44,18 +44,18 @@ class DeviceUtils {
       if (Platform.isAndroid) {
         final AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
         final String? id = await androidIdPlugin.getId();
-        
+
         deviceId = id ?? androidInfo.id; // Fallback to androidInfo.id
         model = androidInfo.model;
         brand = androidInfo.brand;
         androidVersion = androidInfo.version.release;
       } else if (Platform.isIOS) {
-         // Placeholder for iOS if needed in future
-         final IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
-         model = iosInfo.model;
-         deviceId = iosInfo.identifierForVendor ?? 'ios_uuid';
-         brand = 'apple';
-         androidVersion = iosInfo.systemVersion;
+        // Placeholder for iOS if needed in future
+        final IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
+        model = iosInfo.model;
+        deviceId = iosInfo.identifierForVendor ?? 'ios_uuid';
+        brand = 'apple';
+        androidVersion = iosInfo.systemVersion;
       }
     } catch (e) {
       debugPrint('Error getting device info: $e');
@@ -80,7 +80,9 @@ class DeviceUtils {
       print('$_ansiGreen -> Device ID:   ${data.deviceId}$_ansiReset');
       print('$_ansiGreen -> Model:       ${data.model}$_ansiReset');
       print('$_ansiGreen -> Brand:       ${data.brand}$_ansiReset');
-      print('$_ansiGreen -> OS Version:  Android-${data.androidVersion}$_ansiReset');
+      print(
+        '$_ansiGreen -> OS Version:  Android-${data.androidVersion}$_ansiReset',
+      );
       print('$_ansiGreen -> App Version: ${data.appVersion}$_ansiReset');
       print('$_ansiCyan==========================================$_ansiReset');
     }

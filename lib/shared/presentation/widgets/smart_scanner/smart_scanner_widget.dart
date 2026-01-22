@@ -11,11 +11,7 @@ class SmartScannerWidget extends StatefulWidget {
   final Function(BarcodeCapture) onDetect;
   final VoidCallback? onDispose;
 
-  const SmartScannerWidget({
-    super.key,
-    required this.onDetect,
-    this.onDispose,
-  });
+  const SmartScannerWidget({super.key, required this.onDetect, this.onDispose});
 
   @override
   State<SmartScannerWidget> createState() => _SmartScannerWidgetState();
@@ -31,7 +27,7 @@ class _SmartScannerWidgetState extends State<SmartScannerWidget>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    
+
     _controller = MobileScannerController(
       detectionSpeed: DetectionSpeed.normal,
       formats: const [
@@ -49,7 +45,7 @@ class _SmartScannerWidgetState extends State<SmartScannerWidget>
       ],
       facing: CameraFacing.back,
       torchEnabled: false,
-      returnImage: true, 
+      returnImage: true,
     );
   }
 
@@ -61,7 +57,7 @@ class _SmartScannerWidgetState extends State<SmartScannerWidget>
       case AppLifecycleState.detached:
       case AppLifecycleState.hidden:
       case AppLifecycleState.paused:
-        _controller.stop(); 
+        _controller.stop();
         break;
       case AppLifecycleState.resumed:
       case AppLifecycleState.inactive:
@@ -85,7 +81,7 @@ class _SmartScannerWidgetState extends State<SmartScannerWidget>
 
   Future<void> _handleDetection(BarcodeCapture capture) async {
     if (_isProcessing) return;
-    
+
     _isProcessing = true;
 
     if (mounted) {
@@ -95,11 +91,11 @@ class _SmartScannerWidgetState extends State<SmartScannerWidget>
     }
 
     _captureNotifier.value = capture;
-    
+
     if (await Vibration.hasVibrator()) {
       Vibration.vibrate();
     }
-    
+
     // Assuming you have a sound file at this path
     _audioPlayer.play(AssetSource('audio/scanner.wav'));
 
@@ -146,7 +142,7 @@ class _SmartScannerWidgetState extends State<SmartScannerWidget>
               onDetect: _handleDetection,
               fit: BoxFit.cover,
             ),
-            
+
             // Layer 0.5: Frozen Image (If active)
             if (_frozenImage != null)
               Image.memory(
@@ -170,7 +166,10 @@ class _SmartScannerWidgetState extends State<SmartScannerWidget>
                   painter: ARScannerPainter(
                     imgSize: capture.size, // Size of the camera image buffer
                     barcodes: capture.barcodes,
-                    screenSize: Size(constraints.maxWidth, constraints.maxHeight),
+                    screenSize: Size(
+                      constraints.maxWidth,
+                      constraints.maxHeight,
+                    ),
                   ),
                   size: Size.infinite,
                 );

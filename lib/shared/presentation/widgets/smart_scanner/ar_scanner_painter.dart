@@ -19,15 +19,20 @@ class ARScannerPainter extends CustomPainter {
 
     final Paint paint = Paint()
       ..color = AppColors.accent
-      ..strokeWidth = 4 // Thicker for better visibility
+      ..strokeWidth =
+          4 // Thicker for better visibility
       ..style = PaintingStyle.stroke
       ..strokeJoin = StrokeJoin.round;
 
     final Paint glowPaint = Paint()
       ..color = AppColors.accent
-      ..strokeWidth = 8 // Much wider glow
+      ..strokeWidth =
+          8 // Much wider glow
       ..style = PaintingStyle.stroke
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6); // Stronger blur
+      ..maskFilter = const MaskFilter.blur(
+        BlurStyle.normal,
+        6,
+      ); // Stronger blur
 
     // --- COORDINATE MAPPING LOGIC ---
 
@@ -35,7 +40,7 @@ class ARScannerPainter extends CustomPainter {
     // Most phone cameras sensors are Landscape (e.g. 1920x1080).
     // The screen is usually Portrait (e.g. 400x800).
     // BoxFit.cover rotates the image 90 degrees visually to fit.
-    
+
     double sourceWidth = imgSize.width;
     double sourceHeight = imgSize.height;
 
@@ -52,7 +57,9 @@ class ARScannerPainter extends CustomPainter {
     // 2. Calculate BoxFit.cover scale
     final double scaleX = screenSize.width / sourceWidth;
     final double scaleY = screenSize.height / sourceHeight;
-    final double scale = (scaleX > scaleY) ? scaleX : scaleY; // max(scaleX, scaleY)
+    final double scale = (scaleX > scaleY)
+        ? scaleX
+        : scaleY; // max(scaleX, scaleY)
 
     // 3. Calculate Center Offsets
     // These offsets center the scaled image within the screen.
@@ -68,10 +75,10 @@ class ARScannerPainter extends CustomPainter {
 
       for (int i = 0; i < corners.length; i++) {
         final point = corners[i];
-        
+
         // 4. Transform Point
         // We apply the same scale and offset to the corner points.
-        
+
         double x = point.dx;
         double y = point.dy;
 
@@ -93,8 +100,8 @@ class ARScannerPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(ARScannerPainter oldDelegate) {
-     return oldDelegate.imgSize != imgSize || 
-            oldDelegate.barcodes != barcodes ||
-            oldDelegate.screenSize != screenSize;
+    return oldDelegate.imgSize != imgSize ||
+        oldDelegate.barcodes != barcodes ||
+        oldDelegate.screenSize != screenSize;
   }
 }

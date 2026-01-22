@@ -19,7 +19,8 @@ class ActiveRouteCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Si no hay routeId, usamos la fecha como fallback (requerimiento previo)
-    final displayId = routeId ??
+    final displayId =
+        routeId ??
         DateFormat('MMMM d', 'es').format(DateTime.now()).toUpperCase();
 
     return CustomCard(
@@ -39,21 +40,21 @@ class ActiveRouteCard extends StatelessWidget {
                     Text(
                       "RUTA ACTIVA",
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                            letterSpacing: 1.2,
-                          ),
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        letterSpacing: 1.2,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       displayId,
-                      style:
-                          Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 32,
-                              ),
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 32,
+                          ),
                     ),
                   ],
                 ),
@@ -94,8 +95,9 @@ class _RouteProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double progress =
-        (totalCount > 0) ? (deliveredCount / totalCount).clamp(0.0, 1.0) : 0.0;
+    final double progress = (totalCount > 0)
+        ? (deliveredCount / totalCount).clamp(0.0, 1.0)
+        : 0.0;
     final int percentage = (progress * 100).round();
 
     return Column(
@@ -117,9 +119,9 @@ class _RouteProgress extends StatelessWidget {
                   TextSpan(
                     text: "/$totalCount Entregados",
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -127,9 +129,9 @@ class _RouteProgress extends StatelessWidget {
             Text(
               "$percentage% Completado",
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w500,
-                  ),
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
@@ -169,26 +171,26 @@ class _NextStopInfo extends StatelessWidget {
                 Text(
                   "SIGUIENTE PARADA • 2:30 PM",
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.0,
-                        fontSize: 10,
-                      ),
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.0,
+                    fontSize: 10,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   "Calle 14A 2E 37",
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   "Bonet",
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ),

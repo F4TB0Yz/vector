@@ -23,7 +23,10 @@ class RoutesRepositoryImpl implements RoutesRepository {
   }
 
   @override
-  Future<Either<Failure, RouteEntity>> createRoute(String name, DateTime date) async {
+  Future<Either<Failure, RouteEntity>> createRoute(
+    String name,
+    DateTime date,
+  ) async {
     try {
       final result = await localDataSource.createRoute(name, date);
       return Right(result);

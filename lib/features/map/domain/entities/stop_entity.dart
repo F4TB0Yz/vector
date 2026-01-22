@@ -39,5 +39,12 @@ class StopEntity extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, name, address, coordinates, status, stopOrder];
+  List<Object?> get props => [
+    id,
+    name,
+    address,
+    coordinates,
+    status,
+    stopOrder,
+  ];
 }

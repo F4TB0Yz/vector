@@ -24,7 +24,10 @@ class RouteModel extends RouteEntity {
     );
   }
 
-  factory RouteModel.fromMap(Map<String, dynamic> map, {List<StopEntity> stops = const []}) {
+  factory RouteModel.fromMap(
+    Map<String, dynamic> map, {
+    List<StopEntity> stops = const [],
+  }) {
     return RouteModel(
       id: map['id'],
       name: map['name'],

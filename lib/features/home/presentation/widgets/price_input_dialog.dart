@@ -4,10 +4,7 @@ import 'package:flutter/services.dart';
 class PriceInputDialog extends StatefulWidget {
   final Function(double) onPriceConfirmed;
 
-  const PriceInputDialog({
-    super.key,
-    required this.onPriceConfirmed,
-  });
+  const PriceInputDialog({super.key, required this.onPriceConfirmed});
 
   @override
   State<PriceInputDialog> createState() => _PriceInputDialogState();
@@ -31,18 +28,17 @@ class _PriceInputDialogState extends State<PriceInputDialog> {
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.08),
-            width: 1,
+        decoration: const BoxDecoration(
+          color: Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+          border: Border.fromBorderSide(
+            BorderSide(color: Color(0x14FFFFFF), width: 1),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.5),
+              color: Color(0x80000000),
               blurRadius: 30,
-              offset: const Offset(0, 10),
+              offset: Offset(0, 10),
             ),
           ],
         ),
@@ -53,16 +49,15 @@ class _PriceInputDialogState extends State<PriceInputDialog> {
             Container(
               width: 72,
               height: 72,
-              decoration: BoxDecoration(
-                color: const Color(0xFF252525),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: const Color(0xFF00E676).withValues(alpha: 0.3),
-                  width: 1,
+              decoration: const BoxDecoration(
+                color: Color(0xFF252525),
+                borderRadius: BorderRadius.all(Radius.circular(20)),
+                border: Border.fromBorderSide(
+                  BorderSide(color: Color(0x4D00E676), width: 1),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF00E676).withValues(alpha: 0.15),
+                    color: Color(0x2600E676),
                     blurRadius: 24,
                     spreadRadius: -4,
                   ),
@@ -103,11 +98,11 @@ class _PriceInputDialogState extends State<PriceInputDialog> {
 
             // TextField
             Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF252525),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.1),
+              decoration: const BoxDecoration(
+                color: Color(0xFF252525),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+                border: Border.fromBorderSide(
+                  BorderSide(color: Color(0x1AFFFFFF)),
                 ),
               ),
               child: TextField(
@@ -120,22 +115,18 @@ class _PriceInputDialogState extends State<PriceInputDialog> {
                   fontWeight: FontWeight.bold,
                   fontFamily: 'Inter',
                 ),
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
-                decoration: InputDecoration(
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: const InputDecoration(
                   hintText: '2200',
-                  hintStyle: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.3),
-                  ),
+                  hintStyle: TextStyle(color: Color(0x4DFFFFFF)),
                   prefixText: '\$',
-                  prefixStyle: const TextStyle(
+                  prefixStyle: TextStyle(
                     color: Color(0xFF00E676),
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
+                  contentPadding: EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 16,
                   ),

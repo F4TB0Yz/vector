@@ -57,9 +57,9 @@ class HomeActionButtons extends StatelessWidget {
           child: SizedBox(
             height: 54,
             child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: const [
+              decoration: const BoxDecoration(
+                borderRadius: BorderRadius.all(Radius.circular(8)),
+                boxShadow: [
                   BoxShadow(
                     color: Color(0x6600B0FF), // Blue glow
                     blurRadius: 18,

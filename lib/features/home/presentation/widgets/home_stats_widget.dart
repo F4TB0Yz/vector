@@ -8,10 +8,7 @@ import 'package:vector/features/home/presentation/widgets/price_input_dialog.dar
 class HomeStatsWidget extends StatefulWidget {
   final int deliveredCount;
 
-  const HomeStatsWidget({
-    super.key,
-    required this.deliveredCount,
-  });
+  const HomeStatsWidget({super.key, required this.deliveredCount});
 
   @override
   State<HomeStatsWidget> createState() => _HomeStatsWidgetState();
@@ -102,9 +99,7 @@ class _HomeStatsWidgetState extends State<HomeStatsWidget> {
         ),
         const SizedBox(width: 12),
         // Time Card - Isolated to prevent rebuilding the entire widget
-        const Expanded(
-          child: _RouteTimeCard(),
-        ),
+        const Expanded(child: _RouteTimeCard()),
       ],
     );
   }

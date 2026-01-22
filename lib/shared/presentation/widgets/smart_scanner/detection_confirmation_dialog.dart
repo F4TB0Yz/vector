@@ -25,18 +25,17 @@ class DetectionConfirmationDialog extends StatelessWidget {
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E), // Surface color
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.08),
-            width: 1,
+        decoration: const BoxDecoration(
+          color: Color(0xFF1E1E1E), // Surface color
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+          border: Border.fromBorderSide(
+            BorderSide(color: Color(0x14FFFFFF), width: 1),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.5),
+              color: Color(0x80000000),
               blurRadius: 30,
-              offset: const Offset(0, 10),
+              offset: Offset(0, 10),
             ),
           ],
         ),
@@ -47,16 +46,15 @@ class DetectionConfirmationDialog extends StatelessWidget {
             Container(
               width: 72,
               height: 72,
-              decoration: BoxDecoration(
-                color: const Color(0xFF252525),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: const Color(0xFF00E676).withValues(alpha: 0.3),
-                  width: 1,
+              decoration: const BoxDecoration(
+                color: Color(0xFF252525),
+                borderRadius: BorderRadius.all(Radius.circular(20)),
+                border: Border.fromBorderSide(
+                  BorderSide(color: Color(0x4D00E676), width: 1),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF00E676).withValues(alpha: 0.15),
+                    color: Color(0x2600E676),
                     blurRadius: 24,
                     spreadRadius: -4,
                   ),
@@ -119,22 +117,23 @@ class DetectionConfirmationDialog extends StatelessWidget {
                   Navigator.of(context).pop();
                   onConfirm();
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00E676),
-                  foregroundColor: Colors.black,
-                  elevation: 0,
-                  padding: EdgeInsets.zero,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ).copyWith(
-                  shadowColor: WidgetStateProperty.all(
-                    const Color(0xFF00E676).withValues(alpha: 0.5),
-                  ),
-                  elevation: WidgetStateProperty.resolveWith((states) {
-                    return states.contains(WidgetState.pressed) ? 2 : 8;
-                  }),
-                ),
+                style:
+                    ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00E676),
+                      foregroundColor: Colors.black,
+                      elevation: 0,
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ).copyWith(
+                      shadowColor: WidgetStateProperty.all(
+                        const Color(0xFF00E676).withValues(alpha: 0.5),
+                      ),
+                      elevation: WidgetStateProperty.resolveWith((states) {
+                        return states.contains(WidgetState.pressed) ? 2 : 8;
+                      }),
+                    ),
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

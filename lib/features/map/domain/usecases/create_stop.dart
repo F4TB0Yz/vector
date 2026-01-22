@@ -24,9 +24,7 @@ class CreateStop {
     }
 
     // Generar ID si no existe
-    final stopWithId = stop.id.isEmpty
-        ? stop.copyWith(id: _uuid.v4())
-        : stop;
+    final stopWithId = stop.id.isEmpty ? stop.copyWith(id: _uuid.v4()) : stop;
 
     return await repository.createStop(stopWithId);
   }

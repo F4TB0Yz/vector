@@ -32,7 +32,6 @@ final authRepositoryProvider = Provider<AuthRepositoryImpl>((ref) {
   );
 });
 
-
 final loginUseCaseProvider = Provider<LoginUseCase>((ref) {
   return LoginUseCase(ref.watch(authRepositoryProvider));
 });
@@ -55,14 +54,18 @@ class AuthNotifier extends AsyncNotifier<Option<User>> {
     return await repository.getCurrentUser();
   }
 
-  Future<void> login(String account, String password, {bool rememberMe = false}) async {
+  Future<void> login(
+    String account,
+    String password, {
+    bool rememberMe = false,
+  }) async {
     state = const AsyncLoading();
-    
+
     final useCase = ref.read(loginUseCaseProvider);
     final saveCredentialsUseCase = ref.read(saveCredentialsProvider);
-    
+
     final result = await useCase(account: account, password: password);
-    
+
     state = result.fold(
       (Failure failure) => AsyncError(failure.message, StackTrace.current),
       (User user) {

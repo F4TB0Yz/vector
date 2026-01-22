@@ -62,16 +62,17 @@ class PackageCard extends StatelessWidget {
                     Text(
                       'NÚMERO DE SEGUIMIENTO',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: Colors.grey[500],
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.0,
-                            fontSize: 10,
-                          ),
+                        color: Colors.grey[500],
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0,
+                        fontSize: 10,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       trackingId,
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 20, // Un poco más pequeño que Route ID
@@ -80,8 +81,10 @@ class PackageCard extends StatelessWidget {
                   ],
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
@@ -117,10 +120,7 @@ class PackageCard extends StatelessWidget {
             ),
           ),
 
-          Divider(
-            height: 1,
-            color: Colors.white.withValues(alpha: 0.1),
-          ),
+          Divider(height: 1, color: Colors.white.withValues(alpha: 0.1)),
 
           // Body: Dirección y Cliente
           Padding(
@@ -173,21 +173,24 @@ class PackageCard extends StatelessWidget {
             ),
           ),
 
-          Divider(
-            height: 1,
-            color: Colors.white.withValues(alpha: 0.1),
-          ),
+          Divider(height: 1, color: Colors.white.withValues(alpha: 0.1)),
 
           // Footer: Time Window y Action (Placeholder)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 12.0,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
-                    const Icon(LucideIcons.clock,
-                        size: 14, color: AppColors.textSecondary),
+                    const Icon(
+                      LucideIcons.clock,
+                      size: 14,
+                      color: AppColors.textSecondary,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       timeWindow,

@@ -6,7 +6,7 @@ import 'package:vector/features/auth/domain/entities/user.dart';
 class AuthLocalDataSource {
   static const _keyUser = 'jt_auth_user';
   static const _keyToken = 'jt_auth_token';
-  
+
   static const String _ansiCyan = '\x1B[36m';
   static const String _ansiGreen = '\x1B[32m';
   static const String _ansiRed = '\x1B[31m';
@@ -14,7 +14,7 @@ class AuthLocalDataSource {
 
   Future<void> saveUser(User user) async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     final userMap = {
       'account': user.account,
       'token': user.token,
@@ -31,10 +31,10 @@ class AuthLocalDataSource {
       'postName': user.postName,
       'loginTime': user.loginTime,
     };
-    
+
     await prefs.setString(_keyUser, jsonEncode(userMap));
     await prefs.setString(_keyToken, user.token);
-    
+
     _debugLog('💾 USER & TOKEN SAVED TO LOCAL STORAGE', _ansiGreen);
     _debugLog('Token: ${user.token.substring(0, 20)}...', _ansiCyan);
   }
@@ -42,12 +42,12 @@ class AuthLocalDataSource {
   Future<User?> getUser() async {
     final prefs = await SharedPreferences.getInstance();
     final userJson = prefs.getString(_keyUser);
-    
+
     if (userJson == null) {
       _debugLog('❌ NO USER FOUND IN LOCAL STORAGE', _ansiRed);
       return null;
     }
-    
+
     try {
       final userMap = jsonDecode(userJson) as Map<String, dynamic>;
       final user = User(
@@ -66,7 +66,7 @@ class AuthLocalDataSource {
         postName: userMap['postName'] ?? '',
         loginTime: userMap['loginTime'] ?? '',
       );
-      
+
       _debugLog('✅ USER LOADED FROM LOCAL STORAGE', _ansiGreen);
       _debugLog('Name: ${user.name}', _ansiCyan);
       return user;
@@ -79,13 +79,13 @@ class AuthLocalDataSource {
   Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString(_keyToken);
-    
+
     if (token != null) {
       _debugLog('🔑 TOKEN RETRIEVED: ${token.substring(0, 20)}...', _ansiCyan);
     } else {
       _debugLog('❌ NO TOKEN FOUND', _ansiRed);
     }
-    
+
     return token;
   }
 
@@ -103,11 +103,11 @@ class AuthLocalDataSource {
   Future<void> saveCredentials(String account, String password) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keySavedAccount, account);
-    
+
     // Simple Base64 encoding to avoid plain text (not secure, but obfuscated)
     final encodedPassword = base64Encode(utf8.encode(password));
     await prefs.setString(_keySavedPassword, encodedPassword);
-    
+
     _debugLog('💾 CREDENTIALS SAVED', _ansiGreen);
   }
 

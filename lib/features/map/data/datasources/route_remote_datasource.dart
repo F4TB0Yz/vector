@@ -9,15 +9,15 @@ class RouteRemoteDataSource {
   RouteRemoteDataSource({Dio? dio}) : _dio = dio ?? Dio();
 
   /// Fetches detailed route polyline that follows roads using Mapbox Directions API
-  /// 
+  ///
   /// Takes a list of [stops] (waypoints) and returns a detailed polyline with
   /// thousands of points that follow actual roads.
-  /// 
+  ///
   /// Falls back to original stops if:
   /// - Network error occurs
   /// - API returns error
   /// - Response is invalid
-  /// 
+  ///
   /// Mapbox Directions API limits:
   /// - Maximum 25 waypoints per request
   /// - 600 requests/minute (free tier)
@@ -77,10 +77,10 @@ class RouteRemoteDataSource {
 
         if (routes != null && routes.isNotEmpty) {
           final geometry = routes[0]['geometry'] as Map<String, dynamic>?;
-          
+
           if (geometry != null) {
             final coordinates = geometry['coordinates'] as List?;
-            
+
             if (coordinates != null && coordinates.isNotEmpty) {
               // Convert coordinates to Position objects
               final polyline = coordinates.map((coord) {
@@ -88,7 +88,7 @@ class RouteRemoteDataSource {
                 final lat = (coord[1] as num).toDouble();
                 return Position(lng, lat);
               }).toList();
-              
+
               _logInfo('✅ Received ${polyline.length} points from Mapbox API');
               return polyline;
             }

@@ -8,7 +8,6 @@ import 'package:vector/features/map/presentation/providers/map_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-
 class RoutesScreen extends ConsumerStatefulWidget {
   const RoutesScreen({super.key});
 
@@ -21,7 +20,6 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
 
   final List<String> _filters = ["TODAS", "ACTIVA", "EN ESPERA"];
 
-
   @override
   Widget build(BuildContext context) {
     final routesAsync = ref.watch(routesProvider);
@@ -33,31 +31,36 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
           children: [
             // Header
             Padding(
-              padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0),
+              padding: const EdgeInsets.only(
+                left: 16.0,
+                right: 16.0,
+                top: 16.0,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                   Column(
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Rutas Disponibles',
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                             ),
                       ),
                       const SizedBox(height: 4),
-                       Text(
+                      Text(
                         'Arma las ruta a tu manera',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: AppColors.textSecondary,
-                              letterSpacing: 1.5,
-                              fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
+                          letterSpacing: 1.5,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
-                   ),
+                  ),
                   Row(
                     children: [
                       IconButton(
@@ -113,7 +116,9 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
                           color: isSelected
                               ? AppColors.primary
                               : const Color(0xFF2C2C35),
-                          borderRadius: BorderRadius.circular(6), // Sharp corners as per SKILL
+                          borderRadius: BorderRadius.circular(
+                            6,
+                          ), // Sharp corners as per SKILL
                           border: Border.all(
                             color: isSelected
                                 ? Colors.transparent
@@ -135,14 +140,14 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
                 }),
               ),
             ),
-            
+
             const SizedBox(height: 16),
             Divider(
               height: 1,
               thickness: 1,
               color: Colors.white.withValues(alpha: 0.1),
             ),
-            
+
             Expanded(
               child: routesAsync.when(
                 data: (routes) {
@@ -191,106 +196,138 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
                       bottom: 100.0,
                     ),
                     itemCount: routes.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 12),
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final route = routes[index];
                       return Container(
                         padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2C2C35),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.05),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF2C2C35),
+                          borderRadius: BorderRadius.all(Radius.circular(8)),
+                          border: Border.fromBorderSide(
+                            BorderSide(color: Color(0x0DFFFFFF)),
                           ),
                         ),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Icon(
-                                  LucideIcons.navigation,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      route.name,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0x1A00E676),
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(4),
                                     ),
-                                    Text(
-                                      DateFormat('EEEE d, MMMM y', 'es').format(route.date),
-                                      style: TextStyle(
-                                        color: Colors.grey[500],
-                                        fontSize: 12,
+                                  ),
+                                  child: const Icon(
+                                    LucideIcons.navigation,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        route.name,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
                                       ),
+                                      Text(
+                                        DateFormat(
+                                          'EEEE d, MMMM y',
+                                          'es',
+                                        ).format(route.date),
+                                        style: TextStyle(
+                                          color: Colors.grey[500],
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Divider(
+                              height: 1,
+                              thickness: 1,
+                              color: Colors.white.withValues(alpha: 0.05),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                TextButton.icon(
+                                  onPressed: () {
+                                    ref
+                                            .read(
+                                              selectedRouteProvider.notifier,
+                                            )
+                                            .state =
+                                        route;
+                                    const ChangeTabNotification(
+                                      2,
+                                    ).dispatch(context);
+                                  },
+                                  icon: const Icon(
+                                    LucideIcons.package,
+                                    size: 18,
+                                  ),
+                                  label: const Text("Ver Paquetes"),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.white70,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    // Link route to map
+                                    ref
+                                        .read(mapProvider.notifier)
+                                        .loadRouteById(route.id);
+                                    const ChangeTabNotification(
+                                      3,
+                                    ).dispatch(context);
+                                  },
+                                  icon: const Icon(LucideIcons.map, size: 18),
+                                  label: const Text("Abrir Mapa"),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary
+                                        .withValues(alpha: 0.1),
+                                    foregroundColor: AppColors.primary,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 8,
                                     ),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Divider(
-                            height: 1,
-                            thickness: 1,
-                            color: Colors.white.withValues(alpha: 0.05),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              TextButton.icon(
-                                onPressed: () {
-                                  ref.read(selectedRouteProvider.notifier).state = route;
-                                  const ChangeTabNotification(2).dispatch(context);
-                                },
-                                icon: const Icon(LucideIcons.package, size: 18),
-                                label: const Text("Ver Paquetes"),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: Colors.white70,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              ElevatedButton.icon(
-                                onPressed: () {
-                                  // Link route to map
-                                  ref.read(mapProvider.notifier).loadRouteById(route.id);
-                                  const ChangeTabNotification(3).dispatch(context);
-                                },
-                                icon: const Icon(LucideIcons.map, size: 18),
-                                label: const Text("Abrir Mapa"),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                                  foregroundColor: AppColors.primary,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                ),
-                              ),
-                            ],
-                          )
-                        ],
-                      ),
+                              ],
+                            ),
+                          ],
+                        ),
                       );
                     },
                   );
                 },
-                loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-                error: (error, _) => Center(child: Text('Error: $error', style: const TextStyle(color: Colors.red))),
+                loading: () => const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
+                error: (error, _) => Center(
+                  child: Text(
+                    'Error: $error',
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
               ),
             ),
           ],

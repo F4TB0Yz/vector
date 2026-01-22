@@ -72,16 +72,17 @@ class RouteCard extends StatelessWidget {
                     Text(
                       'ID RUTA',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: Colors.grey[500],
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.0,
-                            fontSize: 10,
-                          ),
+                        color: Colors.grey[500],
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0,
+                        fontSize: 10,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       routeId,
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 28,
@@ -90,8 +91,10 @@ class RouteCard extends StatelessWidget {
                   ],
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
@@ -126,12 +129,9 @@ class RouteCard extends StatelessWidget {
               ],
             ),
           ),
-          
-          Divider(
-            height: 1,
-            color: Colors.white.withValues(alpha: 0.1),
-          ),
-          
+
+          Divider(height: 1, color: Colors.white.withValues(alpha: 0.1)),
+
           // Stats Section
           IntrinsicHeight(
             child: Row(
@@ -168,43 +168,40 @@ class RouteCard extends StatelessWidget {
               ],
             ),
           ),
-          
-          Divider(
-             height: 1,
-             color: Colors.white.withValues(alpha: 0.1),
-           ),
-          
+
+          Divider(height: 1, color: Colors.white.withValues(alpha: 0.1)),
+
           // Action Button
-           Padding(
-             padding: const EdgeInsets.all(16.0),
-             child: InkWell(
-               onTap: () {
-                 // TODO: Navigate to Map
-               },
-               borderRadius: BorderRadius.circular(8),
-               child: Container(
-                 padding: const EdgeInsets.symmetric(vertical: 12),
-                 decoration: BoxDecoration(
-                   color: AppColors.primary.withValues(alpha: 0.1),
-                   borderRadius: BorderRadius.circular(8),
-                   border: Border.all(
-                     color: AppColors.primary.withValues(alpha: 0.5),
-                   ),
-                 ),
-                 child: const Center(
-                   child: Text(
-                     "VER MAPA",
-                     style: TextStyle(
-                       color: AppColors.primary,
-                       fontWeight: FontWeight.bold,
-                       fontSize: 14,
-                       letterSpacing: 1.0,
-                     ),
-                   ),
-                 ),
-               ),
-             ),
-           ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: InkWell(
+              onTap: () {
+                // TODO: Navigate to Map
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: const BoxDecoration(
+                  color: Color(0x1A00E676),
+                  borderRadius: BorderRadius.all(Radius.circular(8)),
+                  border: Border.fromBorderSide(
+                    BorderSide(color: Color(0x8000E676)),
+                  ),
+                ),
+                child: const Center(
+                  child: Text(
+                    "VER MAPA",
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -229,20 +226,16 @@ class _StatItem extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            color: Colors.grey[400],
-            size: 20,
-          ),
+          Icon(icon, color: Colors.grey[400], size: 20),
           const SizedBox(height: 8),
           Text(
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Colors.grey[500],
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.0,
-                  fontSize: 10,
-                ),
+              color: Colors.grey[500],
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.0,
+              fontSize: 10,
+            ),
           ),
           const SizedBox(height: 4),
           Text(

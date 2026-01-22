@@ -29,8 +29,8 @@ class JTPackageModel extends JTPackage {
       area: json['area'] ?? '',
       taskStatus: json['taskStatus'] ?? 0,
       // Handle int (1/0) or boolean for isAbnormal
-      isAbnormal: (json['isAbnormal'] is int) 
-          ? json['isAbnormal'] == 1 
+      isAbnormal: (json['isAbnormal'] is int)
+          ? json['isAbnormal'] == 1
           : (json['isAbnormal'] ?? false),
       scanTime: json['scanTime'] ?? '',
       signTime: json['signTime'],

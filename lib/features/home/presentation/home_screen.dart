@@ -30,7 +30,9 @@ class HomeScreen extends StatelessWidget {
                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text("Código detectado: ${barcodes.first.rawValue}"),
+                      content: Text(
+                        "Código detectado: ${barcodes.first.rawValue}",
+                      ),
                       backgroundColor: Colors.green,
                     ),
                   );
@@ -55,7 +57,8 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        bottom: false, // Permitir que el contenido fluya detrás de la navbar si es necesario, pero usaremos padding
+        bottom:
+            false, // Permitir que el contenido fluya detrás de la navbar si es necesario, pero usaremos padding
         child: SingleChildScrollView(
           padding: const EdgeInsets.only(
             left: 16,
@@ -70,10 +73,7 @@ class HomeScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              ActiveRouteCard(
-                deliveredCount: 12,
-                totalCount: 45,
-              ),
+              ActiveRouteCard(deliveredCount: 12, totalCount: 45),
 
               const SizedBox(height: 20),
 
@@ -96,9 +96,7 @@ class HomeScreen extends StatelessWidget {
       ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 90), // Lift above FloatingNavBar
-        child: FloatingScanButton(
-          onTap: () => _openScanner(context),
-        ),
+        child: FloatingScanButton(onTap: () => _openScanner(context)),
       ),
     );
   }

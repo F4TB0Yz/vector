@@ -5,10 +5,7 @@ import 'package:vector/core/theme/app_colors.dart';
 class FloatingScanButton extends StatelessWidget {
   final VoidCallback onTap;
 
-  const FloatingScanButton({
-    super.key,
-    required this.onTap,
-  });
+  const FloatingScanButton({super.key, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -17,12 +14,14 @@ class FloatingScanButton extends StatelessWidget {
     return Container(
       width: 56,
       height: 56,
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark.withAlpha(200), // Semi-transparent
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.white.withAlpha(51), // Subtle border
-          width: 1,
+      decoration: const BoxDecoration(
+        color: Color(0xC8252525), // Semi-transparent
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+        border: Border.fromBorderSide(
+          BorderSide(
+            color: Color(0x33FFFFFF), // Subtle border
+            width: 1,
+          ),
         ),
       ),
       child: Material(

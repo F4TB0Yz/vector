@@ -62,9 +62,7 @@ class DatabaseService {
     ''');
 
     // Crear índices para optimización
-    await db.execute(
-      'CREATE INDEX idx_stops_route_id ON stops(route_id)',
-    );
+    await db.execute('CREATE INDEX idx_stops_route_id ON stops(route_id)');
     await db.execute(
       'CREATE INDEX idx_stops_order ON stops(route_id, stop_order)',
     );
@@ -73,7 +71,9 @@ class DatabaseService {
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       // Add date column, default to current timestamp for existing rows
-      await db.execute('ALTER TABLE routes ADD COLUMN date INTEGER DEFAULT ${DateTime.now().millisecondsSinceEpoch}');
+      await db.execute(
+        'ALTER TABLE routes ADD COLUMN date INTEGER DEFAULT ${DateTime.now().millisecondsSinceEpoch}',
+      );
     }
   }
 
@@ -94,7 +94,7 @@ class DatabaseService {
 
     final databasesPath = await getDatabasesPath();
     final path = join(databasesPath, 'vector.db');
-    
+
     await deleteDatabase(path);
   }
 }
