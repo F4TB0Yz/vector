@@ -13,6 +13,8 @@ import 'package:vector/features/home/presentation/widgets/floating_scan_button.d
 import 'package:vector/shared/presentation/widgets/smart_scanner/smart_scanner_widget.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:vector/features/packages/presentation/widgets/add_package_details_dialog.dart';
+import 'package:vector/shared/presentation/widgets/toasts.dart';
+import 'package:vector/shared/presentation/screens/shared_scanner_screen.dart';
 import 'package:vector/features/routes/domain/usecases/add_stop_to_route.dart'; // Required for addStop
 
 class PackagesScreen extends ConsumerStatefulWidget {
@@ -30,93 +32,21 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
   void _openScanner(BuildContext context) {
     final selectedRoute = ref.read(selectedRouteProvider);
     if (selectedRoute == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor selecciona una ruta primero.'),
-          backgroundColor: Colors.orange,
-        ),
+      showAppToast(
+        context,
+        'Por favor selecciona una ruta primero.',
+        type: ToastType.warning,
       );
       return;
     }
 
-    final manualCodeController = TextEditingController();
-
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => Scaffold(
-          backgroundColor: Colors.black,
-          resizeToAvoidBottomInset: false,
-          body: Stack(
-            alignment: Alignment.center,
-            children: [
-              SmartScannerWidget(
-                onDetect: (capture) {
-                  final code = capture.barcodes.first.rawValue;
-                  if (code != null) {
-                    Navigator.of(context).pop();
-                    _showDetailsDialog(code);
-                  }
-                },
-              ),
-              Positioned(
-                top: 40,
-                left: 16,
-                child: IconButton(
-                  icon: const Icon(LucideIcons.x, color: Colors.white),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ),
-              Positioned(
-                top: 100.0,
-                left: 24,
-                right: 24,
-                child: Material(
-                  color: Colors.transparent,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: manualCodeController,
-                          autofocus: true,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            letterSpacing: 1.5,
-                          ),
-                          decoration: const InputDecoration(
-                            hintText: 'Ingresar código manualmente...',
-                            hintStyle: TextStyle(color: Color(0x96FFFFFF)),
-                            enabledBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0x64FFFFFF)),
-                            ),
-                            focusedBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: AppColors.primary),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      IconButton(
-                        icon: const Icon(
-                          LucideIcons.arrowRightCircle,
-                          color: AppColors.primary,
-                          size: 32,
-                        ),
-                        onPressed: () {
-                          if (manualCodeController.text.isNotEmpty) {
-                            final code = manualCodeController.text;
-                            Navigator.of(context).pop();
-                            _showDetailsDialog(code);
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+        builder: (context) => SharedScannerScreen(
+          onDetect: (code) {
+            Navigator.of(context).pop(); // Pop the scanner screen
+            _showDetailsDialog(code);
+          },
         ),
       ),
     );
@@ -145,12 +75,13 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
   Future<void> _handleSavePackage(Map<String, String> packageData) async {
     final selectedRoute = ref.read(selectedRouteProvider);
     if (selectedRoute == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error: No hay ruta seleccionada para guardar.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        showAppToast(
+          context,
+          'Error: No hay ruta seleccionada para guardar.',
+          type: ToastType.error,
+        );
+      }
       return;
     }
 
@@ -164,71 +95,45 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
       stopOrder: (selectedRoute.stops.length + 1),
     );
 
+    // --- 1. Optimistic UI Update ---
+    final newStops = [...selectedRoute.stops, stop];
+    final optimisticallyUpdatedRoute = RouteEntity(
+      id: selectedRoute.id,
+      name: selectedRoute.name,
+      date: selectedRoute.date,
+      progress: selectedRoute.progress,
+      createdAt: selectedRoute.createdAt,
+      updatedAt: selectedRoute.updatedAt,
+      stops: newStops,
+    );
+
+    ref.read(selectedRouteProvider.notifier).state = optimisticallyUpdatedRoute;
+
+    if (mounted) {
+      showAppToast(
+        context,
+        "Paquete ${packageData['code']} agregado a ${selectedRoute.name}",
+        type: ToastType.info,
+      );
+    }
+
+    // --- 2. Background Persistence ---
     try {
       final useCase = ref.read(addStopToRouteUseCaseProvider);
       await useCase(AddStopParams(routeId: selectedRoute.id, stop: stop));
 
       ref.invalidate(routesProvider);
-      await ref.read(routesProvider.future);
-
-      final updatedRoute = ref
-          .read(routesProvider)
-          .asData
-          ?.value
-          .firstWhere((r) => r.id == selectedRoute.id);
-      if (updatedRoute != null) {
-        ref.read(selectedRouteProvider.notifier).state = updatedRoute;
-      }
-
-      if (mounted) {
-        _showToast(
-          "Paquete ${packageData['code']} agregado a ${selectedRoute.name}",
-        );
-      }
     } catch (e) {
+      // --- 3. Rollback on Error ---
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Error al agregar paquete: $e"),
-            backgroundColor: Colors.red,
-          ),
+        showAppToast(
+          context,
+          "Error al guardar paquete: $e",
+          type: ToastType.error,
         );
       }
+      ref.read(selectedRouteProvider.notifier).state = selectedRoute;
     }
-  }
-
-  void _showToast(String message) {
-    showDialog(
-      context: context,
-      barrierColor: Colors.transparent,
-      builder: (BuildContext context) {
-        Future.delayed(const Duration(seconds: 2), () {
-          // Make sure the dialog is still mounted before trying to pop
-          if (Navigator.of(context, rootNavigator: true).canPop()) {
-            Navigator.of(context, rootNavigator: true).pop();
-          }
-        });
-        return Center(
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 12.0,
-              ),
-              decoration: const BoxDecoration(
-                color: Color(0xBF000000),
-                borderRadius: BorderRadius.all(Radius.circular(8.0)),
-              ),
-              child: Text(
-                message,
-                style: const TextStyle(color: Colors.white, fontSize: 14),
-              ),
-            ),
-          ),
-        );
-      },
-    );
   }
 
   @override
@@ -334,14 +239,11 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                                           .read(selectedRouteProvider.notifier)
                                           .state =
                                       route;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Ruta seleccionada: ${route.name}',
-                                      ),
-                                      backgroundColor: AppColors.primary,
-                                      duration: const Duration(seconds: 1),
-                                    ),
+                                  showAppToast(
+                                    context,
+                                    'Ruta seleccionada: ${route.name}',
+                                    type: ToastType.success,
+                                    duration: const Duration(seconds: 1),
                                   );
                                 },
                                 itemBuilder: (context) => routes.map((route) {
@@ -373,13 +275,10 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                           ref
                               .read(jtPackagesProvider.notifier)
                               .importPackages();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Importando paquetes de J&T en segundo plano...',
-                              ),
-                              backgroundColor: AppColors.primary,
-                            ),
+                          showAppToast(
+                            context,
+                            'Importando paquetes de J&T en segundo plano...',
+                            type: ToastType.success,
                           );
                         },
                         icon: const Icon(

@@ -121,6 +121,7 @@ class _AddPackageDetailsDialogState
                 labelText: 'Notas Adicionales (Opcional)',
                 icon: LucideIcons.fileText,
                 isOptional: true,
+                maxLines: 3,
               ),
             ],
           ),
@@ -150,10 +151,12 @@ class _AddPackageDetailsDialogState
     required IconData icon,
     bool isOptional = false,
     TextInputType? keyboardType,
+    int maxLines = 1,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
+      maxLines: maxLines,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         prefixIcon: Icon(icon, color: const Color(0xFF9AB0BC), size: 20),

@@ -8,6 +8,7 @@ import 'package:vector/features/packages/presentation/widgets/package_card.dart'
 import 'package:vector/features/map/presentation/widgets/next_stop_card.dart';
 import 'package:vector/shared/presentation/notifications/navbar_notification.dart';
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
+import 'package:vector/shared/presentation/widgets/toasts.dart';
 import 'package:vector/features/routes/domain/entities/route_entity.dart';
 import 'package:vector/features/map/domain/entities/stop_entity.dart';
 
@@ -58,9 +59,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // Listen for internal map errors.
     ref.listen<MapState>(mapProvider, (previous, next) {
       if (next.error != null && previous?.error != next.error) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.error!), backgroundColor: Colors.red),
-        );
+        showAppToast(context, next.error!, type: ToastType.error);
       }
     });
 

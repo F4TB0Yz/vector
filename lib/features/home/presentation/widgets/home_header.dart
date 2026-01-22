@@ -5,6 +5,7 @@ import 'package:vector/core/database/database_service.dart';
 import 'package:vector/core/database/seed_data.dart';
 import 'package:vector/core/theme/app_colors.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:vector/shared/presentation/widgets/toasts.dart';
 import 'package:vector/features/auth/presentation/providers/auth_provider.dart';
 import 'package:vector/features/auth/presentation/widgets/jt_login_dialog.dart';
 
@@ -56,13 +57,10 @@ class HomeHeader extends StatelessWidget {
           onPressed: () async {
             await SeedData.seed();
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Datos de ejemplo cargados. Refresca las pantallas.',
-                  ),
-                  backgroundColor: Colors.green,
-                ),
+              showAppToast(
+                context,
+                'Datos de ejemplo cargados. Refresca las pantallas.',
+                type: ToastType.success,
               );
             }
           },
@@ -72,11 +70,10 @@ class HomeHeader extends StatelessWidget {
           onPressed: () async {
             await DatabaseService.instance.deleteDatabaseFile();
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Base de datos eliminada. Reinicia la app.'),
-                  backgroundColor: Colors.red,
-                ),
+              showAppToast(
+                context,
+                'Base de datos eliminada. Reinicia la app.',
+                type: ToastType.error,
               );
             }
           },

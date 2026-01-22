@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:vector/core/theme/app_colors.dart';
 import '../../../../core/utils/device_utils.dart';
+import 'package:vector/shared/presentation/widgets/toasts.dart';
 import '../providers/auth_provider.dart';
 
 class JtLoginDialog extends ConsumerStatefulWidget {
@@ -79,14 +80,10 @@ class _JtLoginDialogState extends ConsumerState<JtLoginDialog> {
     // Usamos ref.listen para manejar efectos secundarios sin reconstruir todo el widget
     ref.listen(authProvider, (previous, next) {
       if (next is AsyncError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              next.error.toString(),
-              style: const TextStyle(color: Colors.white),
-            ),
-            backgroundColor: Colors.redAccent,
-          ),
+        showAppToast(
+          context,
+          next.error.toString(),
+          type: ToastType.error,
         );
       } else if (next is AsyncData) {
         final val = next.value;
