@@ -342,11 +342,25 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                           separatorBuilder: (context, index) => const SizedBox(height: 16),
                           itemBuilder: (context, index) {
                             final stop = filteredStops[index];
-                            final statusString = stop.status.toString().split('.').last.toUpperCase();
+                            
+                            String statusInSpanish;
+                            switch (stop.status) {
+                              case StopStatus.pending:
+                                statusInSpanish = 'PENDIENTE';
+                                break;
+                              case StopStatus.completed:
+                                statusInSpanish = 'ENTREGADO';
+                                break;
+                              case StopStatus.failed:
+                                statusInSpanish = 'FALLIDO';
+                                break;
+                              default:
+                                statusInSpanish = 'DESCONOCIDO';
+                            }
 
                             return PackageCard(
                               trackingId: stop.id,
-                              status: statusString,
+                              status: statusInSpanish,
                               address: stop.address,
                               customerName: stop.name,
                               timeWindow: 'N/A', // This info is not in StopEntity
