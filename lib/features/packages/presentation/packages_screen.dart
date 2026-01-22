@@ -41,80 +41,87 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
 
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => Scaffold(
-          backgroundColor: Colors.black,
-          resizeToAvoidBottomInset: false, // Evita que el teclado mueva todo
-          body: Stack(
-            alignment: Alignment.center,
-            children: [
-              SmartScannerWidget(
-                onDetect: (capture) {
-                  final List<Barcode> barcodes = capture.barcodes;
-                  for (final barcode in barcodes) {
-                    if (barcode.rawValue != null) {
-                      _handleScan(barcode.rawValue!);
-                      Navigator.of(context).pop();
-                      break;
+        builder: (context) {
+          final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+          final navigationHeight = MediaQuery.of(context).padding.bottom;
+          // Use the larger of the two to determine bottom offset, plus some padding
+          final bottomOffset = (keyboardHeight > 0 ? keyboardHeight : navigationHeight) + 16;
+
+          return Scaffold(
+            backgroundColor: Colors.black,
+            resizeToAvoidBottomInset: false, // Evita que el teclado mueva todo
+            body: Stack(
+              alignment: Alignment.center,
+              children: [
+                SmartScannerWidget(
+                  onDetect: (capture) {
+                    final List<Barcode> barcodes = capture.barcodes;
+                    for (final barcode in barcodes) {
+                      if (barcode.rawValue != null) {
+                        _handleScan(barcode.rawValue!);
+                        Navigator.of(context).pop();
+                        break;
+                      }
                     }
-                  }
-                },
-              ),
-              Positioned(
-                top: 40,
-                left: 16,
-                child: IconButton(
-                  icon: const Icon(LucideIcons.x, color: Colors.white),
-                  onPressed: () => Navigator.of(context).pop(),
+                  },
                 ),
-              ),
-              // Manual Input Field
-              Positioned(
-                bottom: MediaQuery.of(context).viewInsets.bottom + 20, // Se ajusta al teclado
-                left: 24,
-                right: 24,
-                child: Material(
-                  color: Colors.transparent,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: manualCodeController,
-                          autofocus: true,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            letterSpacing: 1.5,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Ingresar código manualmente...',
-                            hintStyle: TextStyle(color: Colors.white.withAlpha(150)),
-                            enabledBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Colors.white.withAlpha(100)),
+                Positioned(
+                  top: 40,
+                  left: 16,
+                  child: IconButton(
+                    icon: const Icon(LucideIcons.x, color: Colors.white),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ),
+                // Manual Input Field
+                Positioned(
+                  bottom: bottomOffset,
+                  left: 24,
+                  right: 24,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: manualCodeController,
+                            autofocus: true,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              letterSpacing: 1.5,
                             ),
-                            focusedBorder: const UnderlineInputBorder(
-                              borderSide: BorderSide(color: AppColors.primary),
+                            decoration: InputDecoration(
+                              hintText: 'Ingresar código manualmente...',
+                              hintStyle: TextStyle(color: Colors.white.withAlpha(150)),
+                              enabledBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.white.withAlpha(100)),
+                              ),
+                              focusedBorder: const UnderlineInputBorder(
+                                borderSide: BorderSide(color: AppColors.primary),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      IconButton(
-                        icon: const Icon(LucideIcons.arrowRightCircle, color: AppColors.primary, size: 32),
-                        onPressed: () {
-                          if (manualCodeController.text.isNotEmpty) {
-                            _handleScan(manualCodeController.text);
-                            Navigator.of(context).pop();
-                          }
-                        },
-                      )
-                    ],
+                        const SizedBox(width: 12),
+                        IconButton(
+                          icon: const Icon(LucideIcons.arrowRightCircle, color: AppColors.primary, size: 32),
+                          onPressed: () {
+                            if (manualCodeController.text.isNotEmpty) {
+                              _handleScan(manualCodeController.text);
+                              Navigator.of(context).pop();
+                            }
+                          },
+                        )
+                      ],
+                    ),
                   ),
-                ),
-              )
-            ],
-          ),
-        ),
+                )
+              ],
+            ),
+          );
+        },
       ),
     );
   }
