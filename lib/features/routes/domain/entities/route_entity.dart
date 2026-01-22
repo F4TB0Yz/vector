@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:vector/features/map/domain/entities/stop_entity.dart';
 
 class RouteEntity extends Equatable {
   final String id;
@@ -7,6 +8,7 @@ class RouteEntity extends Equatable {
   final double progress;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final List<StopEntity> stops;
 
   const RouteEntity({
     required this.id,
@@ -15,8 +17,9 @@ class RouteEntity extends Equatable {
     required this.progress,
     required this.createdAt,
     required this.updatedAt,
+    this.stops = const [],
   });
 
   @override
-  List<Object?> get props => [id, name, date, progress, createdAt, updatedAt];
+  List<Object?> get props => [id, name, date, progress, createdAt, updatedAt, stops];
 }
