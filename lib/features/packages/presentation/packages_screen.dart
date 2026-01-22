@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vector/core/theme/app_colors.dart';
+import 'package:vector/features/map/domain/entities/stop_entity.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:vector/features/packages/presentation/widgets/package_card.dart';
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
-import 'package:vector/features/routes/domain/entities/route_entity.dart';
 import 'providers/jt_package_providers.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:vector/features/home/presentation/widgets/floating_scan_button.dart';
+import 'package:vector/shared/presentation/widgets/smart_scanner/smart_scanner_widget.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:vector/features/routes/domain/usecases/add_stop_to_route.dart'; // Required for addStop
 
 class PackagesScreen extends ConsumerStatefulWidget {
   const PackagesScreen({super.key});
@@ -19,9 +24,169 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
 
   final List<String> _filters = ["TODAS", "PENDIENTE", "ENTREGADO", "FALLIDO"];
 
+  void _openScanner(BuildContext context) {
+    final selectedRoute = ref.read(selectedRouteProvider);
+    if (selectedRoute == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor selecciona una ruta primero desde la pantalla de Rutas.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          body: Stack(
+            children: [
+              SmartScannerWidget(
+                onDetect: (capture) {
+                  final List<Barcode> barcodes = capture.barcodes;
+                  for (final barcode in barcodes) {
+                    if (barcode.rawValue != null) {
+                      _handleScan(barcode.rawValue!);
+                      Navigator.of(context).pop();
+                      break;
+                    }
+                  }
+                },
+              ),
+              Positioned(
+                top: 40,
+                left: 16,
+                child: IconButton(
+                  icon: const Icon(LucideIcons.x, color: Colors.white),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleScan(String code) async {
+    final selectedRoute = ref.read(selectedRouteProvider);
+    if (selectedRoute == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor selecciona una ruta primero'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+
+    final stop = StopEntity(
+      id: code,
+      name: "Paquete $code",
+      address: "Dirección desconocida (escaneado)",
+      coordinates: Position(0, 0),
+      status: StopStatus.pending,
+      stopOrder: (selectedRoute.stops.length + 1),
+    );
+
+    debugPrint("--- Handling Scan ---");
+    debugPrint("1. Route '${selectedRoute.name}' has ${selectedRoute.stops.length} stops before adding.");
+    debugPrint("2. Adding stop: ${stop.id} to database...");
+
+    try {
+      final useCase = ref.read(addStopToRouteUseCaseProvider);
+      await useCase(AddStopParams(routeId: selectedRoute.id, stop: stop));
+      debugPrint("3. Stop added to DB successfully.");
+
+      // --- CORRECT REFRESH LOGIC ---
+      debugPrint("4. Invalidating routesProvider to force refresh.");
+      ref.invalidate(routesProvider);
+
+      debugPrint("5. Waiting for routesProvider to rebuild...");
+      final newRoutesList = await ref.read(routesProvider.future);
+      debugPrint("6. routesProvider rebuilt. Total routes fetched: ${newRoutesList.length}");
+
+      final matches = newRoutesList.where((route) => route.id == selectedRoute.id);
+      final updatedRoute = matches.isNotEmpty ? matches.first : null;
+      
+      if (updatedRoute != null) {
+        debugPrint("7. Found updated route. Stops count: ${updatedRoute.stops.length}.");
+        ref.read(selectedRouteProvider.notifier).state = updatedRoute;
+        debugPrint("8. selectedRouteProvider has been updated. UI should refresh.");
+      } else {
+        debugPrint("[ERROR] Could not find the updated route after refresh.");
+      }
+      
+      if (mounted) {
+        _showToast("Paquete $code agregado a ${selectedRoute.name}");
+      }
+    } catch (e) {
+      debugPrint("[ERROR] Failed to add stop: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error al agregar paquete: $e"), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  void _showToast(String message) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.transparent,
+      builder: (BuildContext context) {
+        Future.delayed(const Duration(seconds: 2), () {
+          // Make sure the dialog is still mounted before trying to pop
+          if (Navigator.of(context, rootNavigator: true).canPop()) {
+            Navigator.of(context, rootNavigator: true).pop();
+          }
+        });
+        return Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.75),
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+              child: Text(message, style: const TextStyle(color: Colors.white, fontSize: 14)),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final packagesAsync = ref.watch(jtPackagesProvider);
+    // Correctly watch the providers.
+    final selectedRoute = ref.watch(selectedRouteProvider);
+    final stops = ref.watch(routeStopsProvider);
+
+    // --- DEBUGGING ---
+    debugPrint("--- Building PackagesScreen ---");
+    if(selectedRoute != null) {
+      debugPrint("Selected route: ${selectedRoute.name}");
+      debugPrint("Stops from routeStopsProvider: ${stops.length}");
+    } else {
+      debugPrint("No route selected.");
+    }
+    // --- /DEBUGGING ---
+
+    // Filter stops based on the selected chip
+    final filteredStops = stops.where((stop) {
+      switch (_filters[_selectedIndex]) {
+        case 'PENDIENTE':
+          return stop.status == StopStatus.pending;
+        case 'ENTREGADO':
+          return stop.status == StopStatus.completed;
+        case 'FALLIDO':
+          return stop.status == StopStatus.failed;
+        case 'TODAS':
+        default:
+          return true;
+      }
+    }).toList();
+
 
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
@@ -35,75 +200,45 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                   Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Mis Paquetes',
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                      const SizedBox(height: 4),
-                       Text(
-                        'Gestión de entregas',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: AppColors.textSecondary,
-                              letterSpacing: 1.5,
-                              fontWeight: FontWeight.w600,
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Paradas de la Ruta',
+                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                         ),
-                      ),
-                    ],
-                   ),
-                  Row(
-                    children: [
-                      // Route Selector
-                      Consumer(
-                        builder: (context, ref, child) {
-                          final routesAsync = ref.watch(routesProvider);
-                          return routesAsync.when(
-                            data: (routes) {
-                              if (routes.isEmpty) return const SizedBox.shrink();
-                              return PopupMenuButton<RouteEntity>(
-                                tooltip: 'Seleccionar Ruta',
-                                icon: const Icon(LucideIcons.map, color: AppColors.primary),
-                                color: const Color(0xFF2C2C35),
-                                onSelected: (route) {
-                                  // TODO: Handle route selection (filter packages or set active)
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Ruta seleccionada: ${route.name}'),
-                                      backgroundColor: AppColors.primary,
-                                    ),
-                                  );
-                                },
-                                itemBuilder: (context) => routes.map((route) {
-                                  return PopupMenuItem<RouteEntity>(
-                                    value: route,
-                                    child: Text(
-                                      route.name,
-                                      style: const TextStyle(color: Colors.white),
-                                    ),
-                                  );
-                                }).toList(),
-                              );
-                            },
-                            loading: () => const SizedBox.shrink(),
-                            error: (_, __) => const SizedBox.shrink(),
-                          );
-                        },
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          ref.read(jtPackagesProvider.notifier).importPackages();
-                        },
-                        icon: const Icon(
-                          LucideIcons.downloadCloud,
-                          color: Colors.white,
+                        const SizedBox(height: 4),
+                        Text(
+                          selectedRoute?.name ?? 'Ninguna ruta seleccionada',
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: AppColors.textSecondary,
+                                letterSpacing: 1.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Importar Paquetes de J&T',
+                    onPressed: () {
+                      ref.read(jtPackagesProvider.notifier).importPackages();
+                       ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Importando paquetes de J&T en segundo plano...'),
+                          backgroundColor: AppColors.primary,
+                        ),
+                      );
+                    },
+                    icon: const Icon(
+                      LucideIcons.downloadCloud,
+                      color: Colors.white,
+                    ),
                   ),
                 ],
               ),
@@ -132,14 +267,10 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                           vertical: 10,
                         ),
                         decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppColors.primary
-                              : const Color(0xFF2C2C35),
+                          color: isSelected ? AppColors.primary : const Color(0xFF2C2C35),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: isSelected
-                                ? Colors.transparent
-                                : Colors.white.withValues(alpha: 0.1),
+                            color: isSelected ? Colors.transparent : Colors.white.withOpacity(0.1),
                           ),
                         ),
                         child: Text(
@@ -162,111 +293,74 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
             Divider(
               height: 1,
               thickness: 1,
-              color: Colors.white.withValues(alpha: 0.1),
+              color: Colors.white.withOpacity(0.1),
             ),
             
             Expanded(
-              child: packagesAsync.when(
-                data: (packages) {
-                  if (packages.isEmpty) {
-                    return Center(
+              child: selectedRoute == null
+                  ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(LucideIcons.package, size: 64, color: Colors.grey[800]),
+                          Icon(LucideIcons.map, size: 64, color: Colors.grey[800]),
                           const SizedBox(height: 16),
                           Text(
-                            'No hay paquetes cargados',
+                            'Selecciona una ruta en la pantalla anterior',
+                            textAlign: TextAlign.center,
                             style: TextStyle(color: Colors.grey[400], fontSize: 16),
-                          ),
-                          const SizedBox(height: 24),
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              ref.read(jtPackagesProvider.notifier).importPackages();
-                            },
-                            icon: const Icon(LucideIcons.inbox, color: Colors.black),
-                            label: const Text(
-                              'IMPORTAR PAQUETES J&T',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.0,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              elevation: 4,
-                              shadowColor: AppColors.primary.withValues(alpha: 0.4),
-                            ),
                           ),
                         ],
                       ),
-                    );
-                  }
-
-                  // TODO: Implement filtering based on _selectedIndex if needed in future
-                  // For now showing all fetched
-                  
-                  return ListView.separated(
-                    padding: const EdgeInsets.only(
-                      left: 16.0,
-                      right: 16.0,
-                      top: 16.0,
-                      bottom: 100.0,
-                    ),
-                    itemCount: packages.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 16),
-                    itemBuilder: (context, index) {
-                      final package = packages[index];
-                      // Map J&T status to UI string if needed, or use raw for now
-                      final statusString = package.taskStatus == 3 ? 'PENDIENTE' : 'ESTADO ${package.taskStatus}';
-                      
-                      return PackageCard(
-                        trackingId: package.waybillNo,
-                        status: statusString, 
-                        address: package.address,
-                        customerName: package.receiverName,
-                        timeWindow: package.phone, // Using phone as secondary info for now
-                      );
-                    },
-                  );
-                },
-                loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-                error: (error, stack) => Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(LucideIcons.alertCircle, color: Colors.red, size: 48),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Error al cargar paquetes',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          error.toString().replaceAll('Exception:', ''),
-                          style: TextStyle(color: Colors.grey[400], fontSize: 12),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () => ref.read(jtPackagesProvider.notifier).importPackages(),
-                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                          child: const Text('Reintentar', style: TextStyle(color: Colors.white)),
+                    )
+                  : filteredStops.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(LucideIcons.package, size: 64, color: Colors.grey[800]),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No hay paradas en esta ruta',
+                                style: TextStyle(color: Colors.grey[400], fontSize: 16),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Puedes escanear paquetes para agregarlos',
+                                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                              ),
+                            ],
+                          ),
                         )
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+                      : ListView.separated(
+                          padding: const EdgeInsets.only(
+                            left: 16.0,
+                            right: 16.0,
+                            top: 16.0,
+                            bottom: 100.0,
+                          ),
+                          itemCount: filteredStops.length,
+                          separatorBuilder: (context, index) => const SizedBox(height: 16),
+                          itemBuilder: (context, index) {
+                            final stop = filteredStops[index];
+                            final statusString = stop.status.toString().split('.').last.toUpperCase();
+
+                            return PackageCard(
+                              trackingId: stop.id,
+                              status: statusString,
+                              address: stop.address,
+                              customerName: stop.name,
+                              timeWindow: 'N/A', // This info is not in StopEntity
+                            );
+                          },
+                        ),
             ),
           ],
+        ),
+      ),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 80.0),
+        child: FloatingScanButton(
+          onTap: () => _openScanner(context),
         ),
       ),
     );

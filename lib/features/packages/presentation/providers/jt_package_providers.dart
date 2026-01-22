@@ -7,6 +7,8 @@ import 'package:vector/features/packages/data/repositories/jt_package_repository
 import 'package:vector/features/packages/domain/repositories/jt_package_repository.dart';
 import 'package:vector/features/packages/domain/entities/jt_package.dart';
 import 'package:vector/features/auth/presentation/providers/auth_provider.dart';
+import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
+import 'package:vector/features/map/domain/entities/stop_entity.dart';
 
 
 // --- Dependencies ---
@@ -52,3 +54,18 @@ class JTPackagesNotifier extends AsyncNotifier<List<JTPackage>> {
     );
   }
 }
+
+// --- DERIVED STATE ---
+
+// Provides the list of stops for the currently selected route.
+final routeStopsProvider = Provider<List<StopEntity>>((ref) {
+  final selectedRoute = ref.watch(selectedRouteProvider);
+  // Return the stops of the selected route, or an empty list if no route is selected.
+  // The list is sorted by the 'stopOrder' property.
+  if (selectedRoute == null) return [];
+  
+  // Create a copy to sort safely without mutating original state
+  final stops = List<StopEntity>.from(selectedRoute.stops);
+  stops.sort((a, b) => a.stopOrder.compareTo(b.stopOrder));
+  return stops;
+});

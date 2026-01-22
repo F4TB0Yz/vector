@@ -256,7 +256,8 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
                             children: [
                               TextButton.icon(
                                 onPressed: () {
-                                   const ChangeTabNotification(2).dispatch(context);
+                                  ref.read(selectedRouteProvider.notifier).state = route;
+                                  const ChangeTabNotification(2).dispatch(context);
                                 },
                                 icon: const Icon(LucideIcons.package, size: 18),
                                 label: const Text("Ver Paquetes"),
