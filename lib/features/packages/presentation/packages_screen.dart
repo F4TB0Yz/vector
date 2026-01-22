@@ -11,6 +11,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:vector/features/home/presentation/widgets/floating_scan_button.dart';
 import 'package:vector/shared/presentation/widgets/smart_scanner/smart_scanner_widget.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:vector/features/packages/presentation/widgets/add_package_details_dialog.dart';
 import 'package:vector/features/routes/domain/usecases/add_stop_to_route.dart'; // Required for addStop
 
 class PackagesScreen extends ConsumerStatefulWidget {
@@ -30,7 +31,7 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
     if (selectedRoute == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Por favor selecciona una ruta primero desde la pantalla de Rutas.'),
+          content: Text('Por favor selecciona una ruta primero.'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -41,141 +42,130 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
 
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) {
-          final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-          final navigationHeight = MediaQuery.of(context).padding.bottom;
-          // Use the larger of the two to determine bottom offset, plus some padding
-          final bottomOffset = (keyboardHeight > 0 ? keyboardHeight : navigationHeight) + 16;
-
-          return Scaffold(
-            backgroundColor: Colors.black,
-            resizeToAvoidBottomInset: false, // Evita que el teclado mueva todo
-            body: Stack(
-              alignment: Alignment.center,
-              children: [
-                SmartScannerWidget(
-                  onDetect: (capture) {
-                    final List<Barcode> barcodes = capture.barcodes;
-                    for (final barcode in barcodes) {
-                      if (barcode.rawValue != null) {
-                        _handleScan(barcode.rawValue!);
-                        Navigator.of(context).pop();
-                        break;
-                      }
-                    }
-                  },
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          resizeToAvoidBottomInset: false,
+          body: Stack(
+            alignment: Alignment.center,
+            children: [
+              SmartScannerWidget(
+                onDetect: (capture) {
+                  final code = capture.barcodes.first.rawValue;
+                  if (code != null) {
+                    Navigator.of(context).pop();
+                    _showDetailsDialog(code);
+                  }
+                },
+              ),
+              Positioned(
+                top: 40,
+                left: 16,
+                child: IconButton(
+                  icon: const Icon(LucideIcons.x, color: Colors.white),
+                  onPressed: () => Navigator.of(context).pop(),
                 ),
-                Positioned(
-                  top: 40,
-                  left: 16,
-                  child: IconButton(
-                    icon: const Icon(LucideIcons.x, color: Colors.white),
-                    onPressed: () => Navigator.of(context).pop(),
+              ),
+              Positioned(
+                top: 100.0,
+                left: 24,
+                right: 24,
+                child: Material(
+                  color: Colors.transparent,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: manualCodeController,
+                          autofocus: true,
+                          style: const TextStyle(color: Colors.white, fontSize: 16, letterSpacing: 1.5),
+                          decoration: InputDecoration(
+                            hintText: 'Ingresar código manualmente...',
+                            hintStyle: TextStyle(color: Colors.white.withAlpha(150)),
+                            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white.withAlpha(100))),
+                            focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.primary)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      IconButton(
+                        icon: const Icon(LucideIcons.arrowRightCircle, color: AppColors.primary, size: 32),
+                        onPressed: () {
+                          if (manualCodeController.text.isNotEmpty) {
+                            final code = manualCodeController.text;
+                            Navigator.of(context).pop();
+                            _showDetailsDialog(code);
+                          }
+                        },
+                      )
+                    ],
                   ),
                 ),
-                              // Manual Input Field
-                              Positioned(
-                                top: 100.0,
-                                left: 24,
-                                right: 24,
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.center,
-                                    children: [
-                                      Expanded(
-                                        child: TextField(
-                                          controller: manualCodeController,
-                                          autofocus: false,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 16,
-                                            letterSpacing: 1.5,
-                                          ),
-                                          decoration: InputDecoration(
-                                            hintText: 'Ingresar código manualmente...',
-                                            hintStyle: TextStyle(color: Colors.white.withAlpha(150)),
-                                            enabledBorder: UnderlineInputBorder(
-                                              borderSide: BorderSide(color: Colors.white.withAlpha(100)),
-                                            ),
-                                            focusedBorder: const UnderlineInputBorder(
-                                              borderSide: BorderSide(color: AppColors.primary),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      IconButton(
-                                        icon: const Icon(LucideIcons.arrowRightCircle, color: AppColors.primary, size: 32),
-                                        onPressed: () {
-                                          if (manualCodeController.text.isNotEmpty) {
-                                            _handleScan(manualCodeController.text);
-                                            Navigator.of(context).pop();
-                                          }
-                                        },
-                                      )
-                                    ],
-                                  ),
-                                ),
-                              )              ],
-            ),
-          );
-        },
+              )
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Future<void> _handleScan(String code) async {
+  Future<void> _showDetailsDialog(String code) async {
+    final jtPackages = ref.read(jtPackagesProvider).asData?.value ?? [];
+    JTPackage? prefillData;
+    try {
+      prefillData = jtPackages.firstWhere((p) => p.waybillNo == code);
+    } catch (_) {
+      // Package not found in J&T list, prefillData remains null
+    }
+
+    final result = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (context) => AddPackageDetailsDialog(
+        trackingCode: code,
+        prefillData: prefillData,
+      ),
+    );
+
+    if (result != null) {
+      _handleSavePackage(result);
+    }
+  }
+
+  Future<void> _handleSavePackage(Map<String, String> packageData) async {
     final selectedRoute = ref.read(selectedRouteProvider);
     if (selectedRoute == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor selecciona una ruta primero'), backgroundColor: Colors.orange),
+        const SnackBar(content: Text('Error: No hay ruta seleccionada para guardar.'), backgroundColor: Colors.red),
       );
       return;
     }
 
     final stop = StopEntity(
-      id: code,
-      name: "Paquete $code",
-      address: "Dirección desconocida (escaneado)",
+      id: packageData['code']!,
+      name: packageData['name']!,
+      address: packageData['address']!,
+      // TODO: Add Geocoding from address
       coordinates: Position(0, 0),
       status: StopStatus.pending,
       stopOrder: (selectedRoute.stops.length + 1),
     );
 
-    debugPrint("--- Handling Scan ---");
-    debugPrint("1. Route '${selectedRoute.name}' has ${selectedRoute.stops.length} stops before adding.");
-    debugPrint("2. Adding stop: ${stop.id} to database...");
-
     try {
       final useCase = ref.read(addStopToRouteUseCaseProvider);
       await useCase(AddStopParams(routeId: selectedRoute.id, stop: stop));
-      debugPrint("3. Stop added to DB successfully.");
-
-      // --- CORRECT REFRESH LOGIC ---
-      debugPrint("4. Invalidating routesProvider to force refresh.");
-      ref.invalidate(routesProvider);
-
-      debugPrint("5. Waiting for routesProvider to rebuild...");
-      final newRoutesList = await ref.read(routesProvider.future);
-      debugPrint("6. routesProvider rebuilt. Total routes fetched: ${newRoutesList.length}");
-
-      final matches = newRoutesList.where((route) => route.id == selectedRoute.id);
-      final updatedRoute = matches.isNotEmpty ? matches.first : null;
       
+      ref.invalidate(routesProvider);
+      await ref.read(routesProvider.future);
+      
+      final updatedRoute = ref.read(routesProvider).asData?.value.firstWhere((r) => r.id == selectedRoute.id);
       if (updatedRoute != null) {
-        debugPrint("7. Found updated route. Stops count: ${updatedRoute.stops.length}.");
         ref.read(selectedRouteProvider.notifier).state = updatedRoute;
-        debugPrint("8. selectedRouteProvider has been updated. UI should refresh.");
-      } else {
-        debugPrint("[ERROR] Could not find the updated route after refresh.");
       }
       
       if (mounted) {
-        _showToast("Paquete $code agregado a ${selectedRoute.name}");
+        _showToast("Paquete ${packageData['code']} agregado a ${selectedRoute.name}");
       }
     } catch (e) {
-      debugPrint("[ERROR] Failed to add stop: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Error al agregar paquete: $e"), backgroundColor: Colors.red),
