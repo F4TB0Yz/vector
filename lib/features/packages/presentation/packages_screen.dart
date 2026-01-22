@@ -37,11 +37,15 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
       return;
     }
 
+    final manualCodeController = TextEditingController();
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => Scaffold(
           backgroundColor: Colors.black,
+          resizeToAvoidBottomInset: false, // Evita que el teclado mueva todo
           body: Stack(
+            alignment: Alignment.center,
             children: [
               SmartScannerWidget(
                 onDetect: (capture) {
@@ -63,6 +67,51 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
+              // Manual Input Field
+              Positioned(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20, // Se ajusta al teclado
+                left: 24,
+                right: 24,
+                child: Material(
+                  color: Colors.transparent,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: manualCodeController,
+                          autofocus: true,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            letterSpacing: 1.5,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Ingresar código manualmente...',
+                            hintStyle: TextStyle(color: Colors.white.withAlpha(150)),
+                            enabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.white.withAlpha(100)),
+                            ),
+                            focusedBorder: const UnderlineInputBorder(
+                              borderSide: BorderSide(color: AppColors.primary),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      IconButton(
+                        icon: const Icon(LucideIcons.arrowRightCircle, color: AppColors.primary, size: 32),
+                        onPressed: () {
+                          if (manualCodeController.text.isNotEmpty) {
+                            _handleScan(manualCodeController.text);
+                            Navigator.of(context).pop();
+                          }
+                        },
+                      )
+                    ],
+                  ),
+                ),
+              )
             ],
           ),
         ),
