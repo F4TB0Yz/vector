@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vector/core/theme/app_colors.dart';
-import 'package:vector/features/map/presentation/providers/map_provider.dart';
-import 'package:vector/shared/presentation/notifications/navbar_notification.dart';
+import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
+import 'package:vector/features/routes/presentation/widgets/add_route_dialog.dart';
+import 'package:intl/intl.dart';
+
 
 class RoutesScreen extends ConsumerStatefulWidget {
   const RoutesScreen({super.key});
@@ -19,6 +21,7 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final routesAsync = ref.watch(routesProvider);
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
       body: SafeArea(
@@ -52,14 +55,30 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
                       ),
                     ],
                    ),
-                  IconButton(
-                    onPressed: () {
-                      // TODO: Implement filter functionality
-                    },
-                    icon: const Icon(
-                      Icons.filter_list,
-                      color: Colors.white,
-                    ),
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => const AddRouteDialog(),
+                          );
+                        },
+                        icon: const Icon(
+                          Icons.add_circle_outline_rounded,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          // TODO: Implement filter functionality
+                        },
+                        icon: const Icon(
+                          Icons.filter_list,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -122,23 +141,17 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
             ),
             
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.only(
-                  left: 16.0,
-                  right: 16.0,
-                  top: 16.0,
-                  bottom: 100.0, // Space for FloatingNavBar
-                ),
-                children: [
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 40.0),
+              child: routesAsync.when(
+                data: (routes) {
+                  if (routes.isEmpty) {
+                    return Center(
                       child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
                             Icons.map_outlined,
                             size: 64,
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withValues(alpha: 0.2),
                           ),
                           const SizedBox(height: 16),
                           Text(
@@ -148,11 +161,94 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
                               fontSize: 16,
                             ),
                           ),
+                          const SizedBox(height: 24),
+                          ElevatedButton(
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => const AddRouteDialog(),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.black,
+                            ),
+                            child: const Text('CREAR RUTA AHORA'),
+                          ),
                         ],
                       ),
+                    );
+                  }
+
+                  return ListView.separated(
+                    padding: const EdgeInsets.only(
+                      left: 16.0,
+                      right: 16.0,
+                      top: 16.0,
+                      bottom: 100.0,
                     ),
-                  ),
-                ],
+                    itemCount: routes.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final route = routes[index];
+                      return Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2C2C35),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.05),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Icon(
+                                Icons.route_outlined,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    route.name,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  Text(
+                                    DateFormat('EEEE d, MMMM y', 'es').format(route.date),
+                                    style: TextStyle(
+                                      color: Colors.grey[500],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.chevron_right,
+                              color: Colors.white54,
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                error: (error, _) => Center(child: Text('Error: $error', style: const TextStyle(color: Colors.red))),
               ),
             ),
           ],

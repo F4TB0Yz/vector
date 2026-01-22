@@ -26,7 +26,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -38,6 +38,7 @@ class DatabaseService {
       CREATE TABLE routes (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
+        date INTEGER NOT NULL,
         progress REAL DEFAULT 0.0,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
@@ -69,13 +70,11 @@ class DatabaseService {
     );
   }
 
-  /// Maneja las migraciones de la base de datos.
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Implementar migraciones futuras aquí
-    // Ejemplo:
-    // if (oldVersion < 2) {
-    //   await db.execute('ALTER TABLE stops ADD COLUMN priority INTEGER DEFAULT 0');
-    // }
+    if (oldVersion < 2) {
+      // Add date column, default to current timestamp for existing rows
+      await db.execute('ALTER TABLE routes ADD COLUMN date INTEGER DEFAULT ${DateTime.now().millisecondsSinceEpoch}');
+    }
   }
 
   /// Cierra la base de datos.
