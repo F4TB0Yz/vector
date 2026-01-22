@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -7,7 +8,7 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:vector/core/database/database_service.dart';
-import 'package:vector/core/database/seed_data.dart';
+
 import 'package:vector/features/main/presentation/main_screen.dart';
 import 'package:vector/core/theme/app_theme.dart';
 
@@ -28,7 +29,18 @@ Future<void> main() async {
   await DatabaseService.instance.database;
   debugPrint('Database initialized successfully');
 
+  // Bypass SSL verification for Google Fonts in dev/emulator
+  HttpOverrides.global = MyHttpOverrides();
+
   runApp(const ProviderScope(child: MainApp()));
+}
+
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+  }
 }
 
 class MainApp extends StatelessWidget {
