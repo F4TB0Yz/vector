@@ -85,7 +85,7 @@ class MapNotifier extends Notifier<MapState> {
 
     // Load route asynchronously without blocking initialization
     // ignore: unawaited_futures
-    loadActiveRoute();
+    // loadActiveRoute(); // Comentado para obligar a la selección manual y mostrar placeholder
   }
 
   Future<void> onMapCreated(MapboxMap mapboxMap) async {

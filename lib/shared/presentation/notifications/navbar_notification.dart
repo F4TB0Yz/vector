@@ -5,3 +5,9 @@ class NavBarVisibilityNotification extends Notification {
 
   const NavBarVisibilityNotification(this.isVisible);
 }
+
+class ChangeTabNotification extends Notification {
+  final int targetIndex;
+
+  const ChangeTabNotification(this.targetIndex);
+}

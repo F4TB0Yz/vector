@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vector/core/theme/app_colors.dart';
-import 'package:vector/features/routes/presentation/widgets/route_card.dart';
+import 'package:vector/features/map/presentation/providers/map_provider.dart';
+import 'package:vector/shared/presentation/notifications/navbar_notification.dart';
 
-class RoutesScreen extends StatefulWidget {
+class RoutesScreen extends ConsumerStatefulWidget {
   const RoutesScreen({super.key});
 
   @override
-  State<RoutesScreen> createState() => _RoutesScreenState();
+  ConsumerState<RoutesScreen> createState() => _RoutesScreenState();
 }
 
-class _RoutesScreenState extends State<RoutesScreen> {
+class _RoutesScreenState extends ConsumerState<RoutesScreen> {
   int _selectedIndex = 0;
 
   final List<String> _filters = ["TODAS", "ACTIVA", "EN ESPERA"];
+
 
   @override
   Widget build(BuildContext context) {
@@ -126,29 +129,28 @@ class _RoutesScreenState extends State<RoutesScreen> {
                   top: 16.0,
                   bottom: 100.0, // Space for FloatingNavBar
                 ),
-                children: const [
-                  RouteCard(
-                    routeId: 'RT-4092',
-                    status: 'READY',
-                    estTime: '4h 15m',
-                    stops: 42,
-                    distance: 18.5,
-                  ),
-                   SizedBox(height: 16),
-                  RouteCard(
-                     routeId: 'RT-4093',
-                    status: 'ACTIVE',
-                    estTime: '2h 10m',
-                    stops: 24,
-                    distance: 12.0,
-                  ),
-                   SizedBox(height: 16),
-                   RouteCard(
-                     routeId: 'RT-4094',
-                    status: 'COMPLETED',
-                    estTime: '5h 30m',
-                    stops: 55,
-                    distance: 25.4,
+                children: [
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 40.0),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.map_outlined,
+                            size: 64,
+                            color: Colors.white.withOpacity(0.2),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No tienes rutas asignadas',
+                            style: TextStyle(
+                              color: Colors.grey[400],
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),

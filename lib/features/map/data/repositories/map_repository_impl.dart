@@ -8,7 +8,6 @@ import 'package:vector/features/map/data/datasources/route_remote_datasource.dar
 import 'package:vector/features/map/data/models/route_model.dart';
 import 'package:vector/features/map/data/models/stop_model.dart';
 import 'package:vector/features/map/domain/entities/route_entity.dart';
-import 'package:vector/features/map/domain/entities/stop_entity.dart';
 import 'package:vector/features/map/domain/repositories/map_repository.dart';
 
 // Repository Implementation

@@ -1,7 +1,6 @@
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:vector/features/map/data/models/stop_model.dart';
 import 'package:vector/features/map/domain/entities/route_entity.dart';
-import 'package:vector/features/map/domain/entities/stop_entity.dart';
 
 /// Modelo de datos para RouteEntity con serialización SQLite.
 class RouteModel {

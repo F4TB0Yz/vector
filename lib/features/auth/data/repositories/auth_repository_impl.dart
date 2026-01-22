@@ -38,4 +38,19 @@ class AuthRepositoryImpl implements AuthRepository {
     final user = await _localDataSource.getUser();
     return user != null ? Some(user) : const Option.none();
   }
+
+  @override
+  Future<void> saveCredentials(String account, String password) async {
+    await _localDataSource.saveCredentials(account, password);
+  }
+
+  @override
+  Future<Map<String, String>?> getSavedCredentials() async {
+    return await _localDataSource.getCredentials();
+  }
+
+  @override
+  Future<void> clearSavedCredentials() async {
+    await _localDataSource.clearCredentials();
+  }
 }

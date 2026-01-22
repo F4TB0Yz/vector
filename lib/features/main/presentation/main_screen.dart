@@ -36,12 +36,20 @@ class _MainScreenState extends State<MainScreen> {
 
     return Scaffold(
       backgroundColor: Colors.black, // O el color de fondo de tu tema
-      body: NotificationListener<NavBarVisibilityNotification>(
+      body: NotificationListener<Notification>(
         onNotification: (notification) {
-          setState(() {
-            _isNavBarVisible = notification.isVisible;
-          });
-          return true;
+          if (notification is NavBarVisibilityNotification) {
+            setState(() {
+              _isNavBarVisible = notification.isVisible;
+            });
+            return true;
+          } else if (notification is ChangeTabNotification) {
+            setState(() {
+              _currentIndex = notification.targetIndex;
+            });
+            return true;
+          }
+          return false;
         },
         child: Stack(
           children: [

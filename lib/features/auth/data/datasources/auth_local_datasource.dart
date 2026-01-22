@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../domain/entities/user.dart';
+import 'package:vector/features/auth/domain/entities/user.dart';
 
 class AuthLocalDataSource {
   static const _keyUser = 'jt_auth_user';
@@ -94,6 +94,45 @@ class AuthLocalDataSource {
     await prefs.remove(_keyUser);
     await prefs.remove(_keyToken);
     _debugLog('🗑️ AUTH DATA CLEARED', _ansiRed);
+  }
+
+  // --- Saved Credentials (Remember Me) ---
+  static const _keySavedAccount = 'jt_saved_account';
+  static const _keySavedPassword = 'jt_saved_password'; // stored in base64
+
+  Future<void> saveCredentials(String account, String password) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keySavedAccount, account);
+    
+    // Simple Base64 encoding to avoid plain text (not secure, but obfuscated)
+    final encodedPassword = base64Encode(utf8.encode(password));
+    await prefs.setString(_keySavedPassword, encodedPassword);
+    
+    _debugLog('💾 CREDENTIALS SAVED', _ansiGreen);
+  }
+
+  Future<Map<String, String>?> getCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    final account = prefs.getString(_keySavedAccount);
+    final encodedPassword = prefs.getString(_keySavedPassword);
+
+    if (account != null && encodedPassword != null) {
+      try {
+        final password = utf8.decode(base64Decode(encodedPassword));
+        return {'account': account, 'password': password};
+      } catch (e) {
+        _debugLog('❌ ERROR DECODING PASSWORD: $e', _ansiRed);
+        return null;
+      }
+    }
+    return null;
+  }
+
+  Future<void> clearCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keySavedAccount);
+    await prefs.remove(_keySavedPassword);
+    _debugLog('🗑️ CREDENTIALS CLEARED', _ansiRed);
   }
 
   void _debugLog(String message, String color) {

@@ -19,33 +19,6 @@ class HomeStatsWidget extends StatefulWidget {
 
 class _HomeStatsWidgetState extends State<HomeStatsWidget> {
   double _pricePerPackage = 0;
-  Timer? _timer;
-  Duration _elapsed = Duration.zero;
-
-  @override
-  void initState() {
-    super.initState();
-    // Start with a mock duration to simulate an ongoing route as per example visual
-    // In a real app this would be calculated from a persistent start timestamp
-    _elapsed = const Duration(hours: 1, minutes: 24); 
-    _startTimer();
-  }
-
-  void _startTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) {
-        setState(() {
-          _elapsed += const Duration(seconds: 1);
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
 
   void _showPriceDialog() {
     showDialog(
@@ -71,9 +44,6 @@ class _HomeStatsWidgetState extends State<HomeStatsWidget> {
     final totalEarnings = _pricePerPackage * widget.deliveredCount;
     final formattedEarnings = currencyFormat.format(totalEarnings);
 
-    final hours = _elapsed.inHours.toString().padLeft(2, '0');
-    final minutes = (_elapsed.inMinutes % 60).toString().padLeft(2, '0');
-
     return Row(
       children: [
         // Earnings Card (Interactive)
@@ -94,10 +64,10 @@ class _HomeStatsWidgetState extends State<HomeStatsWidget> {
                       size: 20,
                     ),
                     if (_pricePerPackage > 0)
-                      Text(
+                      const Text(
                         '+CO',
                         style: TextStyle(
-                          color: const Color(0xFF00E676),
+                          color: Color(0xFF00E676),
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
@@ -131,43 +101,86 @@ class _HomeStatsWidgetState extends State<HomeStatsWidget> {
           ),
         ),
         const SizedBox(width: 12),
-        // Time Card (Static)
-        Expanded(
-          child: CustomCard(
-            padding: const EdgeInsets.all(16),
-            isDarkBackground: true,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(
-                  Icons.timer_outlined,
-                  color: AppColors.textSecondary,
-                  size: 20,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  '$hours h $minutes m',
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'TIEMPO RUTA',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white.withValues(alpha: 0.5),
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ],
-            ),
-          ),
+        // Time Card - Isolated to prevent rebuilding the entire widget
+        const Expanded(
+          child: _RouteTimeCard(),
         ),
       ],
+    );
+  }
+}
+
+/// Isolated widget to prevent Timer rebuilds from affecting parent
+class _RouteTimeCard extends StatefulWidget {
+  const _RouteTimeCard();
+
+  @override
+  State<_RouteTimeCard> createState() => _RouteTimeCardState();
+}
+
+class _RouteTimeCardState extends State<_RouteTimeCard> {
+  Timer? _timer;
+  Duration _elapsed = const Duration(hours: 1, minutes: 24);
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          _elapsed += const Duration(seconds: 1);
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hours = _elapsed.inHours.toString().padLeft(2, '0');
+    final minutes = (_elapsed.inMinutes % 60).toString().padLeft(2, '0');
+
+    return CustomCard(
+      padding: const EdgeInsets.all(16),
+      isDarkBackground: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.timer_outlined,
+            color: AppColors.textSecondary,
+            size: 20,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '$hours h $minutes m',
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'TIEMPO RUTA',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Colors.white.withValues(alpha: 0.5),
+              letterSpacing: 1.2,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

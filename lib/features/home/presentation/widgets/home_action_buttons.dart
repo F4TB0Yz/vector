@@ -31,11 +31,11 @@ class HomeActionButtons extends StatelessWidget {
                 ),
                 elevation: 0,
               ),
-              child: Row(
+              child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.qr_code_scanner_rounded, size: 22),
-                  const SizedBox(width: 8),
+                  Icon(Icons.qr_code_scanner_rounded, size: 22),
+                  SizedBox(width: 8),
                   Text(
                     'ESCANEAR',
                     style: TextStyle(
@@ -78,9 +78,9 @@ class HomeActionButtons extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: Row(
+                child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
+                  children: [
                     Icon(Icons.add_road_rounded, size: 22),
                     SizedBox(width: 8),
                     Text(

@@ -155,7 +155,6 @@ class _NextStopInfo extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomCard(
       backgroundColor: AppColors.background,
-      isAnimatedBorder: true,
       borderRadius: 4,
       showBorder: false,
       padding: const EdgeInsets.all(16),

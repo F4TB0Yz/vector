@@ -45,6 +45,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final mapState = ref.watch(mapProvider);
+
     // Escuchar cambios en el provider para mostrar errores.
     ref.listen<MapState>(mapProvider, (previous, next) {
       if (next.error != null && previous?.error != next.error) {
@@ -58,7 +60,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: Stack(
+        child: mapState.activeRoute == null
+            ? _NoRouteSelectedPlaceholder(
+                isLoading: mapState.isLoadingRoute,
+                onNavigateToRoutes: () {
+                  const ChangeTabNotification(1).dispatch(context);
+                },
+              )
+            : Stack(
           children: [
             // 1. Capa de Mapa Real
             Positioned.fill(
@@ -230,9 +239,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                            const Text(
                              "Lista de Paquetes",
                              style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                               color: Colors.white,
+                               fontSize: 18,
+                               fontWeight: FontWeight.bold,
                              ),
                            ),
                            IconButton(
@@ -292,6 +301,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 }
 
+
 class _MapControlButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
@@ -332,6 +342,90 @@ class _MapControlButton extends StatelessWidget {
             color: isActive ? Colors.black : Colors.white,
             size: 24,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NoRouteSelectedPlaceholder extends StatelessWidget {
+  final bool isLoading;
+  final VoidCallback onNavigateToRoutes;
+
+  const _NoRouteSelectedPlaceholder({
+    required this.isLoading,
+    required this.onNavigateToRoutes,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFF1A1A1A),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isLoading)
+              CircularProgressIndicator(
+                color: AppColors.primary,
+                strokeWidth: 3.0,
+              )
+            else ...[
+              Icon(
+                LucideIcons.mapPin,
+                size: 80,
+                color: Colors.grey[700],
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'No hay ruta activa',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 48.0),
+                child: Text(
+                  'Selecciona una ruta desde la pantalla de Rutas para visualizarla en el mapa.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.grey[400],
+                    fontSize: 14,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              // Botón para navegar a Rutas
+              ElevatedButton.icon(
+                onPressed: onNavigateToRoutes,
+                icon: const Icon(LucideIcons.map, size: 20),
+                label: const Text(
+                  'Ver Rutas Disponibles',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4), // Sharp corners
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );

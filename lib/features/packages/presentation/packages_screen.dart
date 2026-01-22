@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vector/core/theme/app_colors.dart';
 import 'package:vector/features/packages/presentation/widgets/package_card.dart';
+import 'providers/jt_package_providers.dart';
 
-class PackagesScreen extends StatefulWidget {
+class PackagesScreen extends ConsumerStatefulWidget {
   const PackagesScreen({super.key});
 
   @override
-  State<PackagesScreen> createState() => _PackagesScreenState();
+  ConsumerState<PackagesScreen> createState() => _PackagesScreenState();
 }
 
-class _PackagesScreenState extends State<PackagesScreen> {
+class _PackagesScreenState extends ConsumerState<PackagesScreen> {
   int _selectedIndex = 0;
 
   final List<String> _filters = ["TODAS", "PENDIENTE", "ENTREGADO", "FALLIDO"];
 
   @override
   Widget build(BuildContext context) {
+    final packagesAsync = ref.watch(jtPackagesProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
       body: SafeArea(
@@ -51,10 +55,10 @@ class _PackagesScreenState extends State<PackagesScreen> {
                    ),
                   IconButton(
                     onPressed: () {
-                      // TODO: Implement search/scan functionality
+                      ref.read(jtPackagesProvider.notifier).importPackages();
                     },
                     icon: const Icon(
-                      Icons.qr_code_scanner_rounded,
+                      Icons.cloud_download_rounded,
                       color: Colors.white,
                     ),
                   ),
@@ -119,46 +123,104 @@ class _PackagesScreenState extends State<PackagesScreen> {
             ),
             
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.only(
-                  left: 16.0,
-                  right: 16.0,
-                  top: 16.0,
-                  bottom: 100.0, // Space for FloatingNavBar
+              child: packagesAsync.when(
+                data: (packages) {
+                  if (packages.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey[800]),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No hay paquetes cargados',
+                            style: TextStyle(color: Colors.grey[400], fontSize: 16),
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              ref.read(jtPackagesProvider.notifier).importPackages();
+                            },
+                            icon: const Icon(Icons.move_to_inbox_rounded, color: Colors.black),
+                            label: const Text(
+                              'IMPORTAR PAQUETES J&T',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 4,
+                              shadowColor: AppColors.primary.withValues(alpha: 0.4),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  // TODO: Implement filtering based on _selectedIndex if needed in future
+                  // For now showing all fetched
+                  
+                  return ListView.separated(
+                    padding: const EdgeInsets.only(
+                      left: 16.0,
+                      right: 16.0,
+                      top: 16.0,
+                      bottom: 100.0,
+                    ),
+                    itemCount: packages.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 16),
+                    itemBuilder: (context, index) {
+                      final package = packages[index];
+                      // Map J&T status to UI string if needed, or use raw for now
+                      final statusString = package.taskStatus == 3 ? 'PENDIENTE' : 'ESTADO ${package.taskStatus}';
+                      
+                      return PackageCard(
+                        trackingId: package.waybillNo,
+                        status: statusString, 
+                        address: package.address,
+                        customerName: package.receiverName,
+                        timeWindow: package.phone, // Using phone as secondary info for now
+                      );
+                    },
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                error: (error, stack) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Error al cargar paquetes',
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          error.toString().replaceAll('Exception:', ''),
+                          style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => ref.read(jtPackagesProvider.notifier).importPackages(),
+                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                          child: const Text('Reintentar', style: TextStyle(color: Colors.white)),
+                        )
+                      ],
+                    ),
+                  ),
                 ),
-                children: const [
-                  PackageCard(
-                    trackingId: 'VEC-8821',
-                    status: 'PENDIENTE',
-                    address: 'Cra 15 #4-20, Fusagasugá',
-                    customerName: 'Juan Pérez',
-                    timeWindow: 'Hoy, 2:00 PM - 4:00 PM',
-                  ),
-                   SizedBox(height: 16),
-                  PackageCard(
-                    trackingId: 'VEC-8822',
-                    status: 'ENTREGADO',
-                    address: 'Calle 8 #12-45, Fusagasugá',
-                    customerName: 'María Rodríguez',
-                    timeWindow: 'Entregado a las 10:30 AM',
-                  ),
-                   SizedBox(height: 16),
-                   PackageCard(
-                    trackingId: 'VEC-8823',
-                    status: 'EN RUTA',
-                    address: 'Av Las Palmas #30-10, Fusagasugá',
-                    customerName: 'Carlos Gómez',
-                    timeWindow: 'Llegada est. 15 min',
-                  ),
-                   SizedBox(height: 16),
-                   PackageCard(
-                    trackingId: 'VEC-8824',
-                    status: 'FALLIDO',
-                    address: 'Vereda El Placer, Finca La Esperanza',
-                    customerName: 'Ana Martínez',
-                    timeWindow: 'Intento fallido 11:00 AM',
-                  ),
-                ],
               ),
             ),
           ],
