@@ -86,7 +86,7 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                                       Expanded(
                                         child: TextField(
                                           controller: manualCodeController,
-                                          autofocus: true,
+                                          autofocus: false,
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 16,
