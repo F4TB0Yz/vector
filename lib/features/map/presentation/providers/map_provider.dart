@@ -164,6 +164,22 @@ class MapNotifier extends Notifier<MapState> {
       },
     );
   }
+
+  Future<void> loadRouteById(String id) async {
+    state = state.copyWith(isLoadingRoute: true);
+    final repo = ref.read(mapRepositoryProvider);
+    final result = await repo.getRouteById(id);
+
+    result.fold(
+      (failure) => state = state.copyWith(error: failure.message, isLoadingRoute: false),
+      (route) async {
+        state = state.copyWith(activeRoute: route, isLoadingRoute: false);
+        if (state.isMapReady) {
+          await _updateMapData(route);
+        }
+      },
+    );
+  }
   
   /// Updates map data using GeoJSON sources (declarative approach)
   Future<void> _updateMapData(RouteEntity route) async {

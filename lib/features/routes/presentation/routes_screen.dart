@@ -4,6 +4,7 @@ import 'package:vector/core/theme/app_colors.dart';
 import 'package:vector/shared/presentation/notifications/navbar_notification.dart';
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
 import 'package:vector/features/routes/presentation/widgets/add_route_dialog.dart';
+import 'package:vector/features/map/presentation/providers/map_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -266,7 +267,8 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
                               const SizedBox(width: 8),
                               ElevatedButton.icon(
                                 onPressed: () {
-                                  // TODO: Link route to map
+                                  // Link route to map
+                                  ref.read(mapProvider.notifier).loadRouteById(route.id);
                                   const ChangeTabNotification(3).dispatch(context);
                                 },
                                 icon: const Icon(LucideIcons.map, size: 18),

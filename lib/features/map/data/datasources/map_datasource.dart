@@ -6,4 +6,7 @@ abstract class MapDataSource {
   /// Fetches the active route.
   /// Throws a [ServerException] for all error codes.
   Future<RouteEntity> getActiveRoute();
+
+  /// Fetches a specific route by ID.
+  Future<RouteEntity> getRouteById(String id);
 }

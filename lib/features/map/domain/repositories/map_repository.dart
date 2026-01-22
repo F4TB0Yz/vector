@@ -7,5 +7,7 @@ abstract class MapRepository {
   /// Returns a [RouteEntity] on success (Right) or a [Failure] on error (Left).
   Future<Either<Failure, RouteEntity>> getActiveRoute();
 
+  Future<Either<Failure, RouteEntity>> getRouteById(String id);
+
   // Other methods like getRouteHistory, updateStopStatus, etc. could be added here.
 }
