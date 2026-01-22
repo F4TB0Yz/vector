@@ -60,7 +60,7 @@ class PackageCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'TRACKING ID',
+                      'NÚMERO DE SEGUIMIENTO',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                             color: Colors.grey[500],
                             fontWeight: FontWeight.bold,
