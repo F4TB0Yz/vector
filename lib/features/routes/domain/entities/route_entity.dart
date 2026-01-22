@@ -20,6 +20,26 @@ class RouteEntity extends Equatable {
     this.stops = const [],
   });
 
+  RouteEntity copyWith({
+    String? id,
+    String? name,
+    DateTime? date,
+    double? progress,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    List<StopEntity>? stops,
+  }) {
+    return RouteEntity(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      date: date ?? this.date,
+      progress: progress ?? this.progress,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      stops: stops ?? this.stops,
+    );
+  }
+
   @override
   List<Object?> get props => [
     id,
@@ -31,3 +51,4 @@ class RouteEntity extends Equatable {
     stops,
   ];
 }
+
