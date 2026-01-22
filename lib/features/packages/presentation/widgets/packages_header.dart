@@ -67,7 +67,7 @@ class PackagesHeader extends ConsumerWidget {
 class _RouteSelector extends ConsumerWidget {
   final RouteEntity? selectedRoute;
 
-  const _RouteSelector({super.key, required this.selectedRoute});
+  const _RouteSelector({required this.selectedRoute});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

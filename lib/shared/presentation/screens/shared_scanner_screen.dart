@@ -46,7 +46,7 @@ class SharedScannerScreen extends StatelessWidget {
                   Expanded(
                     child: TextField(
                       controller: manualCodeController,
-                      autofocus: true,
+                      autofocus: false,
                       onSubmitted: onDetect,
                       style: const TextStyle(
                         color: Colors.white,
