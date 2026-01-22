@@ -4,18 +4,18 @@ import 'package:vector/core/theme/app_colors.dart';
 import 'package:vector/features/packages/domain/entities/jt_package.dart';
 import 'package:vector/features/routes/domain/entities/route_entity.dart';
 import 'package:vector/features/map/domain/entities/stop_entity.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:vector/features/packages/presentation/widgets/package_card.dart';
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
 import 'providers/jt_package_providers.dart';
 
-import 'package:vector/features/home/presentation/widgets/floating_scan_button.dart';
-import 'package:vector/shared/presentation/widgets/smart_scanner/smart_scanner_widget.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:vector/features/packages/presentation/widgets/add_package_details_dialog.dart';
 import 'package:vector/shared/presentation/widgets/toasts.dart';
 import 'package:vector/shared/presentation/screens/shared_scanner_screen.dart';
 import 'package:vector/features/routes/domain/usecases/add_stop_to_route.dart'; // Required for addStop
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:intl/intl.dart';
+import 'package:vector/features/home/presentation/widgets/floating_scan_button.dart';
 
 class PackagesScreen extends ConsumerStatefulWidget {
   const PackagesScreen({super.key});
@@ -138,9 +138,24 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Get today's date without time
+    final today = DateTime.now();
+    final todayDateOnly = DateTime(today.year, today.month, today.day);
+
     // Correctly watch the providers.
     final selectedRoute = ref.watch(selectedRouteProvider);
     final stops = ref.watch(routeStopsProvider);
+
+    // Calculate if the selected route is for today
+    bool isRouteForToday = false;
+    if (selectedRoute != null) {
+      final routeDateOnly = DateTime(
+        selectedRoute.date.year,
+        selectedRoute.date.month,
+        selectedRoute.date.day,
+      );
+      isRouteForToday = routeDateOnly.isAtSameMomentAs(todayDateOnly);
+    }
 
     // --- DEBUGGING ---
     debugPrint("--- Building PackagesScreen ---");
@@ -198,11 +213,10 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                         const SizedBox(height: 4),
                         Text(
                           selectedRoute?.name ?? 'Ninguna ruta seleccionada',
-                          style: Theme.of(context).textTheme.labelSmall
+                          style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
-                                color: AppColors.textSecondary,
-                                letterSpacing: 1.5,
-                                fontWeight: FontWeight.w600,
+                                color: AppColors.text,
+                                fontWeight: FontWeight.bold,
                               ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -221,7 +235,19 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
 
                           return routesAsync.when(
                             data: (routes) {
-                              if (routes.isEmpty) {
+                              final today = DateTime.now();
+                              final todayDateOnly = DateTime(today.year, today.month, today.day);
+
+                              final todayRoutes = routes.where((route) {
+                                final routeDateOnly = DateTime(
+                                  route.date.year,
+                                  route.date.month,
+                                  route.date.day,
+                                );
+                                return routeDateOnly.isAtSameMomentAs(todayDateOnly);
+                              }).toList();
+
+                              if (todayRoutes.isEmpty) {
                                 return const SizedBox.shrink();
                               }
                               return PopupMenuButton<RouteEntity>(
@@ -246,7 +272,7 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                                     duration: const Duration(seconds: 1),
                                   );
                                 },
-                                itemBuilder: (context) => routes.map((route) {
+                                itemBuilder: (context) => todayRoutes.map((route) {
                                   return PopupMenuItem<RouteEntity>(
                                     value: route,
                                     child: Text(
@@ -367,69 +393,94 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                         ],
                       ),
                     )
-                  : filteredStops.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            LucideIcons.package,
-                            size: 64,
-                            color: Colors.grey[800],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No hay paradas en esta ruta',
-                            style: TextStyle(
-                              color: Colors.grey[400],
-                              fontSize: 16,
+                  : Column( // Use a Column to show message and then the list
+                      children: [
+                        if (selectedRoute != null && !isRouteForToday) // Only show this if a route is selected and not for today
+                          Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Row(
+                              children: [
+                                Icon(LucideIcons.info, color: Colors.orange, size: 20),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Esta ruta no es para hoy (${DateFormat('yyyy-MM-dd').format(selectedRoute.date)})',
+                                    style: TextStyle(
+                                      color: Colors.orange.withOpacity(0.8),
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Puedes escanear paquetes para agregarlos',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.only(
-                        left: 16.0,
-                        right: 16.0,
-                        top: 16.0,
-                        bottom: 100.0,
-                      ),
-                      itemCount: filteredStops.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 16),
-                      itemBuilder: (context, index) {
-                        final stop = filteredStops[index];
+                        Expanded(
+                          child: filteredStops.isEmpty
+                              ? Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        LucideIcons.package,
+                                        size: 64,
+                                        color: Colors.grey[800],
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        'No hay paradas en esta ruta',
+                                        style: TextStyle(
+                                          color: Colors.grey[400],
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Puedes escanear paquetes para agregarlos',
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : ListView.separated(
+                                  padding: const EdgeInsets.only(
+                                    left: 16.0,
+                                    right: 16.0,
+                                    top: 16.0,
+                                    bottom: 100.0,
+                                  ),
+                                  itemCount: filteredStops.length,
+                                  separatorBuilder: (context, index) =>
+                                      const SizedBox(height: 16),
+                                  itemBuilder: (context, index) {
+                                    final stop = filteredStops[index];
 
-                        String statusInSpanish;
-                        switch (stop.status) {
-                          case StopStatus.pending:
-                            statusInSpanish = 'PENDIENTE';
-                            break;
-                          case StopStatus.completed:
-                            statusInSpanish = 'ENTREGADO';
-                            break;
-                          case StopStatus.failed:
-                            statusInSpanish = 'FALLIDO';
-                            break;
-                        }
+                                    String statusInSpanish;
+                                    switch (stop.status) {
+                                      case StopStatus.pending:
+                                        statusInSpanish = 'PENDIENTE';
+                                        break;
+                                      case StopStatus.completed:
+                                        statusInSpanish = 'ENTREGADO';
+                                        break;
+                                      case StopStatus.failed:
+                                        statusInSpanish = 'FALLIDO';
+                                        break;
+                                    }
 
-                        return PackageCard(
-                          trackingId: stop.id,
-                          status: statusInSpanish,
-                          address: stop.address,
-                          customerName: stop.name,
-                          timeWindow: 'N/A', // This info is not in StopEntity
-                        );
-                      },
+                                    return PackageCard(
+                                      trackingId: stop.id,
+                                      status: statusInSpanish,
+                                      address: stop.address,
+                                      customerName: stop.name,
+                                      timeWindow: 'N/A', // This info is not in StopEntity
+                                    );
+                                  },
+                                ),
+                        ),
+                      ],
                     ),
             ),
           ],

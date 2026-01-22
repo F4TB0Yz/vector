@@ -89,6 +89,7 @@ class _AddRouteDialogState extends ConsumerState<AddRouteDialog> {
 
               TextFormField(
                 controller: _dateController,
+                readOnly: true,
                 style: const TextStyle(color: Colors.white),
                 decoration: const InputDecoration(
                   labelText: 'Fecha',

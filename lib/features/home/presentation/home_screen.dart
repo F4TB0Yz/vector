@@ -13,7 +13,6 @@ import 'package:vector/features/routes/domain/usecases/add_stop_to_route.dart';
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
 import 'package:vector/features/map/domain/entities/stop_entity.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mapbox;
-import 'package:lucide_icons/lucide_icons.dart';
 import 'package:vector/shared/presentation/screens/shared_scanner_screen.dart';
 import 'package:vector/features/routes/presentation/widgets/add_route_dialog.dart';
 import 'package:vector/shared/presentation/widgets/toasts.dart';
