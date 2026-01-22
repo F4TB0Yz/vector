@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vector/core/theme/app_colors.dart';
+import 'package:vector/features/routes/domain/entities/route_entity.dart';
 import 'package:vector/features/map/domain/entities/stop_entity.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:vector/features/packages/presentation/widgets/package_card.dart';
@@ -145,7 +146,7 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.75),
+                color: Colors.black.withAlpha(191),
                 borderRadius: BorderRadius.circular(8.0),
               ),
               child: Text(message, style: const TextStyle(color: Colors.white, fontSize: 14)),
@@ -224,21 +225,67 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                       ],
                     ),
                   ),
-                  IconButton(
-                    tooltip: 'Importar Paquetes de J&T',
-                    onPressed: () {
-                      ref.read(jtPackagesProvider.notifier).importPackages();
-                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Importando paquetes de J&T en segundo plano...'),
-                          backgroundColor: AppColors.primary,
+                  Row(
+                    children: [
+                      // Route Selector
+                      Consumer(
+                        builder: (context, ref, child) {
+                          final routesAsync = ref.watch(routesProvider);
+                          final selectedRoute = ref.watch(selectedRouteProvider);
+                          
+                          return routesAsync.when(
+                            data: (routes) {
+                              if (routes.isEmpty) return const SizedBox.shrink();
+                              return PopupMenuButton<RouteEntity>(
+                                tooltip: selectedRoute?.name ?? 'Seleccionar Ruta',
+                                icon: Icon(
+                                  LucideIcons.map, 
+                                  color: selectedRoute != null ? AppColors.primary : Colors.grey,
+                                ),
+                                color: const Color(0xFF2C2C35),
+                                onSelected: (route) {
+                                  ref.read(selectedRouteProvider.notifier).state = route;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Ruta seleccionada: ${route.name}'),
+                                      backgroundColor: AppColors.primary,
+                                      duration: const Duration(seconds: 1),
+                                    ),
+                                  );
+                                },
+                                itemBuilder: (context) => routes.map((route) {
+                                  return PopupMenuItem<RouteEntity>(
+                                    value: route,
+                                    child: Text(
+                                      route.name,
+                                      style: const TextStyle(color: Colors.white),
+                                    ),
+                                  );
+                                }).toList(),
+                              );
+                            },
+                            loading: () => const SizedBox(width: 48), // Placeholder for icon button size
+                            error: (_, __) => const Icon(LucideIcons.alertCircle, color: Colors.red),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        tooltip: 'Importar Paquetes de J&T',
+                        onPressed: () {
+                          ref.read(jtPackagesProvider.notifier).importPackages();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Importando paquetes de J&T en segundo plano...'),
+                              backgroundColor: AppColors.primary,
+                            ),
+                          );
+                        },
+                        icon: const Icon(
+                          LucideIcons.downloadCloud,
+                          color: Colors.white,
                         ),
-                      );
-                    },
-                    icon: const Icon(
-                      LucideIcons.downloadCloud,
-                      color: Colors.white,
-                    ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -270,7 +317,7 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                           color: isSelected ? AppColors.primary : const Color(0xFF2C2C35),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: isSelected ? Colors.transparent : Colors.white.withOpacity(0.1),
+                            color: isSelected ? Colors.transparent : Colors.white.withAlpha(25),
                           ),
                         ),
                         child: Text(
@@ -293,7 +340,7 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
             Divider(
               height: 1,
               thickness: 1,
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withAlpha(25),
             ),
             
             Expanded(

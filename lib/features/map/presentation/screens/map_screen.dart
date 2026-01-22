@@ -1,9 +1,5 @@
-// The file map_screen.dart is not being used as per the user's request.
-// This is being done because the user asked to delete it.
-
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart'; // Import Riverpod
-
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:vector/core/theme/app_colors.dart';
 import 'package:vector/features/map/presentation/providers/map_provider.dart';
@@ -11,8 +7,12 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:vector/features/packages/presentation/widgets/package_card.dart';
 import 'package:vector/features/map/presentation/widgets/next_stop_card.dart';
 import 'package:vector/shared/presentation/notifications/navbar_notification.dart';
+import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
+import 'package:vector/features/routes/domain/entities/route_entity.dart';
+import 'package:vector/features/map/domain/entities/stop_entity.dart';
 
-class MapScreen extends ConsumerStatefulWidget { // Changed to ConsumerStatefulWidget
+
+class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
 
   @override
@@ -42,12 +42,21 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   void _onMapCreated(MapboxMap mapboxMap) {
     ref.read(mapProvider.notifier).onMapCreated(mapboxMap);
   }
-
+  
   @override
   Widget build(BuildContext context) {
     final mapState = ref.watch(mapProvider);
+    final selectedRoute = ref.watch(selectedRouteProvider);
 
-    // Escuchar cambios en el provider para mostrar errores.
+    // Listen for changes in the globally selected route and command the map to update.
+    ref.listen<RouteEntity?>(selectedRouteProvider, (previous, next) {
+      // If the route is different from the one currently on the map, load it.
+      if (next != null && next.id != mapState.activeRoute?.id) {
+        ref.read(mapProvider.notifier).loadRouteById(next.id);
+      }
+    });
+
+    // Listen for internal map errors.
     ref.listen<MapState>(mapProvider, (previous, next) {
       if (next.error != null && previous?.error != next.error) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -60,7 +69,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: mapState.activeRoute == null
+        child: selectedRoute == null
             ? _NoRouteSelectedPlaceholder(
                 isLoading: mapState.isLoadingRoute,
                 onNavigateToRoutes: () {
@@ -82,10 +91,47 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             
             // 2. Botones de Control (Derecha Superior)
             Positioned(
-              top: MediaQuery.of(context).padding.top + 16,
+              top: 16,
               right: 16,
               child: Column(
                 children: [
+                   // Route Selector
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final routesAsync = ref.watch(routesProvider);
+                      return routesAsync.when(
+                        data: (routes) {
+                          if (routes.isEmpty) return const SizedBox.shrink();
+                          return _MapControlButton(
+                            icon: LucideIcons.map,
+                            isActive: selectedRoute != null,
+                            onTap: () {
+                              showModalBottomSheet(
+                                context: context,
+                                backgroundColor: const Color(0xFF1E1E1E),
+                                builder: (context) => ListView.builder(
+                                  itemCount: routes.length,
+                                  itemBuilder: (context, index) {
+                                    final route = routes[index];
+                                    return ListTile(
+                                      title: Text(route.name, style: const TextStyle(color: Colors.white)),
+                                      onTap: () {
+                                        ref.read(selectedRouteProvider.notifier).state = route;
+                                        Navigator.pop(context);
+                                      },
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                          );
+                        },
+                        loading: () => const _MapControlButton(icon: LucideIcons.map, onTap: null),
+                        error: (_, __) => const _MapControlButton(icon: LucideIcons.alertCircle, onTap: null, isActive: true),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 8),
                   _MapControlButton(
                     icon: LucideIcons.layers,
                     onTap: () {
@@ -146,9 +192,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                child: PageView.builder(
                  controller: _pageController,
                  padEnds: false, 
-                 itemCount: 3, 
+                 itemCount: selectedRoute.stops.length, 
                  itemBuilder: (context, index) {
-                   final stopNum = index + 4;
+                   final stop = selectedRoute.stops[index];
                    
                    return AnimatedBuilder(
                      animation: _pageController,
@@ -172,7 +218,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                  child: Container(
                                    margin: const EdgeInsets.all(16),
                                    decoration: BoxDecoration(
-                                     color: Colors.black.withValues(alpha: opacity * 1.3),
+                                     color: Colors.black.withAlpha((255 * opacity * 1.3).clamp(0, 255).round()),
                                      borderRadius: BorderRadius.circular(4),
                                    ),
                                  ),
@@ -183,15 +229,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                        );
                      },
                      child: NextStopCard(
-                       stopNumber: "PARADA 0$stopNum",
+                       stopNumber: "PARADA ${stop.stopOrder}",
                        timeAway: "A ${3 + index * 5} MIN",
-                       address: index == 0 
-                           ? "482 Industrial Pkwy, Unit B"
-                           : "Calle ${10 + index} #45-30, Centro",
-                       packageType: index == 1 ? "Caja Grande" : "Caja Pequeña",
-                       weight: "${2.5 + index}kg",
+                       address: stop.address,
+                       packageType: "Paquete",
+                       weight: "N/A",
                        isPriority: index == 0,
-                       note: index == 0 ? "Nota: Dejar en recepción. Cód: 4821." : null,
+                       note: null,
                        onClose: () {
                          setState(() {
                            _showNextStopCard = false;
@@ -214,14 +258,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                height: 500,
                child: Container(
                  decoration: BoxDecoration(
-                   color: const Color(0xFF1E1E1E).withValues(alpha: 0.95),
+                   color: const Color(0xFF1E1E1E).withAlpha(242),
                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                    border: Border(
-                     top: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                     top: BorderSide(color: Colors.white.withAlpha(25)),
                    ),
                    boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.5),
+                      color: Colors.black.withAlpha(127),
                       blurRadius: 20,
                       offset: const Offset(0, -5),
                     ),
@@ -236,9 +280,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                        child: Row(
                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                          children: [
-                           const Text(
-                             "Lista de Paquetes",
-                             style: TextStyle(
+                           Text(
+                             "Paradas de ${selectedRoute.name}",
+                             style: const TextStyle(
                                color: Colors.white,
                                fontSize: 18,
                                fontWeight: FontWeight.bold,
@@ -256,38 +300,38 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                          ],
                        ),
                      ),
-                     Divider(height: 1, color: Colors.white.withValues(alpha: 0.1)),
+                     Divider(height: 1, color: Colors.white.withAlpha(25)),
                      
                      // Lista
                      Expanded(
-                       child: ListView(
+                       child: ListView.separated(
                          padding: const EdgeInsets.all(16),
-                         children: const [
-                            PackageCard(
-                              trackingId: 'VEC-8821',
-                              status: 'PENDIENTE',
-                              address: '482 Industrial Pkwy, Unit B',
-                              customerName: 'Juan Pérez',
-                              timeWindow: 'Hoy, 2:00 PM - 4:00 PM',
-                            ),
-                            SizedBox(height: 12),
-                            PackageCard(
-                              trackingId: 'VEC-8825',
-                              status: 'PENDIENTE',
-                              address: 'Calle 10 #45-30, Centro',
-                              customerName: 'Maria Suarez',
-                              timeWindow: 'Hoy, 2:30 PM - 4:30 PM',
-                            ),
-                            SizedBox(height: 12),
-                            PackageCard(
-                              trackingId: 'VEC-8828',
-                              status: 'PENDIENTE',
-                              address: 'Av. Las Palmas #20-10',
-                              customerName: 'Carlos Ruiz',
-                              timeWindow: 'Hoy, 3:00 PM - 5:00 PM',
-                            ),
-                            SizedBox(height: 80),
-                         ],
+                         itemCount: selectedRoute.stops.length,
+                         separatorBuilder: (context, index) => const SizedBox(height: 12),
+                         itemBuilder: (context, index) {
+                           final stop = selectedRoute.stops[index];
+                            String statusInSpanish;
+                            switch (stop.status) {
+                              case StopStatus.pending:
+                                statusInSpanish = 'PENDIENTE';
+                                break;
+                              case StopStatus.completed:
+                                statusInSpanish = 'ENTREGADO';
+                                break;
+                              case StopStatus.failed:
+                                statusInSpanish = 'FALLIDO';
+                                break;
+                              default:
+                                statusInSpanish = 'DESCONOCIDO';
+                            }
+                           return PackageCard(
+                              trackingId: stop.id,
+                              status: statusInSpanish,
+                              address: stop.address,
+                              customerName: stop.name,
+                              timeWindow: 'N/A',
+                            );
+                         }
                        ),
                      ),
                    ],
@@ -304,12 +348,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
 class _MapControlButton extends StatelessWidget {
   final IconData icon;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final bool isActive;
 
   const _MapControlButton({
     required this.icon,
-    required this.onTap,
+    this.onTap,
     this.isActive = false,
   });
 
@@ -327,11 +371,11 @@ class _MapControlButton extends StatelessWidget {
             color: isActive ? AppColors.primary : const Color(0xFF1E1E1E),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.1),
+              color: Colors.white.withAlpha(25),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
+                color: Colors.black.withAlpha(76),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -366,19 +410,19 @@ class _NoRouteSelectedPlaceholder extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (isLoading)
-              CircularProgressIndicator(
+              const CircularProgressIndicator(
                 color: AppColors.primary,
                 strokeWidth: 3.0,
               )
             else ...[
               Icon(
-                LucideIcons.mapPin,
+                LucideIcons.map,
                 size: 80,
                 color: Colors.grey[700],
               ),
               const SizedBox(height: 24),
               const Text(
-                'No hay ruta activa',
+                'No hay ruta seleccionada',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 22,
@@ -389,7 +433,7 @@ class _NoRouteSelectedPlaceholder extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 48.0),
                 child: Text(
-                  'Selecciona una ruta desde la pantalla de Rutas para visualizarla en el mapa.',
+                  'Selecciona una ruta usando el botón de arriba o desde la pantalla de Rutas.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.grey[400],
@@ -402,9 +446,9 @@ class _NoRouteSelectedPlaceholder extends StatelessWidget {
               // Botón para navegar a Rutas
               ElevatedButton.icon(
                 onPressed: onNavigateToRoutes,
-                icon: const Icon(LucideIcons.map, size: 20),
+                icon: const Icon(LucideIcons.list, size: 20),
                 label: const Text(
-                  'Ver Rutas Disponibles',
+                  'Ver Mis Rutas',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
