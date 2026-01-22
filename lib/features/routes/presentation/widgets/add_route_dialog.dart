@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/routes_provider.dart';
 
@@ -73,7 +74,7 @@ class _AddRouteDialogState extends ConsumerState<AddRouteDialog> {
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: Colors.grey, size: 20),
+                    icon: const Icon(LucideIcons.x, color: Colors.grey, size: 20),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     style: IconButton.styleFrom(
@@ -101,7 +102,7 @@ class _AddRouteDialogState extends ConsumerState<AddRouteDialog> {
                   ),
                   filled: true,
                   fillColor: const Color(0xFF2C2C35),
-                  prefixIcon: const Icon(Icons.event_outlined, color: Colors.grey),
+                  prefixIcon: const Icon(LucideIcons.calendar, color: Colors.grey),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {

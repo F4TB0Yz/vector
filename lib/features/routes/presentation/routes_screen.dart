@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vector/core/theme/app_colors.dart';
+import 'package:vector/shared/presentation/notifications/navbar_notification.dart';
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
 import 'package:vector/features/routes/presentation/widgets/add_route_dialog.dart';
 import 'package:intl/intl.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 
 class RoutesScreen extends ConsumerStatefulWidget {
@@ -65,7 +67,7 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
                           );
                         },
                         icon: const Icon(
-                          Icons.add_circle_outline_rounded,
+                          LucideIcons.plusCircle,
                           color: AppColors.primary,
                         ),
                       ),
@@ -74,7 +76,7 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
                           // TODO: Implement filter functionality
                         },
                         icon: const Icon(
-                          Icons.filter_list,
+                          LucideIcons.filter,
                           color: Colors.white,
                         ),
                       ),
@@ -149,7 +151,7 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            Icons.map_outlined,
+                            LucideIcons.map,
                             size: 64,
                             color: Colors.white.withValues(alpha: 0.2),
                           ),
@@ -200,49 +202,86 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
                             color: Colors.white.withValues(alpha: 0.05),
                           ),
                         ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(4),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Icon(
+                                  LucideIcons.navigation,
+                                  color: AppColors.primary,
+                                ),
                               ),
-                              child: const Icon(
-                                Icons.route_outlined,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    route.name,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      route.name,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    DateFormat('EEEE d, MMMM y', 'es').format(route.date),
-                                    style: TextStyle(
-                                      color: Colors.grey[500],
-                                      fontSize: 12,
+                                    Text(
+                                      DateFormat('EEEE d, MMMM y', 'es').format(route.date),
+                                      style: TextStyle(
+                                        color: Colors.grey[500],
+                                        fontSize: 12,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                            const Icon(
-                              Icons.chevron_right,
-                              color: Colors.white54,
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: Colors.white.withValues(alpha: 0.05),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              TextButton.icon(
+                                onPressed: () {
+                                   const ChangeTabNotification(2).dispatch(context);
+                                },
+                                icon: const Icon(LucideIcons.package, size: 18),
+                                label: const Text("Ver Paquetes"),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.white70,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              ElevatedButton.icon(
+                                onPressed: () {
+                                  // TODO: Link route to map
+                                  const ChangeTabNotification(3).dispatch(context);
+                                },
+                                icon: const Icon(LucideIcons.map, size: 18),
+                                label: const Text("Abrir Mapa"),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                                  foregroundColor: AppColors.primary,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                ),
+                              ),
+                            ],
+                          )
+                        ],
+                      ),
                       );
                     },
                   );

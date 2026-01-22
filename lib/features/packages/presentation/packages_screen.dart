@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vector/core/theme/app_colors.dart';
 import 'package:vector/features/packages/presentation/widgets/package_card.dart';
+import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
+import 'package:vector/features/routes/domain/entities/route_entity.dart';
 import 'providers/jt_package_providers.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class PackagesScreen extends ConsumerStatefulWidget {
   const PackagesScreen({super.key});
@@ -53,14 +56,54 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                       ),
                     ],
                    ),
-                  IconButton(
-                    onPressed: () {
-                      ref.read(jtPackagesProvider.notifier).importPackages();
-                    },
-                    icon: const Icon(
-                      Icons.cloud_download_rounded,
-                      color: Colors.white,
-                    ),
+                  Row(
+                    children: [
+                      // Route Selector
+                      Consumer(
+                        builder: (context, ref, child) {
+                          final routesAsync = ref.watch(routesProvider);
+                          return routesAsync.when(
+                            data: (routes) {
+                              if (routes.isEmpty) return const SizedBox.shrink();
+                              return PopupMenuButton<RouteEntity>(
+                                tooltip: 'Seleccionar Ruta',
+                                icon: const Icon(LucideIcons.map, color: AppColors.primary),
+                                color: const Color(0xFF2C2C35),
+                                onSelected: (route) {
+                                  // TODO: Handle route selection (filter packages or set active)
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Ruta seleccionada: ${route.name}'),
+                                      backgroundColor: AppColors.primary,
+                                    ),
+                                  );
+                                },
+                                itemBuilder: (context) => routes.map((route) {
+                                  return PopupMenuItem<RouteEntity>(
+                                    value: route,
+                                    child: Text(
+                                      route.name,
+                                      style: const TextStyle(color: Colors.white),
+                                    ),
+                                  );
+                                }).toList(),
+                              );
+                            },
+                            loading: () => const SizedBox.shrink(),
+                            error: (_, __) => const SizedBox.shrink(),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          ref.read(jtPackagesProvider.notifier).importPackages();
+                        },
+                        icon: const Icon(
+                          LucideIcons.downloadCloud,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -130,7 +173,7 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey[800]),
+                          Icon(LucideIcons.package, size: 64, color: Colors.grey[800]),
                           const SizedBox(height: 16),
                           Text(
                             'No hay paquetes cargados',
@@ -141,7 +184,7 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                             onPressed: () {
                               ref.read(jtPackagesProvider.notifier).importPackages();
                             },
-                            icon: const Icon(Icons.move_to_inbox_rounded, color: Colors.black),
+                            icon: const Icon(LucideIcons.inbox, color: Colors.black),
                             label: const Text(
                               'IMPORTAR PAQUETES J&T',
                               style: TextStyle(
@@ -199,7 +242,7 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                        const Icon(LucideIcons.alertCircle, color: Colors.red, size: 48),
                         const SizedBox(height: 16),
                         Text(
                           'Error al cargar paquetes',

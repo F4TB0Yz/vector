@@ -6,6 +6,7 @@ import 'package:vector/features/home/presentation/widgets/home_header.dart';
 import 'package:vector/features/home/presentation/widgets/home_action_buttons.dart';
 import 'package:vector/features/home/presentation/widgets/home_stats_widget.dart';
 import 'package:vector/features/home/presentation/widgets/floating_scan_button.dart';
+import 'package:vector/features/routes/presentation/widgets/add_route_dialog.dart';
 import 'package:vector/shared/presentation/widgets/smart_scanner/smart_scanner_widget.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -83,7 +84,10 @@ class HomeScreen extends StatelessWidget {
               HomeActionButtons(
                 onScanTap: () => _openScanner(context),
                 onNewRouteTap: () {
-                   debugPrint('Nueva ruta');
+                  showDialog(
+                    context: context,
+                    builder: (context) => const AddRouteDialog(),
+                  );
                 },
               ),
             ],

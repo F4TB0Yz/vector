@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:vector/core/database/database_service.dart';
+import 'package:vector/core/database/seed_data.dart';
 import 'package:vector/core/theme/app_colors.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:vector/features/auth/presentation/providers/auth_provider.dart';
 import 'package:vector/features/auth/presentation/widgets/jt_login_dialog.dart';
 
@@ -47,6 +50,35 @@ class HomeHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 16),
+        IconButton(
+          onPressed: () async {
+            await SeedData.seed();
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Datos de ejemplo cargados. Refresca las pantallas.'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          },
+          icon: const Icon(LucideIcons.uploadCloud, color: Colors.green),
+        ),
+        IconButton(
+          onPressed: () async {
+            await DatabaseService.instance.deleteDatabaseFile();
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Base de datos eliminada. Reinicia la app.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+          icon: const Icon(LucideIcons.trash2, color: Colors.red),
+        ),
+        const SizedBox(width: 8),
         const _StatusSelector(),
       ],
     );
@@ -75,7 +107,7 @@ class _StatusSelector extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.sync, color: Colors.blue),
+              leading: const Icon(LucideIcons.refreshCw, color: Colors.blue),
               title: const Text('Sincronizar Datos', style: TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(context);
@@ -83,7 +115,7 @@ class _StatusSelector extends ConsumerWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
+              leading: const Icon(LucideIcons.logOut, color: Colors.red),
               title: const Text('Cerrar Sesión', style: TextStyle(color: Colors.white)),
               onTap: () {
                 ref.read(authProvider.notifier).logout();

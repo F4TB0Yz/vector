@@ -28,13 +28,6 @@ Future<void> main() async {
   await DatabaseService.instance.database;
   debugPrint('Database initialized successfully');
 
-  // Poblar con datos de ejemplo en modo debug
-  if (kDebugMode) {
-    debugPrint('Seeding database with example data...');
-    await SeedData.seed();
-    debugPrint('Database seeded successfully');
-  }
-
   runApp(const ProviderScope(child: MainApp()));
 }
 

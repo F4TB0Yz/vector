@@ -83,4 +83,18 @@ class DatabaseService {
     await db.close();
     _database = null;
   }
+
+  /// Elimina la base de datos (SOLO PARA DEBUG).
+  Future<void> deleteDatabaseFile() async {
+    // Cerrar conexión existente
+    if (_database != null) {
+      await _database!.close();
+      _database = null;
+    }
+
+    final databasesPath = await getDatabasesPath();
+    final path = join(databasesPath, 'vector.db');
+    
+    await deleteDatabase(path);
+  }
 }

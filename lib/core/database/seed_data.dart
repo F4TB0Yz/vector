@@ -28,6 +28,7 @@ class SeedData {
     await db.insert('routes', {
       'id': routeId,
       'name': 'Ruta de Hoy',
+      'date': now,
       'progress': 0.0,
       'created_at': now,
       'updated_at': now,
