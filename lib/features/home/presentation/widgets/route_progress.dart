@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:vector/core/theme/app_colors.dart';
-import 'package:intl/intl.dart';
 
 class RouteProgress extends StatelessWidget {
   final int deliveredCount;

@@ -10,11 +10,15 @@ import 'package:vector/features/packages/domain/entities/package_status.dart';
 class PackageCard extends StatelessWidget {
   final PackageEntity package;
   final VoidCallback? onTap;
+  final VoidCallback? onDelivered;
+  final VoidCallback? onFailed;
 
   const PackageCard({
     super.key,
     required this.package,
     this.onTap,
+    this.onDelivered,
+    this.onFailed,
   });
 
   Color _getStatusColor() {
@@ -237,6 +241,63 @@ class PackageCard extends StatelessWidget {
               ],
             ),
           ),
+
+          // Action Buttons
+          if (package.status != PackageStatus.delivered && package.status != PackageStatus.failed) ...[
+            Divider(height: 1, color: Colors.white.withValues(alpha: 0.1)),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: onDelivered,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00E676), // Neon Green
+                        foregroundColor: Colors.black,
+                        disabledBackgroundColor: const Color(0xFF00E676), // Keep neon green when disabled
+                        disabledForegroundColor: Colors.black, // Keep black text when disabled
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text(
+                        'Entregado',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: onFailed,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFF5252), // Neon Red
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: const Color(0xFFFF5252), // Keep neon red when disabled
+                        disabledForegroundColor: Colors.white, // Keep white text when disabled
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text(
+                        'Fallido',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
 
           Divider(height: 1, color: Colors.white.withValues(alpha: 0.1)),
 

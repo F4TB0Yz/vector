@@ -92,8 +92,10 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
           children: [
             const PackagesHeader(),
             const SizedBox(height: 16),
-            const FilterBar(),
-            const SizedBox(height: 16),
+            if (selectedRoute != null) ...[
+              const FilterBar(),
+              const SizedBox(height: 16),
+            ],
             Divider(height: 1, thickness: 1, color: Colors.white.withValues(alpha: 0.1)),
             const RouteDateWarningBanner(),
             Expanded(

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:vector/core/theme/app_colors.dart';
 
 class StatusBadge extends StatelessWidget {
   final String label;
