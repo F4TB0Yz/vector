@@ -150,11 +150,14 @@ class JTPackagesDataSourceImpl implements JTPackagesDataSource {
             }
 
             if (list.isNotEmpty) {
+              // Data-Sync: Process and expand grouped packages
+              final packages = _processPackageList(list);
+
               _debugLog(
-                '✅ PACKAGES FOUND: ${list.length}',
+                '✅ PACKAGES FOUND: ${packages.length} (from ${list.length} items)',
                 color: _AnsiColor.green,
               );
-              return list.map((e) => JTPackageModel.fromJson(e)).toList();
+              return packages;
             }
           }
 
@@ -186,6 +189,38 @@ class JTPackagesDataSourceImpl implements JTPackagesDataSource {
       _debugLog('💥 EXCEPTION: $e', color: _AnsiColor.red);
       rethrow;
     }
+  }
+
+  /// Data-Sync: Process package list and expand grouped packages
+  ///
+  /// J&T API returns grouped packages in a special format:
+  /// - ifMerge: true indicates a grouped package
+  /// - opsDeliverTaskAPIVOS: array containing individual packages
+  ///
+  /// This method expands grouped packages into individual ones and marks them accordingly.
+  List<JTPackageModel> _processPackageList(List<dynamic> list) {
+    final List<JTPackageModel> packages = [];
+
+    for (final item in list) {
+      // Check for grouped packages
+      if (item['ifMerge'] == true && item['opsDeliverTaskAPIVOS'] != null) {
+        final subList = item['opsDeliverTaskAPIVOS'] as List;
+        _debugLog(
+          '📦 Found grouped package with ${subList.length} items',
+          color: _AnsiColor.cyan,
+        );
+
+        // Extract and mark each package as grouped
+        for (final subItem in subList) {
+          packages.add(JTPackageModel.fromJson(subItem, isGrouped: true));
+        }
+      } else if (item['waybillNo'] != null) {
+        // Regular individual package
+        packages.add(JTPackageModel.fromJson(item, isGrouped: false));
+      }
+    }
+
+    return packages;
   }
 
   void _debugLog(String message, {_AnsiColor color = _AnsiColor.white}) {

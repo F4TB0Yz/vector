@@ -8,6 +8,7 @@ import 'package:vector/features/packages/domain/entities/jt_package.dart';
 import 'package:vector/features/auth/presentation/providers/auth_provider.dart';
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
 import 'package:vector/features/map/domain/entities/stop_entity.dart';
+import 'package:vector/features/routes/domain/usecases/add_stop_to_route.dart';
 
 // --- Dependencies ---
 
@@ -42,18 +43,132 @@ class JTPackagesNotifier extends AsyncNotifier<List<JTPackage>> {
     final repository = ref.read(jtPackageRepositoryProvider);
     final result = await repository.getJTPackages();
 
-    result.fold(
-      (failure) {
+    await result.fold(
+      (failure) async {
         if (failure.message.contains('Sesión expirada') ||
             failure.message.contains('135010037')) {
           ref.read(authProvider.notifier).logout();
         }
         state = AsyncValue.error(failure.message, StackTrace.current);
       },
-      (packages) {
+      (packages) async {
         state = AsyncValue.data(packages);
+
+        // Intentar guardar los paquetes en la ruta seleccionada
+        await _savePackagesToSelectedRoute(packages);
       },
     );
+  }
+
+  /// Architecture: Separated business logic - Save packages to currently selected route
+  ///
+  /// This method handles the persistence of imported packages to the database.
+  /// It validates that a route is selected before attempting to save.
+  ///
+  /// Returns the number of successfully saved packages.
+  Future<int> _savePackagesToSelectedRoute(List<JTPackage> packages) async {
+    final selectedRoute = ref.read(selectedRouteProvider);
+    if (selectedRoute == null) {
+      // ignore: avoid_print
+      print(
+        '[JTPackages] ⚠️ No route selected. Packages imported but not saved to route.',
+      );
+      return 0;
+    }
+
+    // ignore: avoid_print
+    print(
+      '[JTPackages] 💾 Saving ${packages.length} packages to route ${selectedRoute.name}...',
+    );
+
+    int savedCount = 0;
+    int errorCount = 0;
+    final addStopUseCase = ref.read(addStopToRouteUseCaseProvider);
+
+    // Optimization: Process packages sequentially to avoid overwhelming the database
+    for (final package in packages) {
+      final result = await _savePackageAsStop(
+        package: package,
+        selectedRoute: selectedRoute,
+        stopOrder: selectedRoute.stops.length + savedCount + 1,
+        addStopUseCase: addStopUseCase,
+      );
+
+      if (result) {
+        savedCount++;
+      } else {
+        errorCount++;
+      }
+    }
+
+    // ignore: avoid_print
+    print('[JTPackages] ✅ Saved $savedCount packages, $errorCount errors');
+
+    // Architecture: Refresh state after batch operation
+    await _refreshRouteState(selectedRoute.id);
+
+    return savedCount;
+  }
+
+  /// Architecture: Extract single package save operation for clarity
+  Future<bool> _savePackageAsStop({
+    required JTPackage package,
+    required dynamic selectedRoute,
+    required int stopOrder,
+    required AddStopToRoute addStopUseCase,
+  }) async {
+    try {
+      final stop = StopEntity(
+        id: package.waybillNo,
+        routeId: selectedRoute.id,
+        package: package,
+        stopOrder: stopOrder,
+      );
+
+      final result = await addStopUseCase(
+        AddStopParams(routeId: selectedRoute.id, stop: stop),
+      );
+
+      return result.fold((failure) {
+        // ignore: avoid_print
+        print(
+          '[JTPackages] ❌ Error saving ${package.waybillNo}: ${failure.message}',
+        );
+        return false;
+      }, (_) => true);
+    } catch (e) {
+      // ignore: avoid_print
+      print('[JTPackages] ❌ Exception saving ${package.waybillNo}: $e');
+      return false;
+    }
+  }
+
+  /// Architecture: Extract route refresh logic for reusability
+  Future<void> _refreshRouteState(String routeId) async {
+    // Invalidate routes to trigger database fetch
+    ref.invalidate(routesProvider);
+
+    // Optimization: Small delay to ensure database commit completes
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    try {
+      final updatedRoutes = await ref.read(routesProvider.future);
+      final updatedRoute = updatedRoutes.firstWhere(
+        (route) => route.id == routeId,
+      );
+
+      ref.read(selectedRouteProvider.notifier).state = updatedRoute;
+
+      // ignore: avoid_print
+      print(
+        '[JTPackages] 🔄 Route updated with ${updatedRoute.stops.length} total stops',
+      );
+    } catch (e) {
+      // ignore: avoid_print
+      print(
+        '[JTPackages] ⚠️ Could not refresh route, keeping current state: $e',
+      );
+    }
   }
 }
 

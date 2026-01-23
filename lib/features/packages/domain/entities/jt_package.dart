@@ -13,6 +13,7 @@ class JTPackage extends PackageEntity {
   final double distance;
   // lngLat is often null or "0.0,0.0" in string format based on usage
   final String? lngLat;
+  final bool isGrouped; // Indica si el paquete pertenece a un grupo
 
   const JTPackage({
     required this.waybillNo,
@@ -29,10 +30,9 @@ class JTPackage extends PackageEntity {
     required this.deliverStaff,
     required this.distance,
     this.lngLat,
+    this.isGrouped = false,
     super.coordinates,
-  }) : super(
-          id: waybillNo,
-        );
+  }) : super(id: waybillNo);
 
   @override
   JTPackage copyWith({
@@ -53,6 +53,7 @@ class JTPackage extends PackageEntity {
     String? deliverStaff,
     double? distance,
     String? lngLat,
+    bool? isGrouped,
   }) {
     return JTPackage(
       waybillNo: waybillNo ?? this.waybillNo,
@@ -69,6 +70,7 @@ class JTPackage extends PackageEntity {
       deliverStaff: deliverStaff ?? this.deliverStaff,
       distance: distance ?? this.distance,
       lngLat: lngLat ?? this.lngLat,
+      isGrouped: isGrouped ?? this.isGrouped,
       coordinates: coordinates ?? this.coordinates,
       // updatedAt is not a constructor parameter in JTPackage, but in PackageEntity.
       // If we need to update updatedAt, we would have to reconstruct the superclass
@@ -79,15 +81,16 @@ class JTPackage extends PackageEntity {
 
   @override
   List<Object?> get props => [
-        ...super.props,
-        waybillNo,
-        waybillId,
-        taskStatus,
-        isAbnormal,
-        scanTime,
-        signTime,
-        deliverStaff,
-        distance,
-        lngLat,
-      ];
+    ...super.props,
+    waybillNo,
+    waybillId,
+    taskStatus,
+    isAbnormal,
+    scanTime,
+    signTime,
+    deliverStaff,
+    distance,
+    lngLat,
+    isGrouped,
+  ];
 }

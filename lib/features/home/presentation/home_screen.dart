@@ -85,6 +85,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     final stop = StopEntity(
       id: packageData['code']!,
+      routeId: selectedRoute.id,
       package: ManualPackageEntity(
         id: packageData['code']!,
         receiverName: packageData['name']!,
@@ -92,7 +93,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         phone: packageData['phone']!,
         notes: packageData['notes'],
         status: PackageStatus.pending,
-        coordinates: mapbox.Position(0, 0),
+        coordinates: null, // TODO: Implement forward geocoding (address → coordinates)
         updatedAt: DateTime.now(),
       ),
       stopOrder: (selectedRoute.stops.length + 1),

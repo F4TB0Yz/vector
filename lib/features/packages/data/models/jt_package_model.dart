@@ -17,12 +17,16 @@ class JTPackageModel extends JTPackage {
     required super.deliverStaff,
     required super.distance,
     super.lngLat,
+    super.isGrouped,
     super.coordinates,
   });
 
-  factory JTPackageModel.fromJson(Map<String, dynamic> json) {
+  factory JTPackageModel.fromJson(
+    Map<String, dynamic> json, {
+    bool isGrouped = false,
+  }) {
     final tStatus = json['taskStatus'] ?? 0;
-    
+
     // Map J&T taskStatus to our unified PackageStatus
     // Assuming: 1=pending, 2=inTransit, 3=outForDelivery, 4=delivered, 5=failed
     PackageStatus unifiedStatus;
@@ -51,7 +55,7 @@ class JTPackageModel extends JTPackage {
       waybillId: json['waybillId'] ?? '',
       receiverName: json['receiverName'] ?? '',
       phone: json['phone'] ?? '',
-      address: json['address'] ?? '',
+      address: json['receiverDetailedAddress'] ?? '',
       status: unifiedStatus,
       taskStatus: tStatus,
       isAbnormal: (json['isAbnormal'] is int)
@@ -62,7 +66,9 @@ class JTPackageModel extends JTPackage {
       deliverStaff: json['deliverStaff'] ?? '',
       distance: (json['distance'] as num?)?.toDouble() ?? 0.0,
       lngLat: json['lngLat'],
-      notes: json['remark'] ?? json['notes'], // J&T uses 'remark' for notes often
+      isGrouped: isGrouped,
+      notes:
+          json['remark'] ?? json['notes'], // J&T uses 'remark' for notes often
     );
   }
 

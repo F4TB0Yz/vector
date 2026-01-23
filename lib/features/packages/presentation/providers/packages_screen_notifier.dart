@@ -51,6 +51,7 @@ class PackagesScreenNotifier extends StateNotifier<PackagesScreenState> {
 
     final stop = StopEntity(
       id: packageData['code']!,
+      routeId: selectedRoute.id,
       package: ManualPackageEntity(
         id: packageData['code']!,
         receiverName: packageData['name']!,
@@ -58,7 +59,7 @@ class PackagesScreenNotifier extends StateNotifier<PackagesScreenState> {
         phone: packageData['phone']!,
         notes: packageData['notes'],
         status: PackageStatus.pending,
-        coordinates: Position(0, 0),
+        coordinates: null, // TODO: Implement forward geocoding (address → coordinates)
         updatedAt: DateTime.now(),
       ),
       stopOrder: (selectedRoute.stops.length + 1),

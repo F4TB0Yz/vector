@@ -12,6 +12,7 @@ import 'package:vector/features/map/presentation/widgets/no_route_selected_place
 import 'package:vector/shared/presentation/notifications/navbar_notification.dart';
 import 'package:vector/features/map/domain/entities/stop_entity.dart'; // Import for StopEntity
 import 'package:vector/features/packages/domain/entities/package_status.dart'; // Import for PackageStatus
+import 'package:vector/features/map/presentation/widgets/confirm_add_stop_dialog.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -44,18 +45,25 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     ref.read(mapProvider.notifier).onMapCreated(mapboxMap);
   }
 
+  // Handles the long tap gesture on the map.
+  void _onMapLongClick(MapContentGestureContext context) {
+    final selectedRoute = ref.read(selectedRouteProvider);
+    if (selectedRoute == null) return;
+
+    // Delegate the logic to the map notifier, using the geographic Point directly.
+    ref.read(mapProvider.notifier).onMapLongClick(context.point);
+  }
+
   void _onStopDelivered(StopEntity stop) {
-    ref.read(mapProvider.notifier).updatePackageStatus(
-          stop.package.id,
-          PackageStatus.delivered,
-        );
+    ref
+        .read(mapProvider.notifier)
+        .updatePackageStatus(stop.package.id, PackageStatus.delivered);
   }
 
   void _onStopFailed(StopEntity stop) {
-    ref.read(mapProvider.notifier).updatePackageStatus(
-          stop.package.id,
-          PackageStatus.failed,
-        );
+    ref
+        .read(mapProvider.notifier)
+        .updatePackageStatus(stop.package.id, PackageStatus.failed);
   }
 
   @override
@@ -78,6 +86,27 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       }
     });
 
+    // Listen for stop creation requests and show the confirmation dialog.
+    ref.listen<StopCreationRequest?>(
+      mapProvider.select((state) => state.stopCreationRequest),
+      (previous, next) {
+        // If next is null and previous wasn't, close any open dialog
+        if (next == null && previous != null) {
+          Navigator.of(context, rootNavigator: true).pop();
+        }
+        // If next is not null, show the dialog
+        else if (next != null && previous == null) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext dialogContext) {
+              return ConfirmAddStopDialog(request: next);
+            },
+          );
+        }
+      },
+    );
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
@@ -95,8 +124,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     // RepaintBoundary para optimización (Skill: Optimization)
                     child: RepaintBoundary(
                       child: MapWidget(
-                        styleUri: MapboxStyles.DARK,
                         onMapCreated: _onMapCreated,
+                        onLongTapListener: _onMapLongClick,
+                        styleUri: MapboxStyles.DARK,
                       ),
                     ),
                   ),

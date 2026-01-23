@@ -26,7 +26,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -57,6 +57,7 @@ class DatabaseService {
         longitude REAL NOT NULL,
         status TEXT NOT NULL,
         stop_order INTEGER NOT NULL,
+        is_grouped INTEGER DEFAULT 0,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL,
         FOREIGN KEY (route_id) REFERENCES routes(id) ON DELETE CASCADE
@@ -77,11 +78,20 @@ class DatabaseService {
         'ALTER TABLE routes ADD COLUMN date INTEGER DEFAULT ${DateTime.now().millisecondsSinceEpoch}',
       );
     }
-    
+
     if (oldVersion < 3) {
       // Add phone and notes columns to stops table
-      await db.execute('ALTER TABLE stops ADD COLUMN phone TEXT DEFAULT \'N/A\'');
+      await db.execute(
+        'ALTER TABLE stops ADD COLUMN phone TEXT DEFAULT \'N/A\'',
+      );
       await db.execute('ALTER TABLE stops ADD COLUMN notes TEXT');
+
+      if (oldVersion < 4) {
+        // Add is_grouped column to stops table
+        await db.execute(
+          'ALTER TABLE stops ADD COLUMN is_grouped INTEGER DEFAULT 0',
+        );
+      }
     }
   }
 

@@ -30,10 +30,8 @@ class StopRepositoryImpl implements StopRepository {
   @override
   Future<Either<Failure, StopEntity>> createStop(StopEntity stop) async {
     try {
-      // Necesitamos el routeId, lo extraemos del contexto o lo pasamos
-      // Por ahora, asumimos que viene en el stop (necesitaremos agregarlo)
-      // Temporal: usar un routeId fijo o pasarlo como parámetro
-      final stopModel = StopModel.fromEntity(stop, 'route-01');
+      // FIX: Use the routeId from the StopEntity instead of a hardcoded value.
+      final stopModel = StopModel.fromEntity(stop, stop.routeId);
       final createdModel = await localDataSource.createStop(stopModel);
       return Right(createdModel.toEntity());
     } on VectorDatabaseException catch (e) {
@@ -46,7 +44,7 @@ class StopRepositoryImpl implements StopRepository {
   @override
   Future<Either<Failure, StopEntity>> updateStop(StopEntity stop) async {
     try {
-      final stopModel = StopModel.fromEntity(stop, 'route-01');
+      final stopModel = StopModel.fromEntity(stop, stop.routeId);
       final updatedModel = await localDataSource.updateStop(stopModel);
       return Right(updatedModel.toEntity());
     } on VectorDatabaseException catch (e) {

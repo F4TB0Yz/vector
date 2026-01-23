@@ -8,8 +8,37 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:turf/turf.dart' as turf;
 import 'package:vector/core/utils/permission_handler.dart';
 import 'package:vector/features/map/domain/entities/route_entity.dart';
+import 'package:vector/features/map/domain/entities/stop_entity.dart';
 import 'package:vector/features/map/presentation/providers/map_injection.dart';
 import 'package:vector/features/packages/domain/entities/package_status.dart'; // Import for PackageStatus
+
+// --- STATE DATA ---
+
+/// Represents a request to create a new stop, typically initiated by a long-press on the map.
+/// This object is used to hold the context for the confirmation UI.
+class StopCreationRequest {
+  final Point coordinates;
+  final String? suggestedAddress;
+  final bool isGeocoding;
+
+  const StopCreationRequest({
+    required this.coordinates,
+    this.suggestedAddress,
+    this.isGeocoding = false,
+  });
+
+  StopCreationRequest copyWith({
+    Point? coordinates,
+    String? suggestedAddress,
+    bool? isGeocoding,
+  }) {
+    return StopCreationRequest(
+      coordinates: coordinates ?? this.coordinates,
+      suggestedAddress: suggestedAddress ?? this.suggestedAddress,
+      isGeocoding: isGeocoding ?? this.isGeocoding,
+    );
+  }
+}
 
 // --- STATE ---
 class MapState {
@@ -23,6 +52,8 @@ class MapState {
   final RouteEntity? activeRoute;
   final bool isLoadingRoute;
 
+  final StopCreationRequest? stopCreationRequest;
+
   final String? error;
 
   const MapState({
@@ -33,6 +64,7 @@ class MapState {
     this.locationPermission,
     this.activeRoute,
     this.isLoadingRoute = false,
+    this.stopCreationRequest,
     this.error,
   });
 
@@ -44,6 +76,8 @@ class MapState {
     geo.LocationPermission? locationPermission,
     RouteEntity? activeRoute,
     bool? isLoadingRoute,
+    StopCreationRequest? stopCreationRequest,
+    bool clearStopCreationRequest = false,
     String? error,
     bool clearError = false,
   }) {
@@ -55,6 +89,9 @@ class MapState {
       locationPermission: locationPermission ?? this.locationPermission,
       activeRoute: activeRoute ?? this.activeRoute,
       isLoadingRoute: isLoadingRoute ?? this.isLoadingRoute,
+      stopCreationRequest: clearStopCreationRequest
+          ? null
+          : stopCreationRequest ?? this.stopCreationRequest,
       error: clearError ? null : error ?? this.error,
     );
   }
@@ -393,12 +430,127 @@ class MapNotifier extends Notifier<MapState> {
     }
   }
 
+  Future<void> onMapLongClick(Point point) async {
+    // 1. Set initial state to show a loading indicator in the dialog
+    state = state.copyWith(
+      stopCreationRequest: StopCreationRequest(
+        coordinates: point,
+        isGeocoding: true,
+      ),
+    );
+
+    // 2. Call reverse geocoding use case
+    final reverseGeocodeUseCase = ref.read(reverseGeocodeCoordinatesProvider);
+    final result = await reverseGeocodeUseCase(point.coordinates);
+
+    // 3. Update state with the result
+    result.fold(
+      (failure) {
+        // If geocoding fails, show coordinates as fallback
+        final fallbackAddress =
+            'Coordenadas: ${point.coordinates.lat.toStringAsFixed(6)}, ${point.coordinates.lng.toStringAsFixed(6)}';
+
+        // Check if the user hasn't cancelled the dialog while geocoding
+        if (state.stopCreationRequest?.coordinates.coordinates.toString() ==
+            point.coordinates.toString()) {
+          state = state.copyWith(
+            stopCreationRequest: state.stopCreationRequest!.copyWith(
+              suggestedAddress: fallbackAddress,
+              isGeocoding: false,
+            ),
+          );
+        }
+      },
+      (address) {
+        // Success: show the geocoded address
+        if (state.stopCreationRequest?.coordinates.coordinates.toString() ==
+            point.coordinates.toString()) {
+          state = state.copyWith(
+            stopCreationRequest: state.stopCreationRequest!.copyWith(
+              suggestedAddress: address.placeName,
+              isGeocoding: false,
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  void cancelStopCreation() {
+    state = state.copyWith(clearStopCreationRequest: true);
+  }
+
+  Future<void> confirmStopCreation() async {
+    if (state.stopCreationRequest == null || state.activeRoute == null) return;
+
+    final request = state.stopCreationRequest!;
+    final route = state.activeRoute!;
+
+    // Clear the request from the state to hide the dialog immediately
+    state = state.copyWith(
+      clearStopCreationRequest: true,
+      isLoadingRoute: true,
+    );
+
+    // Call the use case
+    final createStopUseCase = ref.read(createStopFromCoordinatesProvider);
+    final result = await createStopUseCase(
+      coordinates: request.coordinates,
+      activeRoute: route,
+      address: request.suggestedAddress,
+    );
+
+    result.fold(
+      (failure) {
+        state = state.copyWith(
+          error: 'Error al crear la parada: ${failure.message}',
+          isLoadingRoute: false,
+        );
+      },
+      (newStop) {
+        // Success! Now, update the route in the state
+        final updatedStops = List<StopEntity>.from(route.stops)..add(newStop);
+        final updatedRoute = route.copyWith(stops: updatedStops);
+
+        state = state.copyWith(
+          activeRoute: updatedRoute,
+          isLoadingRoute: false,
+        );
+
+        // And refresh the map visuals
+        _updateMapData(updatedRoute);
+      },
+    );
+  }
+
   Future<void> zoomIn() async {
-    // ...
+    if (!state.isMapReady || state.mapController == null) return;
+    try {
+      final currentCamera = await state.mapController!.getCameraState();
+      final currentZoom = currentCamera.zoom;
+
+      await state.mapController!.easeTo(
+        CameraOptions(zoom: currentZoom + 1.0),
+        MapAnimationOptions(duration: 300),
+      );
+    } catch (e) {
+      state = state.copyWith(error: "Error al hacer zoom in: $e");
+    }
   }
 
   Future<void> zoomOut() async {
-    // ...
+    if (!state.isMapReady || state.mapController == null) return;
+    try {
+      final currentCamera = await state.mapController!.getCameraState();
+      final currentZoom = currentCamera.zoom;
+
+      await state.mapController!.easeTo(
+        CameraOptions(zoom: currentZoom - 1.0),
+        MapAnimationOptions(duration: 300),
+      );
+    } catch (e) {
+      state = state.copyWith(error: "Error al hacer zoom out: $e");
+    }
   }
 
   void updatePackageStatus(String packageId, PackageStatus newStatus) {
