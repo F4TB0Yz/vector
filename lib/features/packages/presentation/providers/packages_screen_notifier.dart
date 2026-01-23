@@ -17,9 +17,10 @@ class PackagesScreenState {
   const PackagesScreenState();
 }
 
-final packagesScreenNotifierProvider = StateNotifierProvider<PackagesScreenNotifier, PackagesScreenState>((ref) {
-  return PackagesScreenNotifier(ref);
-});
+final packagesScreenNotifierProvider =
+    StateNotifierProvider<PackagesScreenNotifier, PackagesScreenState>((ref) {
+      return PackagesScreenNotifier(ref);
+    });
 
 class PackagesScreenNotifier extends StateNotifier<PackagesScreenState> {
   final Ref _ref;
@@ -59,7 +60,8 @@ class PackagesScreenNotifier extends StateNotifier<PackagesScreenState> {
         phone: packageData['phone']!,
         notes: packageData['notes'],
         status: PackageStatus.pending,
-        coordinates: null, // TODO: Implement forward geocoding (address → coordinates)
+        coordinates:
+            null, // TODO: Implement forward geocoding (address → coordinates)
         updatedAt: DateTime.now(),
       ),
       stopOrder: (selectedRoute.stops.length + 1),
@@ -69,7 +71,10 @@ class PackagesScreenNotifier extends StateNotifier<PackagesScreenState> {
     final newStops = [...selectedRoute.stops, stop];
     final updatedRoute = selectedRoute.copyWith(stops: newStops);
     onOptimisticUpdate(updatedRoute);
-    showAppToast("Paquete ${packageData['code']} agregado a ${selectedRoute.name}", type: ToastType.info);
+    showAppToast(
+      "Paquete ${packageData['code']} agregado a ${selectedRoute.name}",
+      type: ToastType.info,
+    );
 
     try {
       final useCase = _ref.read(addStopToRouteUseCaseProvider);

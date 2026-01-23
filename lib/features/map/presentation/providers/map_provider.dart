@@ -144,6 +144,18 @@ class MapNotifier extends Notifier<MapState> {
     mapboxMap.logo.updateSettings(LogoSettings(enabled: false));
     mapboxMap.scaleBar.updateSettings(ScaleBarSettings(enabled: false));
     mapboxMap.attribution.updateSettings(AttributionSettings(enabled: false));
+
+    // Asegurar que los gestos estén habilitados (Skill: Optimization/Map)
+    mapboxMap.gestures.updateSettings(
+      GesturesSettings(
+        scrollEnabled: true,
+        pinchToZoomEnabled: true,
+        rotateEnabled: true,
+        pitchEnabled: true,
+        doubleTapToZoomInEnabled: true,
+        quickZoomEnabled: true,
+      ),
+    );
   }
 
   Future<void> _enableLocationPuck() async {
@@ -228,7 +240,10 @@ class MapNotifier extends Notifier<MapState> {
   }
 
   /// Updates map data using GeoJSON sources (declarative approach)
-  Future<void> _updateMapData(RouteEntity route) async {
+  Future<void> _updateMapData(
+    RouteEntity route, {
+    bool shouldZoom = true,
+  }) async {
     if (!state.isMapReady || state.mapController == null) return;
 
     // Prevenir llamadas concurrentes
@@ -236,13 +251,16 @@ class MapNotifier extends Notifier<MapState> {
     _isUpdatingMapData = true;
 
     try {
-      await _performMapDataUpdate(route);
+      await _performMapDataUpdate(route, shouldZoom: shouldZoom);
     } finally {
       _isUpdatingMapData = false;
     }
   }
 
-  Future<void> _performMapDataUpdate(RouteEntity route) async {
+  Future<void> _performMapDataUpdate(
+    RouteEntity route, {
+    bool shouldZoom = true,
+  }) async {
     final mapboxMap = state.mapController!;
 
     // 1. Preparar datos de LA RUTA (Línea)
@@ -297,8 +315,10 @@ class MapNotifier extends Notifier<MapState> {
     // Llamamos a la creación de capas solo si no existen
     await _buildLayers(mapboxMap);
 
-    // Zoom to route
-    await _zoomToRoute(route);
+    // Zoom to route only if requested
+    if (shouldZoom) {
+      await _zoomToRoute(route);
+    }
   }
 
   /// Builds map layers for route and stops (only if they don't exist)
@@ -517,8 +537,8 @@ class MapNotifier extends Notifier<MapState> {
           isLoadingRoute: false,
         );
 
-        // And refresh the map visuals
-        _updateMapData(updatedRoute);
+        // And refresh the map visuals (without zooming)
+        _updateMapData(updatedRoute, shouldZoom: false);
       },
     );
   }

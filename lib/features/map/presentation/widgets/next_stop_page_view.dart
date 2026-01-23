@@ -31,63 +31,66 @@ class NextStopPageView extends StatelessWidget {
       right: 0,
       bottom: showNextStopCard ? 30 : -500,
       height: 350,
-      child: PageView.builder(
-        controller: pageController,
-        padEnds: false,
-        physics: const PageScrollPhysics(parent: AlwaysScrollableScrollPhysics()), // Add this line
-        itemCount: selectedRoute.stops.length,
-        itemBuilder: (context, index) {
-          final stop = selectedRoute.stops[index];
+      child: IgnorePointer(
+        ignoring: !showNextStopCard,
+        child: PageView.builder(
+          controller: pageController,
+          padEnds: false,
+          physics: const PageScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ), // Add this line
+          itemCount: selectedRoute.stops.length,
+          itemBuilder: (context, index) {
+            final stop = selectedRoute.stops[index];
 
-          return AnimatedBuilder(
-            animation: pageController,
-            builder: (context, child) {
-              double value = 0.0;
-              if (pageController.position.haveDimensions) {
-                value = index.toDouble() - (pageController.page ?? 0);
-                value = (value * 0.4).clamp(-1, 1);
-              }
+            return AnimatedBuilder(
+              animation: pageController,
+              builder: (context, child) {
+                double value = 0.0;
+                if (pageController.position.haveDimensions) {
+                  value = index.toDouble() - (pageController.page ?? 0);
+                  value = (value * 0.4).clamp(-1, 1);
+                }
 
-              final scale = 1.0 - (value.abs() * 0.1);
-              final opacity = value.abs().clamp(0.0, 1.0);
+                final scale = 1.0 - (value.abs() * 0.1);
+                final opacity = value.abs().clamp(0.0, 1.0);
 
-              return Center(
-                child: Transform.scale(
-                  scale: scale,
-                  child: Stack(
-                    children: [
-                      child!,
-                      Positioned.fill(
-                        child: IgnorePointer(
-                          child: Container(
-                            margin: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withAlpha(
-                                (255 * opacity * 1.3).clamp(0, 255).round(),
-                              ),
-                              borderRadius: BorderRadius.circular(
-                                4,
+                return Center(
+                  child: Transform.scale(
+                    scale: scale,
+                    child: Stack(
+                      children: [
+                        child!,
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            child: Container(
+                              margin: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withAlpha(
+                                  (255 * opacity * 1.3).clamp(0, 255).round(),
+                                ),
+                                borderRadius: BorderRadius.circular(4),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
-            child: NextStopCard(
-              stop: stop, // Pass the StopEntity object
-              onClose: () {
-                onCloseNextStopCard();
-                const NavBarVisibilityNotification(true).dispatch(context);
+                );
               },
-              onDelivered: onDelivered, // Pass the onDelivered callback
-              onFailed: onFailed, // Pass the onFailed callback
-            ),
-          );
-        },
+              child: NextStopCard(
+                stop: stop, // Pass the StopEntity object
+                onClose: () {
+                  onCloseNextStopCard();
+                  const NavBarVisibilityNotification(true).dispatch(context);
+                },
+                onDelivered: onDelivered, // Pass the onDelivered callback
+                onFailed: onFailed, // Pass the onFailed callback
+              ),
+            );
+          },
+        ),
       ),
     );
   }

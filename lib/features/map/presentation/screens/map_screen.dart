@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
@@ -127,6 +129,21 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         onMapCreated: _onMapCreated,
                         onLongTapListener: _onMapLongClick,
                         styleUri: MapboxStyles.DARK,
+                        gestureRecognizers:
+                            <Factory<OneSequenceGestureRecognizer>>{
+                              Factory<PanGestureRecognizer>(
+                                () => PanGestureRecognizer(),
+                              ),
+                              Factory<ScaleGestureRecognizer>(
+                                () => ScaleGestureRecognizer(),
+                              ),
+                              Factory<TapGestureRecognizer>(
+                                () => TapGestureRecognizer(),
+                              ),
+                              Factory<LongPressGestureRecognizer>(
+                                () => LongPressGestureRecognizer(),
+                              ),
+                            },
                       ),
                     ),
                   ),

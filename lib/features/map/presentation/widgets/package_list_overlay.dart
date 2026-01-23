@@ -25,73 +25,71 @@ class PackageListOverlay extends StatelessWidget {
       right: 0,
       bottom: showPackageList ? 0 : -600,
       height: 500,
-      child: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xF21E1E1E),
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(16),
-          ),
-          border: Border(
-            top: BorderSide(color: Color(0x19FFFFFF)),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x7F000000),
-              blurRadius: 20,
-              offset: Offset(0, -5),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Paradas de ${selectedRoute.name}",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon( // Added const here
-                      LucideIcons.x,
-                      color: Colors.grey,
-                    ),
-                    onPressed: () {
-                      onClosePackageList();
-                      const NavBarVisibilityNotification(
-                        true,
-                      ).dispatch(context);
-                    },
-                  ),
-                ],
+      child: IgnorePointer(
+        ignoring: !showPackageList,
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Color(0xF21E1E1E),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+            border: Border(top: BorderSide(color: Color(0x19FFFFFF))),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0x7F000000),
+                blurRadius: 20,
+                offset: Offset(0, -5),
               ),
-            ),
-            Divider(height: 1, color: Colors.white.withAlpha(25)),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Paradas de ${selectedRoute.name}",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        // Added const here
+                        LucideIcons.x,
+                        color: Colors.grey,
+                      ),
+                      onPressed: () {
+                        onClosePackageList();
+                        const NavBarVisibilityNotification(
+                          true,
+                        ).dispatch(context);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              Divider(height: 1, color: Colors.white.withAlpha(25)),
 
-            // Lista
-            Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.all(16),
-                itemCount: selectedRoute.stops.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final stop = selectedRoute.stops[index];
-                  return PackageCard(
-                    package: stop.package,
-                  );
-                },
+              // Lista
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: selectedRoute.stops.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final stop = selectedRoute.stops[index];
+                    return PackageCard(package: stop.package);
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

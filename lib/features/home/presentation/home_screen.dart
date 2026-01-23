@@ -93,7 +93,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         phone: packageData['phone']!,
         notes: packageData['notes'],
         status: PackageStatus.pending,
-        coordinates: null, // TODO: Implement forward geocoding (address → coordinates)
+        coordinates:
+            null, // TODO: Implement forward geocoding (address → coordinates)
         updatedAt: DateTime.now(),
       ),
       stopOrder: (selectedRoute.stops.length + 1),
@@ -184,4 +185,3 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 }
-
