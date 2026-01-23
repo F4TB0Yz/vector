@@ -58,14 +58,16 @@ class NextStopPageView extends StatelessWidget {
                     children: [
                       child!,
                       Positioned.fill(
-                        child: Container(
-                          margin: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withAlpha(
-                              (255 * opacity * 1.3).clamp(0, 255).round(),
-                            ),
-                            borderRadius: BorderRadius.circular(
-                              4,
+                        child: IgnorePointer(
+                          child: Container(
+                            margin: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withAlpha(
+                                (255 * opacity * 1.3).clamp(0, 255).round(),
+                              ),
+                              borderRadius: BorderRadius.circular(
+                                4,
+                              ),
                             ),
                           ),
                         ),

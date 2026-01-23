@@ -116,6 +116,11 @@ class NextStopCard extends StatelessWidget {
                     ),
                     IconButton(
                       onPressed: onClose,
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(
+                        minWidth: 40,
+                        minHeight: 40,
+                      ),
                       icon: const Icon(
                         LucideIcons.x,
                         color: Colors.white,

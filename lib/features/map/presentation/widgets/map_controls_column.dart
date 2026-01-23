@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:vector/core/theme/app_colors.dart';
 import 'package:vector/features/map/presentation/providers/map_provider.dart';
-import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
 
 class MapControlsColumn extends ConsumerWidget {
   final bool showNextStopCard;
@@ -23,61 +22,6 @@ class MapControlsColumn extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       children: [
-        // Route Selector
-        Consumer(
-          builder: (context, ref, child) {
-            final routesAsync = ref.watch(routesProvider);
-            return routesAsync.when(
-              data: (routes) {
-                if (routes.isEmpty) {
-                  return const SizedBox.shrink();
-                }
-                return _MapControlButton(
-                  icon: LucideIcons.map,
-                  isActive: true,
-                  onTap: () {
-                    showModalBottomSheet(
-                      context: context,
-                      backgroundColor: const Color(0xFF1E1E1E),
-                      builder: (context) => ListView.builder(
-                        itemCount: routes.length,
-                        itemBuilder: (context, index) {
-                          final route = routes[index];
-                          return ListTile(
-                            title: Text(
-                              route.name,
-                              style: const TextStyle(
-                                color: Colors.white,
-                              ),
-                            ),
-                            onTap: () {
-                              ref
-                                  .read(
-                                    selectedRouteProvider.notifier,
-                                  )
-                                  .state = route;
-                              Navigator.pop(context);
-                            },
-                          );
-                        },
-                      ),
-                    );
-                  },
-                );
-              },
-              loading: () => const _MapControlButton(
-                icon: LucideIcons.map,
-                onTap: null,
-              ),
-              error: (_, __) => const _MapControlButton(
-                icon: LucideIcons.alertCircle,
-                onTap: null,
-                isActive: true,
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 8),
         _MapControlButton(
           icon: LucideIcons.layers,
           onTap: onToggleNextStopCard,
