@@ -4,7 +4,7 @@ import 'package:vector/core/theme/app_colors.dart';
 import 'package:vector/shared/presentation/notifications/navbar_notification.dart';
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
 import 'package:vector/features/routes/presentation/widgets/add_route_dialog.dart';
-import 'package:vector/features/map/presentation/providers/map_provider.dart';
+import 'package:vector/features/routes/presentation/widgets/route_card.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -16,13 +16,12 @@ class RoutesScreen extends ConsumerStatefulWidget {
 }
 
 class _RoutesScreenState extends ConsumerState<RoutesScreen> {
-  int _selectedIndex = 0;
-
   final List<String> _filters = ["TODAS", "ACTIVA", "EN ESPERA"];
 
   @override
   Widget build(BuildContext context) {
-    final routesAsync = ref.watch(routesProvider);
+    final groupedRoutesAsync = ref.watch(groupedRoutesProvider);
+    final selectedFilter = ref.watch(routeFilterProvider);
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
       body: SafeArea(
@@ -97,14 +96,12 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Row(
                 children: List.generate(_filters.length, (index) {
-                  final isSelected = _selectedIndex == index;
+                  final isSelected = selectedFilter == index;
                   return Padding(
                     padding: const EdgeInsets.only(right: 12.0),
                     child: GestureDetector(
                       onTap: () {
-                        setState(() {
-                          _selectedIndex = index;
-                        });
+                        ref.read(routeFilterProvider.notifier).state = index;
                       },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
@@ -149,9 +146,9 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
             ),
 
             Expanded(
-              child: routesAsync.when(
-                data: (routes) {
-                  if (routes.isEmpty) {
+              child: groupedRoutesAsync.when(
+                data: (groups) {
+                  if (groups.isEmpty) {
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -163,7 +160,7 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'No tienes rutas asignadas',
+                            'No se encontraron rutas',
                             style: TextStyle(
                               color: Colors.grey[400],
                               fontSize: 16,
@@ -188,133 +185,51 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
                     );
                   }
 
-                  return ListView.separated(
+                  final sortedDates = groups.keys.toList()
+                    ..sort((a, b) => b.compareTo(a));
+
+                  return ListView.builder(
                     padding: const EdgeInsets.only(
                       left: 16.0,
                       right: 16.0,
                       top: 16.0,
                       bottom: 100.0,
                     ),
-                    itemCount: routes.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final route = routes[index];
-                      return Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF2C2C35),
-                          borderRadius: BorderRadius.all(Radius.circular(8)),
-                          border: Border.fromBorderSide(
-                            BorderSide(color: Color(0x0DFFFFFF)),
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0x1A00E676),
-                                    borderRadius: BorderRadius.all(
-                                      Radius.circular(4),
-                                    ),
-                                  ),
-                                  child: const Icon(
-                                    LucideIcons.navigation,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        route.name,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      Text(
-                                        DateFormat(
-                                          'EEEE d, MMMM y',
-                                          'es',
-                                        ).format(route.date),
-                                        style: TextStyle(
-                                          color: Colors.grey[500],
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Divider(
-                              height: 1,
-                              thickness: 1,
-                              color: Colors.white.withValues(alpha: 0.05),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                TextButton.icon(
-                                  onPressed: () {
+                    itemCount: sortedDates.length,
+                    itemBuilder: (context, dateIndex) {
+                      final date = sortedDates[dateIndex];
+                      final routes = groups[date]!;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _DateHeader(date: date),
+                          const SizedBox(height: 12),
+                          ...routes.map((route) => Padding(
+                                padding: const EdgeInsets.only(bottom: 12.0),
+                                child: RouteCard(
+                                  routeId: route.name,
+                                  status: route.progress == 1.0
+                                      ? 'COMPLETED'
+                                      : route.progress > 0
+                                          ? 'ACTIVE'
+                                          : 'READY',
+                                  estTime: 'Calculando...',
+                                  stops: route.stops.length,
+                                  distance: 0.0,
+                                  isSelected:
+                                      ref.watch(selectedRouteProvider)?.id ==
+                                          route.id,
+                                  onSelect: () {
                                     ref
-                                            .read(
-                                              selectedRouteProvider.notifier,
-                                            )
-                                            .state =
-                                        route;
-                                    const ChangeTabNotification(
-                                      2,
-                                    ).dispatch(context);
+                                        .read(selectedRouteProvider.notifier)
+                                        .state = route;
+                                    const ChangeTabNotification(2)
+                                        .dispatch(context);
                                   },
-                                  icon: const Icon(
-                                    LucideIcons.package,
-                                    size: 18,
-                                  ),
-                                  label: const Text("Ver Paquetes"),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: Colors.white70,
-                                  ),
                                 ),
-                                const SizedBox(width: 8),
-                                ElevatedButton.icon(
-                                  onPressed: () {
-                                    // Link route to map
-                                    ref
-                                        .read(mapProvider.notifier)
-                                        .loadRouteById(route.id);
-                                    const ChangeTabNotification(
-                                      3,
-                                    ).dispatch(context);
-                                  },
-                                  icon: const Icon(LucideIcons.map, size: 18),
-                                  label: const Text("Abrir Mapa"),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primary
-                                        .withValues(alpha: 0.1),
-                                    foregroundColor: AppColors.primary,
-                                    elevation: 0,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 8,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                              )),
+                        ],
                       );
                     },
                   );
@@ -334,5 +249,61 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
         ),
       ),
     );
+  }
+}
+
+class _DateHeader extends StatelessWidget {
+  final DateTime date;
+
+  const _DateHeader({required this.date});
+
+  @override
+  Widget build(BuildContext context) {
+    final String label = _getFriendlyDate(date);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 16,
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label.toUpperCase(),
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Divider(
+              color: Colors.white.withValues(alpha: 0.1),
+              thickness: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getFriendlyDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final routeDate = DateTime(date.year, date.month, date.day);
+
+    if (routeDate == today) return "Hoy";
+    if (routeDate == yesterday) return "Ayer";
+
+    return DateFormat('EEEE d MMMM', 'es').format(date);
   }
 }

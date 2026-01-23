@@ -8,7 +8,8 @@ class RouteCard extends StatelessWidget {
   final String estTime;
   final int stops;
   final double distance;
-  final VoidCallback? onTap;
+  final bool isSelected;
+  final VoidCallback? onSelect;
 
   const RouteCard({
     super.key,
@@ -17,7 +18,8 @@ class RouteCard extends StatelessWidget {
     required this.estTime,
     required this.stops,
     required this.distance,
-    this.onTap,
+    this.isSelected = false,
+    this.onSelect,
   });
 
   Color _getStatusColor() {
@@ -51,150 +53,129 @@ class RouteCard extends StatelessWidget {
     final statusColor = _getStatusColor();
 
     return CustomCard(
-      onTap: onTap,
       padding: EdgeInsets.zero,
       backgroundColor: const Color(0xFF1E1E1E),
       showBorder: true,
-      borderColor: Colors.white.withValues(alpha: 0.1),
+      borderColor: isSelected 
+          ? AppColors.primary.withValues(alpha: 0.5) 
+          : Colors.white.withValues(alpha: 0.1),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Header Section
+          // Main Content Section
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'ID RUTA',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Colors.grey[500],
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.0,
-                        fontSize: 10,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      routeId,
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 28,
-                          ),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(
-                      color: statusColor.withValues(alpha: 0.5),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: statusColor,
-                          shape: BoxShape.circle,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            'ID:',
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: Colors.grey[500],
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            routeId,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _getDisplayStatus(),
-                        style: TextStyle(
-                          color: statusColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                          letterSpacing: 0.5,
+                      const SizedBox(height: 4),
+                      // Compact Stats Row
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _CompactStat(
+                              icon: Icons.access_time_rounded,
+                              value: estTime,
+                            ),
+                            _StatDivider(),
+                            _CompactStat(
+                              icon: Icons.location_on_rounded,
+                              value: '$stops stops',
+                            ),
+                            _StatDivider(),
+                            _CompactStat(
+                              icon: Icons.straighten_rounded,
+                              value: '$distance km',
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-          ),
-
-          Divider(height: 1, color: Colors.white.withValues(alpha: 0.1)),
-
-          // Stats Section
-          IntrinsicHeight(
-            child: Row(
-              children: [
-                Expanded(
-                  child: _StatItem(
-                    icon: Icons.access_time_rounded,
-                    label: 'TIEMPO EST.',
-                    value: estTime,
+                // Status Badge (Mini)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
                   ),
-                ),
-                VerticalDivider(
-                  width: 1,
-                  color: Colors.white.withValues(alpha: 0.1),
-                ),
-                Expanded(
-                  child: _StatItem(
-                    icon: Icons.location_on_rounded,
-                    label: 'PARADAS',
-                    value: stops.toString(),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                      color: statusColor.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
                   ),
-                ),
-                VerticalDivider(
-                  width: 1,
-                  color: Colors.white.withValues(alpha: 0.1),
-                ),
-                Expanded(
-                  child: _StatItem(
-                    icon: Icons.straighten_rounded,
-                    label: 'DISTANCIA',
-                    value: '$distance km',
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          Divider(height: 1, color: Colors.white.withValues(alpha: 0.1)),
-
-          // Action Button
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: InkWell(
-              onTap: () {
-                // TODO: Navigate to Map
-              },
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: const BoxDecoration(
-                  color: Color(0x1A00E676),
-                  borderRadius: BorderRadius.all(Radius.circular(8)),
-                  border: Border.fromBorderSide(
-                    BorderSide(color: Color(0x8000E676)),
-                  ),
-                ),
-                child: const Center(
                   child: Text(
-                    "VER MAPA",
+                    _getDisplayStatus(),
                     style: TextStyle(
-                      color: AppColors.primary,
+                      color: statusColor,
                       fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                      fontSize: 10,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+          Divider(height: 1, color: Colors.white.withValues(alpha: 0.05)),
+
+          // Action Button (Compact)
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: InkWell(
+              onTap: onSelect,
+              borderRadius: BorderRadius.circular(4),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: isSelected 
+                      ? AppColors.primary.withValues(alpha: 0.2) 
+                      : const Color(0x1A00E676),
+                  borderRadius: const BorderRadius.all(Radius.circular(4)),
+                  border: Border.all(
+                    color: isSelected ? AppColors.primary : const Color(0x8000E676),
+                    width: 1,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    isSelected ? "SELECCIONADA" : "Seleccionar",
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
                       letterSpacing: 1.0,
                     ),
                   ),
@@ -208,45 +189,42 @@ class RouteCard extends StatelessWidget {
   }
 }
 
-class _StatItem extends StatelessWidget {
+class _CompactStat extends StatelessWidget {
   final IconData icon;
-  final String label;
   final String value;
 
-  const _StatItem({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
+  const _CompactStat({required this.icon, required this.value});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: Colors.grey[400], size: 20),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Colors.grey[500],
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.0,
-              fontSize: 10,
-            ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: Colors.grey[500], size: 14),
+        const SizedBox(width: 4),
+        Text(
+          value,
+          style: TextStyle(
+            color: Colors.grey[300],
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-        ],
+        ),
+      ],
+    );
+  }
+}
+
+class _StatDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      width: 4,
+      height: 4,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        shape: BoxShape.circle,
       ),
     );
   }
