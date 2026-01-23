@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:vector/core/theme/app_colors.dart';
+import 'package:vector/features/routes/presentation/widgets/metric_item.dart';
+import 'package:vector/features/routes/presentation/widgets/select_button.dart';
+import 'package:vector/features/routes/presentation/widgets/status_badge.dart';
 
 class RouteCard extends StatefulWidget {
   final String routeId;
@@ -159,7 +162,7 @@ class _RouteCardState extends State<RouteCard> with SingleTickerProviderStateMix
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(
+                                        const Text(
                                           'ID RUTA',
                                           style: TextStyle(
                                             color: AppColors.textSecondary,
@@ -181,7 +184,7 @@ class _RouteCardState extends State<RouteCard> with SingleTickerProviderStateMix
                                       ],
                                     ),
                                   ),
-                                  _StatusBadge(
+                                  StatusBadge(
                                     label: _getDisplayStatus(),
                                     color: statusColor,
                                   ),
@@ -191,17 +194,17 @@ class _RouteCardState extends State<RouteCard> with SingleTickerProviderStateMix
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  _MetricItem(
+                                  MetricItem(
                                     icon: LucideIcons.clock,
                                     value: widget.estTime,
                                     label: 'ETA',
                                   ),
-                                  _MetricItem(
+                                  MetricItem(
                                     icon: LucideIcons.mapPin,
                                     value: widget.stops.toString(),
                                     label: 'PARADAS',
                                   ),
-                                  _MetricItem(
+                                  MetricItem(
                                     icon: LucideIcons.navigation,
                                     value: '${widget.distance.toStringAsFixed(1)} KM',
                                     label: 'DIST.',
@@ -209,7 +212,7 @@ class _RouteCardState extends State<RouteCard> with SingleTickerProviderStateMix
                                 ],
                               ),
                               const SizedBox(height: 20),
-                              _SelectButton(
+                              SelectButton(
                                 isSelected: widget.isSelected,
                                 isActivating: _isActivating,
                                 onTap: _handleTap,
@@ -255,162 +258,6 @@ class _RouteCardState extends State<RouteCard> with SingleTickerProviderStateMix
                   ),
                 ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  final String label;
-  final Color color;
-
-  const _StatusBadge({required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 0.5,
-        ),
-      ),
-    );
-  }
-}
-
-class _MetricItem extends StatelessWidget {
-  final IconData icon;
-  final String value;
-  final String label;
-
-  const _MetricItem({
-    required this.icon,
-    required this.value,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 12, color: AppColors.textSecondary),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 9,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SelectButton extends StatelessWidget {
-  final bool isSelected;
-  final bool isActivating;
-  final VoidCallback? onTap;
-  final Color accentColor;
-
-  const _SelectButton({
-    required this.isSelected,
-    required this.isActivating,
-    required this.onTap,
-    required this.accentColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final bool isHighlighted = isSelected || isActivating;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(6),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isHighlighted ? AppColors.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(
-              color: isHighlighted ? Colors.transparent : AppColors.primary,
-              width: 1.5,
-            ),
-            boxShadow: isHighlighted
-                ? [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.4),
-                      blurRadius: 15,
-                      offset: const Offset(0, 4),
-                    )
-                  ]
-                : [],
-          ),
-          child: Center(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isActivating) ...[
-                  const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ] else if (isSelected) ...[
-                  const Icon(LucideIcons.check, size: 16, color: Colors.white),
-                  const SizedBox(width: 8),
-                ],
-                Text(
-                  isActivating 
-                      ? 'ACTIVANDO...' 
-                      : isSelected 
-                          ? 'RUTA SELECCIONADA' 
-                          : 'INICIAR RUTA',
-                  style: TextStyle(
-                    color: isHighlighted ? Colors.white : AppColors.primary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.0,
-                  ),
-                ),
-              ],
-            ),
           ),
         ),
       ),
