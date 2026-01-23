@@ -1,8 +1,10 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:vector/core/presentation/widgets/custom_card.dart';
+import 'package:flutter/services.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:vector/core/theme/app_colors.dart';
 
-class RouteCard extends StatelessWidget {
+class RouteCard extends StatefulWidget {
   final String routeId;
   final String status;
   final String estTime;
@@ -22,12 +24,51 @@ class RouteCard extends StatelessWidget {
     this.onSelect,
   });
 
+  @override
+  State<RouteCard> createState() => _RouteCardState();
+}
+
+class _RouteCardState extends State<RouteCard> with SingleTickerProviderStateMixin {
+  bool _isActivating = false;
+  late AnimationController _sweepController;
+
+  @override
+  void initState() {
+    super.initState();
+    _sweepController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+  }
+
+  @override
+  void dispose() {
+    _sweepController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleTap() async {
+    if (widget.isSelected || _isActivating) return;
+
+    setState(() => _isActivating = true);
+    HapticFeedback.heavyImpact();
+    _sweepController.forward(from: 0.0);
+
+    // Animación notable antes de navegar
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    if (mounted) {
+      widget.onSelect?.call();
+      if (mounted) setState(() => _isActivating = false);
+    }
+  }
+
   Color _getStatusColor() {
-    switch (status.toUpperCase()) {
+    switch (widget.status.toUpperCase()) {
       case 'READY':
-        return const Color(0xFF00E676);
+        return const Color(0xFF00E676); // Neon Green
       case 'ACTIVE':
-        return AppColors.primary;
+        return const Color(0xFF2979FF); // Electric Blue
       case 'COMPLETED':
         return Colors.blueGrey;
       default:
@@ -36,7 +77,7 @@ class RouteCard extends StatelessWidget {
   }
 
   String _getDisplayStatus() {
-    switch (status.toUpperCase()) {
+    switch (widget.status.toUpperCase()) {
       case 'READY':
         return 'LISTA';
       case 'ACTIVE':
@@ -44,170 +85,250 @@ class RouteCard extends StatelessWidget {
       case 'COMPLETED':
         return 'COMPLETADA';
       default:
-        return status.toUpperCase();
+        return widget.status.toUpperCase();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final statusColor = _getStatusColor();
+    final bool activeState = widget.isSelected || _isActivating;
 
-    return CustomCard(
-      padding: EdgeInsets.zero,
-      backgroundColor: const Color(0xFF1E1E1E),
-      showBorder: true,
-      borderColor: isSelected 
-          ? AppColors.primary.withValues(alpha: 0.5) 
-          : Colors.white.withValues(alpha: 0.1),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Main Content Section
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: activeState
+            ? [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  blurRadius: 20,
+                  spreadRadius: -5,
+                )
+              ]
+            : [],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Stack(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 400),
+                decoration: BoxDecoration(
+                  color: activeState
+                      ? AppColors.primary.withValues(alpha: 0.08)
+                      : const Color(0xFF1E1E24).withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: activeState
+                        ? AppColors.primary.withValues(alpha: 0.5)
+                        : Colors.white.withValues(alpha: 0.08),
+                    width: 1.5,
+                  ),
+                ),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Row(
-                        children: [
-                          Text(
-                            'ID:',
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: Colors.grey[500],
-                              fontWeight: FontWeight.bold,
-                              fontSize: 10,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            routeId,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      // Compact Stats Row
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            _CompactStat(
-                              icon: Icons.access_time_rounded,
-                              value: estTime,
-                            ),
-                            _StatDivider(),
-                            _CompactStat(
-                              icon: Icons.location_on_rounded,
-                              value: '$stops stops',
-                            ),
-                            _StatDivider(),
-                            _CompactStat(
-                              icon: Icons.straighten_rounded,
-                              value: '$distance km',
+                      // Status Neon Strip
+                      Container(
+                        width: 4,
+                        decoration: BoxDecoration(
+                          color: statusColor,
+                          boxShadow: [
+                            BoxShadow(
+                              color: statusColor.withValues(alpha: 0.5),
+                              blurRadius: 8,
+                              spreadRadius: 1,
                             ),
                           ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'ID RUTA',
+                                          style: TextStyle(
+                                            color: AppColors.textSecondary,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 1.2,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          widget.routeId,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: -0.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  _StatusBadge(
+                                    label: _getDisplayStatus(),
+                                    color: statusColor,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  _MetricItem(
+                                    icon: LucideIcons.clock,
+                                    value: widget.estTime,
+                                    label: 'ETA',
+                                  ),
+                                  _MetricItem(
+                                    icon: LucideIcons.mapPin,
+                                    value: widget.stops.toString(),
+                                    label: 'PARADAS',
+                                  ),
+                                  _MetricItem(
+                                    icon: LucideIcons.navigation,
+                                    value: '${widget.distance.toStringAsFixed(1)} KM',
+                                    label: 'DIST.',
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
+                              _SelectButton(
+                                isSelected: widget.isSelected,
+                                isActivating: _isActivating,
+                                onTap: _handleTap,
+                                accentColor: widget.isSelected ? Colors.white : AppColors.primary,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                // Status Badge (Mini)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(
-                      color: statusColor.withValues(alpha: 0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    _getDisplayStatus(),
-                    style: TextStyle(
-                      color: statusColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 10,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 12),
-          Divider(height: 1, color: Colors.white.withValues(alpha: 0.05)),
-
-          // Action Button (Compact)
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: InkWell(
-              onTap: onSelect,
-              borderRadius: BorderRadius.circular(4),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: isSelected 
-                      ? AppColors.primary.withValues(alpha: 0.2) 
-                      : const Color(0x1A00E676),
-                  borderRadius: const BorderRadius.all(Radius.circular(4)),
-                  border: Border.all(
-                    color: isSelected ? AppColors.primary : const Color(0x8000E676),
-                    width: 1,
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    isSelected ? "SELECCIONADA" : "Seleccionar",
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                ),
               ),
-            ),
+              // Selection Sweep Animation (Neon Light bar passing through)
+              if (_isActivating)
+                Positioned.fill(
+                  child: AnimatedBuilder(
+                    animation: _sweepController,
+                    builder: (context, child) {
+                      return Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.transparent,
+                              AppColors.primary.withValues(alpha: 0.05),
+                              AppColors.primary.withValues(alpha: 0.2),
+                              AppColors.primary.withValues(alpha: 0.05),
+                              Colors.transparent,
+                            ],
+                            stops: [
+                              _sweepController.value - 0.3,
+                              _sweepController.value - 0.15,
+                              _sweepController.value,
+                              _sweepController.value + 0.15,
+                              _sweepController.value + 0.3,
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _CompactStat extends StatelessWidget {
-  final IconData icon;
-  final String value;
+class _StatusBadge extends StatelessWidget {
+  final String label;
+  final Color color;
 
-  const _CompactStat({required this.icon, required this.value});
+  const _StatusBadge({required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
+class _MetricItem extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+
+  const _MetricItem({
+    required this.icon,
+    required this.value,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: Colors.grey[500], size: 14),
-        const SizedBox(width: 4),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 12, color: AppColors.textSecondary),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 2),
         Text(
           value,
-          style: TextStyle(
-            color: Colors.grey[300],
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ],
@@ -215,16 +336,83 @@ class _CompactStat extends StatelessWidget {
   }
 }
 
-class _StatDivider extends StatelessWidget {
+class _SelectButton extends StatelessWidget {
+  final bool isSelected;
+  final bool isActivating;
+  final VoidCallback? onTap;
+  final Color accentColor;
+
+  const _SelectButton({
+    required this.isSelected,
+    required this.isActivating,
+    required this.onTap,
+    required this.accentColor,
+  });
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8),
-      width: 4,
-      height: 4,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
-        shape: BoxShape.circle,
+    final bool isHighlighted = isSelected || isActivating;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(6),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isHighlighted ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: isHighlighted ? Colors.transparent : AppColors.primary,
+              width: 1.5,
+            ),
+            boxShadow: isHighlighted
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.4),
+                      blurRadius: 15,
+                      offset: const Offset(0, 4),
+                    )
+                  ]
+                : [],
+          ),
+          child: Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isActivating) ...[
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ] else if (isSelected) ...[
+                  const Icon(LucideIcons.check, size: 16, color: Colors.white),
+                  const SizedBox(width: 8),
+                ],
+                Text(
+                  isActivating 
+                      ? 'ACTIVANDO...' 
+                      : isSelected 
+                          ? 'RUTA SELECCIONADA' 
+                          : 'INICIAR RUTA',
+                  style: TextStyle(
+                    color: isHighlighted ? Colors.white : AppColors.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
