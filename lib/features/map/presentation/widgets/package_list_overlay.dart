@@ -86,24 +86,8 @@ class PackageListOverlay extends StatelessWidget {
                     const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final stop = selectedRoute.stops[index];
-                  String statusInSpanish;
-                  switch (stop.status) {
-                    case StopStatus.pending:
-                      statusInSpanish = 'PENDIENTE';
-                      break;
-                    case StopStatus.completed:
-                      statusInSpanish = 'ENTREGADO';
-                      break;
-                    case StopStatus.failed:
-                      statusInSpanish = 'FALLIDO';
-                      break;
-                  }
                   return PackageCard(
-                    trackingId: stop.id,
-                    status: statusInSpanish,
-                    address: stop.address,
-                    customerName: stop.name,
-                    timeWindow: 'N/A',
+                    package: stop.package,
                   );
                 },
               ),

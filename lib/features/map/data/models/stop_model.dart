@@ -1,5 +1,7 @@
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:vector/features/map/domain/entities/stop_entity.dart';
+import 'package:vector/features/packages/domain/entities/manual_package_entity.dart';
+import 'package:vector/features/packages/domain/entities/package_status.dart';
 
 /// Modelo de datos para StopEntity con serialización SQLite.
 class StopModel {
@@ -7,6 +9,8 @@ class StopModel {
   final String routeId;
   final String name;
   final String address;
+  final String phone;
+  final String? notes;
   final double latitude;
   final double longitude;
   final String status;
@@ -19,6 +23,8 @@ class StopModel {
     required this.routeId,
     required this.name,
     required this.address,
+    required this.phone,
+    this.notes,
     required this.latitude,
     required this.longitude,
     required this.status,
@@ -34,6 +40,8 @@ class StopModel {
       routeId: map['route_id'] as String,
       name: map['name'] as String,
       address: map['address'] as String,
+      phone: map['phone'] as String? ?? 'N/A',
+      notes: map['notes'] as String?,
       latitude: map['latitude'] as double,
       longitude: map['longitude'] as double,
       status: map['status'] as String,
@@ -50,6 +58,8 @@ class StopModel {
       'route_id': routeId,
       'name': name,
       'address': address,
+      'phone': phone,
+      'notes': notes,
       'latitude': latitude,
       'longitude': longitude,
       'status': status,
@@ -63,10 +73,16 @@ class StopModel {
   StopEntity toEntity() {
     return StopEntity(
       id: id,
-      name: name,
-      address: address,
-      coordinates: Position(longitude, latitude),
-      status: _parseStatus(status),
+      package: ManualPackageEntity(
+        id: id,
+        receiverName: name,
+        address: address,
+        phone: phone,
+        notes: notes,
+        status: _parseStatus(status),
+        coordinates: Position(longitude, latitude),
+        updatedAt: DateTime.fromMillisecondsSinceEpoch(updatedAt),
+      ),
       stopOrder: stopOrder,
     );
   }
@@ -79,38 +95,43 @@ class StopModel {
       routeId: routeId,
       name: entity.name,
       address: entity.address,
+      phone: entity.package.phone,
+      notes: entity.package.notes,
       latitude: entity.coordinates.lat.toDouble(),
       longitude: entity.coordinates.lng.toDouble(),
       status: _statusToString(entity.status),
       stopOrder: entity.stopOrder,
       createdAt: now,
-      updatedAt: now,
+      updatedAt: entity.package.updatedAt?.millisecondsSinceEpoch ?? now,
     );
   }
 
   /// Parsea el status desde String a enum.
-  static StopStatus _parseStatus(String status) {
+  static PackageStatus _parseStatus(String status) {
     switch (status) {
       case 'pending':
-        return StopStatus.pending;
+        return PackageStatus.pending;
+      case 'delivered':
       case 'completed':
-        return StopStatus.completed;
+        return PackageStatus.delivered;
       case 'failed':
-        return StopStatus.failed;
+        return PackageStatus.failed;
       default:
-        return StopStatus.pending;
+        return PackageStatus.pending;
     }
   }
 
   /// Convierte el status de enum a String.
-  static String _statusToString(StopStatus status) {
+  static String _statusToString(PackageStatus status) {
     switch (status) {
-      case StopStatus.pending:
+      case PackageStatus.pending:
         return 'pending';
-      case StopStatus.completed:
-        return 'completed';
-      case StopStatus.failed:
+      case PackageStatus.delivered:
+        return 'delivered';
+      case PackageStatus.failed:
         return 'failed';
+      default:
+        return 'pending';
     }
   }
 }

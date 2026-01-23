@@ -26,7 +26,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -51,6 +51,8 @@ class DatabaseService {
         route_id TEXT NOT NULL,
         name TEXT NOT NULL,
         address TEXT NOT NULL,
+        phone TEXT DEFAULT 'N/A',
+        notes TEXT,
         latitude REAL NOT NULL,
         longitude REAL NOT NULL,
         status TEXT NOT NULL,
@@ -74,6 +76,12 @@ class DatabaseService {
       await db.execute(
         'ALTER TABLE routes ADD COLUMN date INTEGER DEFAULT ${DateTime.now().millisecondsSinceEpoch}',
       );
+    }
+    
+    if (oldVersion < 3) {
+      // Add phone and notes columns to stops table
+      await db.execute('ALTER TABLE stops ADD COLUMN phone TEXT DEFAULT \'N/A\'');
+      await db.execute('ALTER TABLE stops ADD COLUMN notes TEXT');
     }
   }
 

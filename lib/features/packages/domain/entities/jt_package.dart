@@ -1,31 +1,26 @@
-import 'package:equatable/equatable.dart';
+import 'package:vector/features/packages/domain/entities/package_entity.dart';
+import 'package:vector/features/packages/domain/entities/package_status.dart';
 
-class JTPackage extends Equatable {
+class JTPackage extends PackageEntity {
   final String waybillNo;
   final String waybillId;
-  final String receiverName;
-  final String phone;
-  final String address;
-  final String city;
-  final String area;
-  final int taskStatus;
+  final int taskStatus; // Original integer from J&T API
   final bool isAbnormal;
   final String scanTime;
   final String? signTime;
   final String deliverStaff;
   final double distance;
-  // lngLat is often null or "0.0,0.0" in string format based on usage,
-  // keeping it as String? for flexibility mapping from API
+  // lngLat is often null or "0.0,0.0" in string format based on usage
   final String? lngLat;
 
   const JTPackage({
     required this.waybillNo,
     required this.waybillId,
-    required this.receiverName,
-    required this.phone,
-    required this.address,
-    required this.city,
-    required this.area,
+    required super.receiverName,
+    required super.phone,
+    required super.address,
+    required super.status,
+    super.notes,
     required this.taskStatus,
     required this.isAbnormal,
     required this.scanTime,
@@ -33,23 +28,22 @@ class JTPackage extends Equatable {
     required this.deliverStaff,
     required this.distance,
     this.lngLat,
-  });
+    super.coordinates,
+  }) : super(
+          id: waybillNo,
+        );
 
   @override
   List<Object?> get props => [
-    waybillNo,
-    waybillId,
-    receiverName,
-    phone,
-    address,
-    city,
-    area,
-    taskStatus,
-    isAbnormal,
-    scanTime,
-    signTime,
-    deliverStaff,
-    distance,
-    lngLat,
-  ];
+        ...super.props,
+        waybillNo,
+        waybillId,
+        taskStatus,
+        isAbnormal,
+        scanTime,
+        signTime,
+        deliverStaff,
+        distance,
+        lngLat,
+      ];
 }

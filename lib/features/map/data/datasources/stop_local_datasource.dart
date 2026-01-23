@@ -51,6 +51,8 @@ class StopLocalDataSource {
         routeId: stop.routeId,
         name: stop.name,
         address: stop.address,
+        phone: stop.phone,
+        notes: stop.notes,
         latitude: stop.latitude,
         longitude: stop.longitude,
         status: stop.status,

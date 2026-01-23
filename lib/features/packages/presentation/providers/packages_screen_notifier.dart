@@ -8,6 +8,8 @@ import 'package:vector/features/routes/domain/entities/route_entity.dart';
 import 'package:vector/features/routes/domain/usecases/add_stop_to_route.dart';
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
 import 'package:vector/shared/presentation/widgets/toasts.dart';
+import 'package:vector/features/packages/domain/entities/manual_package_entity.dart';
+import 'package:vector/features/packages/domain/entities/package_status.dart';
 
 // State for PackagesScreen, can be expanded later
 class PackagesScreenState {
@@ -49,10 +51,16 @@ class PackagesScreenNotifier extends StateNotifier<PackagesScreenState> {
 
     final stop = StopEntity(
       id: packageData['code']!,
-      name: packageData['name']!,
-      address: packageData['address']!,
-      coordinates: Position(0, 0), // TODO: Add Geocoding from address
-      status: StopStatus.pending,
+      package: ManualPackageEntity(
+        id: packageData['code']!,
+        receiverName: packageData['name']!,
+        address: packageData['address']!,
+        phone: packageData['phone']!,
+        notes: packageData['notes'],
+        status: PackageStatus.pending,
+        coordinates: Position(0, 0),
+        updatedAt: DateTime.now(),
+      ),
       stopOrder: (selectedRoute.stops.length + 1),
     );
 

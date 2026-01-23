@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vector/features/home/presentation/widgets/floating_scan_button.dart';
 import 'package:vector/features/packages/presentation/providers/filtered_stops_provider.dart';
 import 'package:vector/features/packages/presentation/providers/packages_screen_notifier.dart';
-import 'package:vector/features/packages/presentation/utils/stop_status_extension.dart';
 import 'package:vector/features/packages/presentation/widgets/add_package_details_dialog.dart';
 import 'package:vector/features/packages/presentation/widgets/filter_bar.dart';
 import 'package:vector/features/packages/presentation/widgets/packages_header.dart';
@@ -113,11 +112,7 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                           itemBuilder: (context, index) {
                             final stop = filteredStops[index];
                             return PackageCard(
-                              trackingId: stop.id,
-                              status: stop.status.toLocalizedString(),
-                              address: stop.address,
-                              customerName: stop.name,
-                              timeWindow: 'N/A', // This info is not in StopEntity
+                              package: stop.package,
                             );
                           },
                         ),

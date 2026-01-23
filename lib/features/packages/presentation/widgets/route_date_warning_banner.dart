@@ -20,14 +20,14 @@ class RouteDateWarningBanner extends ConsumerWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      color: Colors.orange.withOpacity(0.1),
+      color: const Color(0xFF00E5FF).withOpacity(0.1),
       child: Row(
         children: [
-          const Icon(LucideIcons.info, color: Colors.orange, size: 16),
+          const Icon(LucideIcons.info, color: Color(0xFF00E5FF), size: 16),
           const SizedBox(width: 8),
           Text(
             'Ruta de fecha: ${DateFormat('yyyy-MM-dd').format(selectedRoute.date)}',
-            style: const TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold),
+            style: const TextStyle(color: Color(0xFF00E5FF), fontSize: 12, fontWeight: FontWeight.bold),
           ),
         ],
       ),

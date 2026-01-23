@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:vector/features/map/domain/entities/stop_entity.dart';
+import 'package:vector/features/packages/domain/entities/package_status.dart';
 import 'package:vector/features/packages/presentation/providers/jt_package_providers.dart';
 
 // Provides the currently selected filter index (0 for "TODAS", 1 for "PENDIENTE", etc.)
@@ -17,11 +18,11 @@ final filteredStopsProvider = Provider<List<StopEntity>>((ref) {
   return stops.where((stop) {
     switch (currentFilter) {
       case 'PENDIENTE':
-        return stop.status == StopStatus.pending;
+        return stop.status == PackageStatus.pending;
       case 'ENTREGADO':
-        return stop.status == StopStatus.completed;
+        return stop.status == PackageStatus.delivered;
       case 'FALLIDO':
-        return stop.status == StopStatus.failed;
+        return stop.status == PackageStatus.failed;
       case 'TODAS':
       default:
         return true;

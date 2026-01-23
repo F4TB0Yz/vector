@@ -9,6 +9,8 @@ void showAppToast(
   ToastType type = ToastType.info,
   Duration duration = const Duration(seconds: 2),
 }) {
+  if (!context.mounted) return;
+
   Color backgroundColor;
   Color textColor = Colors.white;
 
@@ -21,10 +23,10 @@ void showAppToast(
       backgroundColor = Colors.red;
       break;
     case ToastType.warning:
-      backgroundColor = Colors.orange;
+      backgroundColor = const Color(0xFF00E5FF); // Neon Cyan
+      textColor = Colors.black;
       break;
     case ToastType.info:
-    default:
       backgroundColor = const Color(0xBF000000);
       break;
   }
@@ -34,7 +36,8 @@ void showAppToast(
     barrierColor: Colors.transparent,
     builder: (BuildContext context) {
       Future.delayed(duration, () {
-        if (Navigator.of(context, rootNavigator: true).canPop()) {
+        if (context.mounted &&
+            Navigator.of(context, rootNavigator: true).canPop()) {
           Navigator.of(context, rootNavigator: true).pop();
         }
       });

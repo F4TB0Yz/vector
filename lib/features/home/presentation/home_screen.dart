@@ -16,6 +16,8 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mapbox;
 import 'package:vector/shared/presentation/screens/shared_scanner_screen.dart';
 import 'package:vector/features/routes/presentation/widgets/add_route_dialog.dart';
 import 'package:vector/shared/presentation/widgets/toasts.dart';
+import 'package:vector/features/packages/domain/entities/manual_package_entity.dart';
+import 'package:vector/features/packages/domain/entities/package_status.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -83,11 +85,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     final stop = StopEntity(
       id: packageData['code']!,
-      name: packageData['name']!,
-      address: packageData['address']!,
-      // TODO: Add Geocoding from address
-      coordinates: mapbox.Position(0, 0),
-      status: StopStatus.pending,
+      package: ManualPackageEntity(
+        id: packageData['code']!,
+        receiverName: packageData['name']!,
+        address: packageData['address']!,
+        phone: packageData['phone']!,
+        notes: packageData['notes'],
+        status: PackageStatus.pending,
+        coordinates: mapbox.Position(0, 0),
+        updatedAt: DateTime.now(),
+      ),
       stopOrder: (selectedRoute.stops.length + 1),
     );
 

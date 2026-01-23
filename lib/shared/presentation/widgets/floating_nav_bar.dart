@@ -25,13 +25,6 @@ class FloatingNavBar extends StatelessWidget {
         border: Border.fromBorderSide(
           BorderSide(color: Color(0x1AFFFFFF), width: 1),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x66000000),
-            blurRadius: 20,
-            offset: Offset(0, 10),
-          ),
-        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(35),

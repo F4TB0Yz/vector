@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:vector/core/theme/app_colors.dart';
+import 'package:vector/features/auth/presentation/providers/auth_provider.dart';
 import 'package:vector/features/packages/presentation/providers/jt_package_providers.dart';
 import 'package:vector/features/routes/domain/entities/route_entity.dart';
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
@@ -13,8 +14,24 @@ class PackagesHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedRoute = ref.watch(selectedRouteProvider);
+    final authState = ref.watch(authProvider);
+    final jtPackagesState = ref.watch(jtPackagesProvider);
 
-    void importPackages() {
+    final bool isSessionActive = authState.value?.isSome() ?? false;
+    final bool isLoading = jtPackagesState.isLoading;
+    final bool isDownloadEnabled = isSessionActive && !isLoading;
+
+    void handleImportClick() {
+      if (isLoading) {
+        showAppToast(context, 'Ya hay una importación en curso...', type: ToastType.info);
+        return;
+      }
+      
+      if (!isSessionActive) {
+        showAppToast(context, 'Inicia sesión en J&T para importar paquetes', type: ToastType.warning);
+        return;
+      }
+
       ref.read(jtPackagesProvider.notifier).importPackages();
       showAppToast(context, 'Importando paquetes...', type: ToastType.success);
     }
@@ -52,9 +69,14 @@ class PackagesHeader extends ConsumerWidget {
             children: [
               _RouteSelector(selectedRoute: selectedRoute),
               IconButton(
-                tooltip: 'Importar Paquetes de J&T',
-                onPressed: importPackages,
-                icon: const Icon(LucideIcons.downloadCloud, color: Colors.white),
+                tooltip: isSessionActive 
+                    ? 'Importar Paquetes de J&T' 
+                    : 'Inicia sesión en J&T para importar',
+                onPressed: handleImportClick,
+                icon: Icon(
+                  LucideIcons.packageSearch, 
+                  color: isDownloadEnabled ? AppColors.primary : AppColors.primary.withOpacity(0.3),
+                ),
               ),
             ],
           ),

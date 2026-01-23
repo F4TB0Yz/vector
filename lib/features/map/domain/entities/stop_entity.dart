@@ -1,50 +1,41 @@
 import 'package:equatable/equatable.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
-
-enum StopStatus { pending, completed, failed }
+import 'package:vector/features/packages/domain/entities/package_entity.dart';
+import 'package:vector/features/packages/domain/entities/package_status.dart';
 
 class StopEntity extends Equatable {
   final String id;
-  final String name;
-  final String address;
-  final Position coordinates;
-  final StopStatus status;
+  final PackageEntity package; // El paquete asociado a esta parada
   final int stopOrder;
 
   const StopEntity({
     required this.id,
-    required this.name,
-    required this.address,
-    required this.coordinates,
-    this.status = StopStatus.pending,
+    required this.package,
     required this.stopOrder,
   });
 
+  // Helper getters to maintain compatibility or ease of use
+  String get name => package.receiverName;
+  String get address => package.address;
+  Position get coordinates => package.coordinates ?? Position(0, 0);
+  PackageStatus get status => package.status;
+
   StopEntity copyWith({
     String? id,
-    String? name,
-    String? address,
-    Position? coordinates,
-    StopStatus? status,
+    PackageEntity? package,
     int? stopOrder,
   }) {
     return StopEntity(
       id: id ?? this.id,
-      name: name ?? this.name,
-      address: address ?? this.address,
-      coordinates: coordinates ?? this.coordinates,
-      status: status ?? this.status,
+      package: package ?? this.package,
       stopOrder: stopOrder ?? this.stopOrder,
     );
   }
 
   @override
   List<Object?> get props => [
-    id,
-    name,
-    address,
-    coordinates,
-    status,
-    stopOrder,
-  ];
+        id,
+        package,
+        stopOrder,
+      ];
 }
