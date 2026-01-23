@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:vector/features/map/presentation/widgets/next_stop_card.dart';
 import 'package:vector/features/routes/domain/entities/route_entity.dart';
 import 'package:vector/shared/presentation/notifications/navbar_notification.dart'; // For NavBarVisibilityNotification
+import 'package:vector/features/map/domain/entities/stop_entity.dart'; // Import for StopEntity
 
 class NextStopPageView extends StatelessWidget {
   final PageController pageController;
   final RouteEntity selectedRoute;
   final bool showNextStopCard;
   final VoidCallback onCloseNextStopCard;
+  final void Function(StopEntity stop)? onDelivered; // New callback
+  final void Function(StopEntity stop)? onFailed; // New callback
 
   const NextStopPageView({
     super.key,
@@ -15,6 +18,8 @@ class NextStopPageView extends StatelessWidget {
     required this.selectedRoute,
     required this.showNextStopCard,
     required this.onCloseNextStopCard,
+    this.onDelivered, // Add to constructor
+    this.onFailed, // Add to constructor
   });
 
   @override
@@ -29,6 +34,7 @@ class NextStopPageView extends StatelessWidget {
       child: PageView.builder(
         controller: pageController,
         padEnds: false,
+        physics: const PageScrollPhysics(parent: AlwaysScrollableScrollPhysics()), // Add this line
         itemCount: selectedRoute.stops.length,
         itemBuilder: (context, index) {
           final stop = selectedRoute.stops[index];
@@ -70,17 +76,13 @@ class NextStopPageView extends StatelessWidget {
               );
             },
             child: NextStopCard(
-              stopNumber: "PARADA ${stop.stopOrder}",
-              timeAway: "A ${3 + index * 5} MIN", // This is hardcoded example data, should come from stop
-              address: stop.address,
-              packageType: "Paquete", // This is hardcoded, should come from stop
-              weight: "N/A", // This is hardcoded, should come from stop
-              isPriority: index == 0,
-              note: null, // This is hardcoded, should come from stop
+              stop: stop, // Pass the StopEntity object
               onClose: () {
                 onCloseNextStopCard();
                 const NavBarVisibilityNotification(true).dispatch(context);
               },
+              onDelivered: onDelivered, // Pass the onDelivered callback
+              onFailed: onFailed, // Pass the onFailed callback
             ),
           );
         },

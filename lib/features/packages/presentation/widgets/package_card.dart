@@ -6,6 +6,7 @@ import 'package:vector/core/theme/app_colors.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:vector/features/packages/domain/entities/package_entity.dart';
 import 'package:vector/features/packages/domain/entities/package_status.dart';
+import 'package:vibration/vibration.dart'; // Import the vibration package
 
 class PackageCard extends StatelessWidget {
   final PackageEntity package;
@@ -53,6 +54,12 @@ class PackageCard extends StatelessWidget {
     final Uri launchUri = Uri.parse("https://wa.me/$cleanPhone");
     if (await canLaunchUrl(launchUri)) {
       await launchUrl(launchUri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _performVibration() async {
+    if (await Vibration.hasVibrator()) {
+      Vibration.vibrate(duration: 50); // Short vibration
     }
   }
 
@@ -251,14 +258,18 @@ class PackageCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: onDelivered,
+                      onPressed: () {
+                        _performVibration();
+                        onDelivered?.call();
+                      },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00E676), // Neon Green
-                        foregroundColor: Colors.black,
-                        disabledBackgroundColor: const Color(0xFF00E676), // Keep neon green when disabled
-                        disabledForegroundColor: Colors.black, // Keep black text when disabled
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: AppColors.accent,
+                        disabledBackgroundColor: Colors.transparent,
+                        disabledForegroundColor: AppColors.accent.withValues(alpha: 0.5),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(6),
+                          side: const BorderSide(color: AppColors.accent, width: 1),
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
@@ -274,14 +285,18 @@ class PackageCard extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: onFailed,
+                      onPressed: () {
+                        _performVibration();
+                        onFailed?.call();
+                      },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF5252), // Neon Red
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor: const Color(0xFFFF5252), // Keep neon red when disabled
-                        disabledForegroundColor: Colors.white, // Keep white text when disabled
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: const Color(0xFFEF5350),
+                        disabledBackgroundColor: Colors.transparent,
+                        disabledForegroundColor: const Color(0xFFEF5350).withValues(alpha: 0.5),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(6),
+                          side: const BorderSide(color: Color(0xFFEF5350), width: 1),
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),

@@ -17,6 +17,22 @@ class RouteEntity extends Equatable {
     this.progress = 0.0,
   });
 
+  RouteEntity copyWith({
+    String? id,
+    String? name,
+    List<Position>? polyline,
+    List<StopEntity>? stops,
+    double? progress,
+  }) {
+    return RouteEntity(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      polyline: polyline ?? this.polyline,
+      stops: stops ?? this.stops,
+      progress: progress ?? this.progress,
+    );
+  }
+
   @override
   List<Object?> get props => [id, name, polyline, stops, progress];
 }

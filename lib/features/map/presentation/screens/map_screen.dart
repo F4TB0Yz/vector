@@ -10,6 +10,8 @@ import 'package:vector/features/map/presentation/widgets/next_stop_page_view.dar
 import 'package:vector/features/map/presentation/widgets/package_list_overlay.dart';
 import 'package:vector/features/map/presentation/widgets/no_route_selected_placeholder.dart';
 import 'package:vector/shared/presentation/notifications/navbar_notification.dart';
+import 'package:vector/features/map/domain/entities/stop_entity.dart'; // Import for StopEntity
+import 'package:vector/features/packages/domain/entities/package_status.dart'; // Import for PackageStatus
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -40,6 +42,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   void _onMapCreated(MapboxMap mapboxMap) {
     ref.read(mapProvider.notifier).onMapCreated(mapboxMap);
+  }
+
+  void _onStopDelivered(StopEntity stop) {
+    ref.read(mapProvider.notifier).updatePackageStatus(
+          stop.package.id,
+          PackageStatus.delivered,
+        );
+  }
+
+  void _onStopFailed(StopEntity stop) {
+    ref.read(mapProvider.notifier).updatePackageStatus(
+          stop.package.id,
+          PackageStatus.failed,
+        );
   }
 
   @override
@@ -122,8 +138,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     onCloseNextStopCard: () {
                       setState(() {
                         _showNextStopCard = false;
+                        NavBarVisibilityNotification(true).dispatch(context);
                       });
                     },
+                    onDelivered: _onStopDelivered, // Pass the method
+                    onFailed: _onStopFailed, // Pass the method
                   ),
 
                   // 4. Lista de Paquetes (Overlay Inferior)

@@ -1,4 +1,6 @@
 import 'package:vector/features/packages/domain/entities/package_entity.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'; // Import for Position
+import 'package:vector/features/packages/domain/entities/package_status.dart'; // Import for PackageStatus
 
 class JTPackage extends PackageEntity {
   final String waybillNo;
@@ -31,6 +33,49 @@ class JTPackage extends PackageEntity {
   }) : super(
           id: waybillNo,
         );
+
+  @override
+  JTPackage copyWith({
+    String? id, // Note: id is derived from waybillNo
+    String? receiverName,
+    String? address,
+    String? phone,
+    String? notes,
+    Position? coordinates,
+    PackageStatus? status,
+    DateTime? updatedAt,
+    String? waybillNo,
+    String? waybillId,
+    int? taskStatus,
+    bool? isAbnormal,
+    String? scanTime,
+    String? signTime,
+    String? deliverStaff,
+    double? distance,
+    String? lngLat,
+  }) {
+    return JTPackage(
+      waybillNo: waybillNo ?? this.waybillNo,
+      waybillId: waybillId ?? this.waybillId,
+      receiverName: receiverName ?? this.receiverName,
+      phone: phone ?? this.phone,
+      address: address ?? this.address,
+      status: status ?? this.status,
+      notes: notes ?? this.notes,
+      taskStatus: taskStatus ?? this.taskStatus,
+      isAbnormal: isAbnormal ?? this.isAbnormal,
+      scanTime: scanTime ?? this.scanTime,
+      signTime: signTime ?? this.signTime,
+      deliverStaff: deliverStaff ?? this.deliverStaff,
+      distance: distance ?? this.distance,
+      lngLat: lngLat ?? this.lngLat,
+      coordinates: coordinates ?? this.coordinates,
+      // updatedAt is not a constructor parameter in JTPackage, but in PackageEntity.
+      // If we need to update updatedAt, we would have to reconstruct the superclass
+      // explicitly, or add it as a parameter to JTPackage constructor if it's meant to be mutable there.
+      // For now, it's ignored as it's not directly in JTPackage's constructor.
+    );
+  }
 
   @override
   List<Object?> get props => [

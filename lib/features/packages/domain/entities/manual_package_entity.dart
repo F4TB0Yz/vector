@@ -14,6 +14,7 @@ class ManualPackageEntity extends PackageEntity {
     super.updatedAt,
   });
 
+  @override
   ManualPackageEntity copyWith({
     String? id,
     String? receiverName,

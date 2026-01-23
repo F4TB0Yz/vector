@@ -9,6 +9,7 @@ import 'package:turf/turf.dart' as turf;
 import 'package:vector/core/utils/permission_handler.dart';
 import 'package:vector/features/map/domain/entities/route_entity.dart';
 import 'package:vector/features/map/presentation/providers/map_injection.dart';
+import 'package:vector/features/packages/domain/entities/package_status.dart'; // Import for PackageStatus
 
 // --- STATE ---
 class MapState {
@@ -398,6 +399,24 @@ class MapNotifier extends Notifier<MapState> {
 
   Future<void> zoomOut() async {
     // ...
+  }
+
+  void updatePackageStatus(String packageId, PackageStatus newStatus) {
+    if (state.activeRoute == null) return;
+
+    final updatedStops = state.activeRoute!.stops.map((stop) {
+      if (stop.package.id == packageId) {
+        final updatedPackage = stop.package.copyWith(status: newStatus);
+        return stop.copyWith(package: updatedPackage);
+      }
+      return stop;
+    }).toList();
+
+    final updatedRoute = state.activeRoute!.copyWith(stops: updatedStops);
+    state = state.copyWith(activeRoute: updatedRoute);
+
+    // Trigger map update to reflect the new status (e.g., stop marker color change)
+    _updateMapData(updatedRoute);
   }
 
   /// Updates route progress by splitting geometry into past and future segments

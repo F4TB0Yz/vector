@@ -23,6 +23,17 @@ abstract class PackageEntity extends Equatable {
     this.updatedAt,
   });
 
+  PackageEntity copyWith({
+    String? id,
+    String? receiverName,
+    String? address,
+    String? phone,
+    String? notes,
+    Position? coordinates,
+    PackageStatus? status,
+    DateTime? updatedAt,
+  });
+
   @override
   List<Object?> get props => [
         id,

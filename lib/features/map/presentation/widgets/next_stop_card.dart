@@ -1,32 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:vector/core/theme/app_colors.dart'; // Import for AppColors
+import 'package:vector/features/map/domain/entities/stop_entity.dart'; // Import for StopEntity
+import 'package:vibration/vibration.dart'; // Import for vibration feedback
 
 class NextStopCard extends StatelessWidget {
-  final String stopNumber;
-  final String timeAway;
-  final String address;
-  final String packageType;
-  final String weight;
-  final bool isPriority;
-  final String? note;
+  final StopEntity stop;
   final VoidCallback? onScan;
   final VoidCallback? onClose;
+  final void Function(StopEntity stop)? onDelivered;
+  final void Function(StopEntity stop)? onFailed;
 
   const NextStopCard({
     super.key,
-    required this.stopNumber,
-    required this.timeAway,
-    required this.address,
-    required this.packageType,
-    required this.weight,
-    this.isPriority = false,
-    this.note,
+    required this.stop,
     this.onScan,
     this.onClose,
+    this.onDelivered,
+    this.onFailed,
   });
+
+  void _performVibration() async {
+    if (await Vibration.hasVibrator()) {
+      Vibration.vibrate(duration: 50); // Short vibration
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Helper variables for easier access
+    final String stopNumberText = "PARADA ${stop.stopOrder}";
+    final String timeAwayText = "A 3 MIN"; // Placeholder, actual logic needed
+    final String addressText = stop.address;
+    final String packageTypeText = "Paquete"; // Placeholder (PackageEntity doesn't have packageType)
+    final String weightText = "N/A"; // Placeholder (PackageEntity doesn't have weight)
+    final String? noteText = stop.package.notes;
+
     // Color principal de la tarjeta (Cyan/Azul vibrante de la imagen)
     const accentColor = Color(0xFF00B0FF);
 
@@ -48,8 +57,7 @@ class NextStopCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min, // Se ajusta al contenido
+      child: Column( // Main Column of NextStopCard
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Barra superior de progreso/indicador (opcional, para dar el toque "Next Stop")
@@ -66,7 +74,7 @@ class NextStopCard extends StatelessWidget {
           ),
 
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -86,7 +94,7 @@ class NextStopCard extends StatelessWidget {
                             borderRadius: BorderRadius.all(Radius.circular(4)),
                           ),
                           child: Text(
-                            stopNumber.toUpperCase(), // Ej: STOP 04
+                            stopNumberText.toUpperCase(), // Ej: STOP 04
                             style: const TextStyle(
                               color: Colors.black,
                               fontWeight: FontWeight.bold,
@@ -96,7 +104,7 @@ class NextStopCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          timeAway.toUpperCase(), // Ej: 3 MIN AWAY
+                          timeAwayText.toUpperCase(), // Ej: 3 MIN AWAY
                           style: TextStyle(
                             color: Colors.grey[400],
                             fontSize: 12,
@@ -116,12 +124,12 @@ class NextStopCard extends StatelessWidget {
                     ),
                   ],
                 ),
-
+            
                 const SizedBox(height: 12),
-
+              
                 // Dirección Principal
                 Text(
-                  address,
+                  addressText,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 20,
@@ -129,43 +137,22 @@ class NextStopCard extends StatelessWidget {
                     height: 1.2,
                   ),
                 ),
-
+              
                 const SizedBox(height: 16),
-
+              
                 // Detalles del Paquete
                 Row(
                   children: [
-                    _DetailItem(icon: LucideIcons.package, text: packageType),
+                    _DetailItem(icon: LucideIcons.package, text: packageTypeText),
                     const SizedBox(width: 16),
-                    _DetailItem(
-                      icon: LucideIcons.scale, // Alternativa para peso
-                      text: weight,
-                    ),
-                    if (isPriority) ...[
-                      const Spacer(),
-                      const Icon(
-                        LucideIcons.star,
-                        color: Color(0xFFFFD740), // Amarillo
-                        size: 16,
-                      ),
-                      const SizedBox(width: 4),
-                      const Text(
-                        'PRIORIDAD',
-                        style: TextStyle(
-                          color: Color(0xFFFFD740),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
+                    _DetailItem(icon: LucideIcons.scale, text: weightText),
                   ],
                 ),
-
+              
                 const SizedBox(height: 16),
-
+              
                 // Nota (si existe)
-                if (note != null)
+                if (noteText != null)
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
@@ -184,19 +171,20 @@ class NextStopCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            note!,
+                            noteText,
                             style: TextStyle(
                               color: Colors.grey[300],
                               fontSize: 13,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
-
+              
                 const SizedBox(height: 16),
-
+              
                 // Botón Escanear
                 SizedBox(
                   width: double.infinity,
@@ -211,11 +199,11 @@ class NextStopCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       elevation: 0,
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(LucideIcons.scanLine, size: 20),
-                        const SizedBox(width: 8),
+                        Icon(LucideIcons.scanLine, size: 20),
+                        SizedBox(width: 8),
                         Text(
                           'ESCANEAR PAQUETE',
                           style: TextStyle(
@@ -227,6 +215,66 @@ class NextStopCard extends StatelessWidget {
                       ],
                     ),
                   ),
+                ),
+                
+                // Entregado / Fallido buttons
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          _performVibration();
+                          onDelivered?.call(stop);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          foregroundColor: AppColors.accent,
+                          disabledBackgroundColor: Colors.transparent,
+                          disabledForegroundColor: AppColors.accent.withValues(alpha: 0.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                            side: const BorderSide(color: AppColors.accent, width: 1),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: const Text(
+                          'Entregado',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          _performVibration();
+                          onFailed?.call(stop);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          foregroundColor: const Color(0xFFEF5350),
+                          disabledBackgroundColor: Colors.transparent,
+                          disabledForegroundColor: const Color(0xFFEF5350).withValues(alpha: 0.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                            side: const BorderSide(color: Color(0xFFEF5350), width: 1),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: const Text(
+                          'Fallido',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
