@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:vector/core/theme/app_colors.dart';
-import 'package:vector/shared/presentation/notifications/navbar_notification.dart';
 
 class NoRouteSelectedPlaceholder extends StatelessWidget {
   final bool isLoading;

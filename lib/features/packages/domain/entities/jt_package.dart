@@ -1,5 +1,4 @@
 import 'package:vector/features/packages/domain/entities/package_entity.dart';
-import 'package:vector/features/packages/domain/entities/package_status.dart';
 
 class JTPackage extends PackageEntity {
   final String waybillNo;

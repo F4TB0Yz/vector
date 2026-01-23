@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:vector/features/map/domain/entities/stop_entity.dart';
 import 'package:vector/features/packages/presentation/widgets/package_card.dart';
 import 'package:vector/features/routes/domain/entities/route_entity.dart';
 import 'package:vector/shared/presentation/notifications/navbar_notification.dart';

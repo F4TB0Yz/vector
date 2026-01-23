@@ -75,7 +75,7 @@ class PackagesHeader extends ConsumerWidget {
                 onPressed: handleImportClick,
                 icon: Icon(
                   LucideIcons.packageSearch, 
-                  color: isDownloadEnabled ? AppColors.primary : AppColors.primary.withOpacity(0.3),
+                  color: isDownloadEnabled ? AppColors.primary : AppColors.primary.withValues(alpha: 0.3),
                 ),
               ),
             ],

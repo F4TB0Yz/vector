@@ -31,7 +31,7 @@ class FilterBar extends ConsumerWidget {
                   color: isSelected ? AppColors.primary : const Color(0xFF2C2C35),
                   borderRadius: BorderRadius.circular(6), // 6px radius for sharp/tech look
                   border: Border.all(
-                    color: isSelected ? Colors.transparent : Colors.white.withOpacity(0.1),
+                    color: isSelected ? Colors.transparent : Colors.white.withValues(alpha: 0.1),
                   ),
                 ),
                 child: Text(

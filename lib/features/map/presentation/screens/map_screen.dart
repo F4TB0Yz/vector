@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
-import 'package:vector/core/theme/app_colors.dart';
 import 'package:vector/features/map/presentation/providers/map_provider.dart';
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
 import 'package:vector/shared/presentation/widgets/toasts.dart';

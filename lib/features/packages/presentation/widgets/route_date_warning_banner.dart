@@ -20,7 +20,7 @@ class RouteDateWarningBanner extends ConsumerWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      color: const Color(0xFF00E5FF).withOpacity(0.1),
+      color: const Color(0xFF00E5FF).withValues(alpha: 0.1),
       child: Row(
         children: [
           const Icon(LucideIcons.info, color: Color(0xFF00E5FF), size: 16),

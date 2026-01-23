@@ -4,8 +4,6 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:vector/core/theme/app_colors.dart';
 import 'package:vector/features/map/presentation/providers/map_provider.dart';
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
-import 'package:vector/shared/presentation/notifications/navbar_notification.dart';
-import 'package:vector/shared/presentation/widgets/toasts.dart';
 
 class MapControlsColumn extends ConsumerWidget {
   final bool showNextStopCard;

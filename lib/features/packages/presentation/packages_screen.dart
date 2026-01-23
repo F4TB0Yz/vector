@@ -50,10 +50,14 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
     final packagesScreenNotifier = ref.read(packagesScreenNotifierProvider.notifier);
     final prefillData = await packagesScreenNotifier.getPrefillData(code);
 
+    if (!context.mounted) return;
+
     final result = await showDialog<Map<String, String>>(
       context: context,
       builder: (context) => AddPackageDetailsDialog(trackingCode: code, prefillData: prefillData),
     );
+
+    if (!mounted) return;
 
     if (result != null) {
       await packagesScreenNotifier.handleSavePackage(
@@ -90,7 +94,7 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
             const SizedBox(height: 16),
             const FilterBar(),
             const SizedBox(height: 16),
-            Divider(height: 1, thickness: 1, color: Colors.white.withOpacity(0.1)),
+            Divider(height: 1, thickness: 1, color: Colors.white.withValues(alpha: 0.1)),
             const RouteDateWarningBanner(),
             Expanded(
               child: selectedRoute == null
