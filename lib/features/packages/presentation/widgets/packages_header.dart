@@ -27,8 +27,20 @@ class PackagesHeader extends ConsumerWidget {
       previous,
       next,
     ) {
-      // Solo mostrar toast si cambió de loading a data/error
-      if (previous?.isLoading == true) {
+      // Mostrar mensaje cuando comienza la importación
+      if (previous?.isLoading != true && next.isLoading) {
+        showAppToast(
+          context,
+          'Importando paquetes...',
+          type: ToastType.info,
+          duration: const Duration(
+            seconds: 1,
+          ), // Duración corta ya que el resultado vendrá pronto
+        );
+      }
+
+      // Mostrar resultado cuando termina la importación
+      if (previous?.isLoading == true && !next.isLoading) {
         next.when(
           data: (packages) {
             if (packages.isNotEmpty && selectedRoute != null) {
@@ -36,6 +48,12 @@ class PackagesHeader extends ConsumerWidget {
                 context,
                 '✅ ${packages.length} paquetes importados a ${selectedRoute.name}',
                 type: ToastType.success,
+              );
+            } else if (packages.isEmpty) {
+              showAppToast(
+                context,
+                'No se encontraron paquetes para importar',
+                type: ToastType.warning,
               );
             }
           },
@@ -79,8 +97,9 @@ class PackagesHeader extends ConsumerWidget {
         return;
       }
 
+      // Iniciar la importación sin bloquear
+      // El listener manejará los mensajes de éxito/error
       ref.read(jtPackagesProvider.notifier).importPackages();
-      showAppToast(context, 'Importando paquetes...', type: ToastType.info);
     }
 
     return Padding(
