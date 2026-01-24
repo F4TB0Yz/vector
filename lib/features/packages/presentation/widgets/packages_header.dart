@@ -84,7 +84,6 @@ class PackagesHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final routesProvider = context.watch<RoutesProvider>();
     final authProvider = context.watch<AuthProvider>();
-    final packagesProvider = context.watch<PackagesProvider>(); // Only need state for button (using watch below if needed for UI update)
     final isLoading = context.watch<PackagesProvider>().isLoading; // Listen to loading
 
     final selectedRoute = routesProvider.selectedRoute;
