@@ -31,15 +31,15 @@ class ConfirmAddStopDialog extends StatelessWidget {
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF1E1E24).withOpacity(0.85),
+              color: const Color(0xFF1E1E24).withValues(alpha: 0.85),
               borderRadius: BorderRadius.circular(4),
               border: Border.all(
-                color: AppColors.accent.withOpacity(0.3),
+                color: AppColors.accent.withValues(alpha: 0.3),
                 width: 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.accent.withOpacity(0.15),
+                  color: AppColors.accent.withValues(alpha: 0.15),
                   blurRadius: 20,
                   spreadRadius: 2,
                 ),
@@ -62,7 +62,7 @@ class ConfirmAddStopDialog extends StatelessWidget {
                           borderRadius: BorderRadius.circular(2),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.accent.withOpacity(0.5),
+                              color: AppColors.accent.withValues(alpha: 0.5),
                               blurRadius: 8,
                               spreadRadius: 1,
                             ),
@@ -105,7 +105,7 @@ class ConfirmAddStopDialog extends StatelessWidget {
                         child: Text(
                           'Cancelar',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
+                            color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 16,
                           ),
                         ),
@@ -124,7 +124,7 @@ class ConfirmAddStopDialog extends StatelessWidget {
                               ? null
                               : [
                                   BoxShadow(
-                                    color: AppColors.accent.withOpacity(0.3),
+                                    color: AppColors.accent.withValues(alpha: 0.3),
                                     blurRadius: 12,
                                     spreadRadius: 1,
                                   ),
@@ -189,7 +189,7 @@ class ConfirmAddStopDialog extends StatelessWidget {
           Text(
             'Obteniendo dirección...',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
               fontSize: 14,
             ),
           ),
@@ -208,16 +208,16 @@ class ConfirmAddStopDialog extends StatelessWidget {
       children: [
         Text(
           '¿Desea crear una nueva parada en esta ubicación?',
-          style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 15),
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 15),
         ),
         const SizedBox(height: 20),
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(4),
             border: Border.all(
-              color: AppColors.accent.withOpacity(0.2),
+              color: AppColors.accent.withValues(alpha: 0.2),
               width: 1,
             ),
           ),
@@ -230,7 +230,7 @@ class ConfirmAddStopDialog extends StatelessWidget {
                   displayRequest.suggestedAddress ??
                       'No se pudo obtener la dirección.',
                   style: textTheme.bodyMedium?.copyWith(
-                    color: Colors.white.withOpacity(0.85),
+                    color: Colors.white.withValues(alpha: 0.85),
                     fontSize: 14,
                   ),
                 ),

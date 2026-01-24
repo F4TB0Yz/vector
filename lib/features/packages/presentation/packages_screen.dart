@@ -65,7 +65,7 @@ class _PackagesScreenState extends State<PackagesScreen> {
       builder: (context) => AddPackageDetailsDialog(trackingCode: code, prefillData: prefillData),
     );
 
-    if (!mounted) return;
+    if (!context.mounted) return;
 
     if (result != null) {
       _handleSavePackage(context, result);
@@ -100,7 +100,7 @@ class _PackagesScreenState extends State<PackagesScreen> {
 
     await routesProvider.addStop(stop, addStopUseCase);
 
-    if (mounted) {
+    if (context.mounted) {
        if (routesProvider.error != null) {
          showAppToast(context, "Error: ${routesProvider.error}", type: ToastType.error);
        } else {

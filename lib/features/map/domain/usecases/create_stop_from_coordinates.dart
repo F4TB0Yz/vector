@@ -6,7 +6,6 @@ import 'package:vector/features/map/domain/entities/route_entity.dart';
 import 'package:vector/features/map/domain/entities/stop_entity.dart';
 import 'package:vector/features/map/domain/repositories/stop_repository.dart';
 import 'package:vector/features/packages/domain/entities/manual_package_entity.dart';
-import 'package:vector/features/packages/domain/entities/package_entity.dart';
 import 'package:vector/features/packages/domain/entities/package_status.dart';
 
 /// Use case para crear una nueva parada a partir de coordenadas en el mapa.
