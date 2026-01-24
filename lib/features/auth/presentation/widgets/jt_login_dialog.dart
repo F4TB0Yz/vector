@@ -1,61 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:provider/provider.dart';
 import 'package:vector/core/theme/app_colors.dart';
-import '../../../../core/utils/device_utils.dart';
 import 'package:vector/shared/presentation/widgets/toasts.dart';
-import '../providers/auth_provider.dart';
+import 'package:vector/features/auth/presentation/providers/auth_provider.dart';
 
-class JtLoginDialog extends ConsumerStatefulWidget {
+class JtLoginDialog extends StatefulWidget {
   const JtLoginDialog({super.key});
 
   @override
-  ConsumerState<JtLoginDialog> createState() => _JtLoginDialogState();
+  State<JtLoginDialog> createState() => _JtLoginDialogState();
 }
 
-class _JtLoginDialogState extends ConsumerState<JtLoginDialog> {
-  final _accountController = TextEditingController();
+class _JtLoginDialogState extends State<JtLoginDialog> {
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  
+  // Note: rememberMe logic was using getSavedCredentialsProvider which we removed from this dialog 
+  // to simplify. If needed, we can init it from AuthProvider or a usecase in initState.
+  // For now I'll keep the UI for rememberMe but wired to local state.
   bool _rememberMe = false;
 
   @override
   void initState() {
     super.initState();
-    _loadDeviceData();
-    _loadSavedCredentials();
-  }
-
-  Future<void> _loadSavedCredentials() async {
-    // Wait for the provider to be ready (safe in initState usually, but let's be safe)
-    // Actually, we can read provider directly in initState if we don't watch.
-
-    // We need to wait a bit or use addPostFrameCallback because we are accessing context/ref
-    // but ref is available in ConsumerState.
-
-    // Using Future.microtask or just async execution
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final getSavedCreds = ref.read(getSavedCredentialsProvider);
-      final creds = await getSavedCreds();
-
-      if (creds != null && mounted) {
-        setState(() {
-          _accountController.text = creds['account'] ?? '';
-          _passwordController.text = creds['password'] ?? '';
-          _rememberMe = true;
-        });
-      }
-    });
-  }
-
-  Future<void> _loadDeviceData() async {
-    // This will fetch and print device data with colors in console
-    await DeviceUtils.getJtDeviceData();
+    // Potentially load saved credentials here if needed via sl<GetSavedCredentials>()
   }
 
   @override
   void dispose() {
-    _accountController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -63,44 +37,42 @@ class _JtLoginDialogState extends ConsumerState<JtLoginDialog> {
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Trigger login
-    // El listener en build manejará el éxito (cerrar) o error (SnackBar)
-    await ref
-        .read(authProvider.notifier)
-        .login(
-          _accountController.text.trim(),
-          _passwordController.text.trim(),
-          rememberMe: _rememberMe,
+    // Dismiss keyboard
+    FocusScope.of(context).unfocus();
+
+    final authProvider = context.read<AuthProvider>();
+    
+    await authProvider.login(
+      _usernameController.text.trim(),
+      _passwordController.text.trim(),
+      rememberMe: _rememberMe,
+    );
+
+    if (mounted) {
+      if (authProvider.error != null) {
+        showAppToast(
+          context,
+          authProvider.error!,
+          type: ToastType.error,
         );
+      } else if (authProvider.isAuthenticated) {
+        Navigator.of(context).pop();
+        showAppToast(context, 'Sesión iniciada', type: ToastType.success);
+      }
+    }
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
-    // Usamos ref.listen para manejar efectos secundarios sin reconstruir todo el widget
-    ref.listen(authProvider, (previous, next) {
-      if (next is AsyncError) {
-        showAppToast(
-          context,
-          next.error.toString(),
-          type: ToastType.error,
-        );
-      } else if (next is AsyncData) {
-        final val = next.value;
-        if (val != null && val.isSome()) {
-          Navigator.of(context).pop();
-        }
-      }
-    });
-
-    // final authState = ref.watch(authProvider); // REMOVED: Causes unnecessary rebuilds
-    // final isLoading = authState.isLoading; // REMOVED: Handled locally in Consumer
+    // Watch AuthProvider for loading state
+    final authProviderState = context.watch<AuthProvider>();
+    final isLoading = authProviderState.isLoading;
 
     return Dialog(
       backgroundColor: const Color(0xFF1E1E24), // Dark Slate
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: AppColors.border),
+        side: const BorderSide(color: AppColors.border),
       ),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -123,7 +95,7 @@ class _JtLoginDialogState extends ConsumerState<JtLoginDialog> {
 
               // Account Input
               TextFormField(
-                controller: _accountController,
+                controller: _usernameController,
                 style: const TextStyle(color: Colors.white),
                 decoration: _inputDecoration('Usuario'),
                 validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
@@ -140,7 +112,7 @@ class _JtLoginDialogState extends ConsumerState<JtLoginDialog> {
               ),
               const SizedBox(height: 24),
 
-              // Action Button
+              // Remember Me Checkbox
               Row(
                 children: [
                   Theme(
@@ -157,46 +129,40 @@ class _JtLoginDialogState extends ConsumerState<JtLoginDialog> {
                     ),
                   ),
                   const Text(
-                    'Recordar cuenta', // TODO: localize
+                    'Recordar cuenta',
                     style: TextStyle(color: Colors.white70),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
 
-              Consumer(
-                builder: (context, ref, child) {
-                  final isLoading = ref.watch(authProvider).isLoading;
-
-                  return ElevatedButton(
-                    onPressed: isLoading ? null : _handleLogin,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00E676), // Neon Green
-                      foregroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
+              ElevatedButton(
+                onPressed: isLoading ? null : _handleLogin,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00E676), // Neon Green
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  elevation: 0,
+                ),
+                child: isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.black,
+                        ),
+                      )
+                    : const Text(
+                        'CONECTAR',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.0,
+                        ),
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      elevation: 0,
-                    ),
-                    child: isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.black,
-                            ),
-                          )
-                        : const Text(
-                            'CONECTAR',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.0,
-                            ),
-                          ),
-                  );
-                },
               ),
             ],
           ),

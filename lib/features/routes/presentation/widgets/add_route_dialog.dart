@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/routes_provider.dart';
 
-class AddRouteDialog extends ConsumerStatefulWidget {
+class AddRouteDialog extends StatefulWidget {
   const AddRouteDialog({super.key});
 
   @override
-  ConsumerState<AddRouteDialog> createState() => _AddRouteDialogState();
+  State<AddRouteDialog> createState() => _AddRouteDialogState();
 }
 
-class _AddRouteDialogState extends ConsumerState<AddRouteDialog> {
+class _AddRouteDialogState extends State<AddRouteDialog> {
   late final TextEditingController _nameController;
   late final TextEditingController _dateController;
   final _formKey = GlobalKey<FormState>();
@@ -27,7 +27,6 @@ class _AddRouteDialogState extends ConsumerState<AddRouteDialog> {
   }
 
   @override
-  @override
   void dispose() {
     _nameController.dispose();
     _dateController.dispose();
@@ -37,7 +36,7 @@ class _AddRouteDialogState extends ConsumerState<AddRouteDialog> {
   void _submit() {
     if (_formKey.currentState!.validate()) {
       final date = DateFormat('yyyy-MM-dd').parse(_dateController.text);
-      ref.read(routesProvider.notifier).createRoute(_nameController.text, date);
+      context.read<RoutesProvider>().createRoute(_nameController.text, date);
       Navigator.of(context).pop();
     }
   }

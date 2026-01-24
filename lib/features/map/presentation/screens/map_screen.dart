@@ -1,9 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:provider/provider.dart';
 import 'package:vector/features/map/presentation/providers/map_provider.dart';
+import 'package:vector/features/map/presentation/providers/map_state.dart';
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
 import 'package:vector/shared/presentation/widgets/toasts.dart';
 import 'package:vector/features/routes/domain/entities/route_entity.dart';
@@ -12,21 +13,26 @@ import 'package:vector/features/map/presentation/widgets/next_stop_page_view.dar
 import 'package:vector/features/map/presentation/widgets/package_list_overlay.dart';
 import 'package:vector/features/map/presentation/widgets/no_route_selected_placeholder.dart';
 import 'package:vector/shared/presentation/notifications/navbar_notification.dart';
-import 'package:vector/features/map/domain/entities/stop_entity.dart'; // Import for StopEntity
-import 'package:vector/features/packages/domain/entities/package_status.dart'; // Import for PackageStatus
+import 'package:vector/features/map/domain/entities/stop_entity.dart';
+import 'package:vector/features/packages/domain/entities/package_status.dart';
 import 'package:vector/features/map/presentation/widgets/confirm_add_stop_dialog.dart';
 
-class MapScreen extends ConsumerStatefulWidget {
+class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
 
   @override
-  ConsumerState<MapScreen> createState() => _MapScreenState();
+  State<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends ConsumerState<MapScreen> {
+class _MapScreenState extends State<MapScreen> {
   bool _showNextStopCard = false;
   bool _showPackageList = false;
   late PageController _pageController;
+
+  // Track previous state for side effects
+  String? _previousError;
+  StopCreationRequest? _previousStopCreationRequest;
+  RouteEntity? _previousSelectedRoute;
 
   @override
   void initState() {
@@ -34,80 +40,98 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     _pageController = PageController(viewportFraction: 0.85);
 
     // Iniciar el proveedor de mapa
-    Future.microtask(() => ref.read(mapProvider.notifier).init());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<MapProvider>().init();
+      context.read<MapProvider>().addListener(_onMapProviderChanged);
+      context.read<RoutesProvider>().addListener(_onRoutesProviderChanged);
+       // Initial check
+      _onRoutesProviderChanged();
+    });
   }
 
   @override
   void dispose() {
+    context.read<MapProvider>().removeListener(_onMapProviderChanged);
+    context.read<RoutesProvider>().removeListener(_onRoutesProviderChanged);
     _pageController.dispose();
     super.dispose();
   }
 
+  void _onRoutesProviderChanged() {
+    if (!mounted) return;
+    final selectedRoute = context.read<RoutesProvider>().selectedRoute;
+
+    if (selectedRoute?.id != _previousSelectedRoute?.id) {
+        // Route changed
+        if (selectedRoute != null) {
+            context.read<MapProvider>().loadRouteById(selectedRoute.id);
+        }
+        _previousSelectedRoute = selectedRoute;
+    }
+  }
+
+  void _onMapProviderChanged() {
+    if (!mounted) return;
+    final mapState = context.read<MapProvider>().state;
+
+    // Error Handling
+    if (mapState.error != null && mapState.error != _previousError) {
+      showAppToast(context, mapState.error!, type: ToastType.error);
+    }
+    _previousError = mapState.error;
+
+    // Stop Creation Dialog
+    final nextRequest = mapState.stopCreationRequest;
+    if (nextRequest != _previousStopCreationRequest) {
+      if (nextRequest != null && _previousStopCreationRequest == null) {
+        // Open Dialog
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext dialogContext) {
+            return ConfirmAddStopDialog(request: nextRequest);
+          },
+        );
+      } else if (nextRequest == null && _previousStopCreationRequest != null) {
+        // Close Dialog
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+      _previousStopCreationRequest = nextRequest;
+    }
+  }
+
   void _onMapCreated(MapboxMap mapboxMap) {
-    ref.read(mapProvider.notifier).onMapCreated(mapboxMap);
+    context.read<MapProvider>().onMapCreated(mapboxMap);
   }
 
   // Handles the long tap gesture on the map.
   void _onMapLongClick(MapContentGestureContext context) {
-    final selectedRoute = ref.read(selectedRouteProvider);
+    final selectedRoute = this.context.read<RoutesProvider>().selectedRoute;
     if (selectedRoute == null) return;
 
-    // Delegate the logic to the map notifier, using the geographic Point directly.
-    ref.read(mapProvider.notifier).onMapLongClick(context.point);
+    // Delegate the logic to the map provider
+    // Note: 'context' here is MapContentGestureContext, avoiding conflict with BuildContext by implicit lookup or renaming if needed.
+    // However, we need BuildContext to access provider.
+    // The method argument shadows 'context'. Let's rename argument or use 'this.context'.
+    this.context.read<MapProvider>().onMapLongClick(context.point);
   }
 
   void _onStopDelivered(StopEntity stop) {
-    ref
-        .read(mapProvider.notifier)
+    context
+        .read<MapProvider>()
         .updatePackageStatus(stop.package.id, PackageStatus.delivered);
   }
 
   void _onStopFailed(StopEntity stop) {
-    ref
-        .read(mapProvider.notifier)
+    context
+        .read<MapProvider>()
         .updatePackageStatus(stop.package.id, PackageStatus.failed);
   }
 
   @override
   Widget build(BuildContext context) {
-    final mapState = ref.watch(mapProvider);
-    final selectedRoute = ref.watch(selectedRouteProvider);
-
-    // Listen for changes in the globally selected route and command the map to update.
-    ref.listen<RouteEntity?>(selectedRouteProvider, (previous, next) {
-      // If the route is different from the one currently on the map, load it.
-      if (next != null && next.id != mapState.activeRoute?.id) {
-        ref.read(mapProvider.notifier).loadRouteById(next.id);
-      }
-    });
-
-    // Listen for internal map errors.
-    ref.listen<MapState>(mapProvider, (previous, next) {
-      if (next.error != null && previous?.error != next.error) {
-        showAppToast(context, next.error!, type: ToastType.error);
-      }
-    });
-
-    // Listen for stop creation requests and show the confirmation dialog.
-    ref.listen<StopCreationRequest?>(
-      mapProvider.select((state) => state.stopCreationRequest),
-      (previous, next) {
-        // If next is null and previous wasn't, close any open dialog
-        if (next == null && previous != null) {
-          Navigator.of(context, rootNavigator: true).pop();
-        }
-        // If next is not null, show the dialog
-        else if (next != null && previous == null) {
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (BuildContext dialogContext) {
-              return ConfirmAddStopDialog(request: next);
-            },
-          );
-        }
-      },
-    );
+    final mapState = context.watch<MapProvider>().state;
+    final selectedRoute = context.watch<RoutesProvider>().selectedRoute;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -123,7 +147,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 children: [
                   // 1. Capa de Mapa Real
                   Positioned.fill(
-                    // RepaintBoundary para optimización (Skill: Optimization)
                     child: RepaintBoundary(
                       child: MapWidget(
                         onMapCreated: _onMapCreated,
@@ -131,19 +154,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         styleUri: MapboxStyles.DARK,
                         gestureRecognizers:
                             <Factory<OneSequenceGestureRecognizer>>{
-                              Factory<PanGestureRecognizer>(
-                                () => PanGestureRecognizer(),
-                              ),
-                              Factory<ScaleGestureRecognizer>(
-                                () => ScaleGestureRecognizer(),
-                              ),
-                              Factory<TapGestureRecognizer>(
-                                () => TapGestureRecognizer(),
-                              ),
-                              Factory<LongPressGestureRecognizer>(
-                                () => LongPressGestureRecognizer(),
-                              ),
-                            },
+                          Factory<PanGestureRecognizer>(
+                            () => PanGestureRecognizer(),
+                          ),
+                          Factory<ScaleGestureRecognizer>(
+                            () => ScaleGestureRecognizer(),
+                          ),
+                          Factory<TapGestureRecognizer>(
+                            () => TapGestureRecognizer(),
+                          ),
+                          Factory<LongPressGestureRecognizer>(
+                            () => LongPressGestureRecognizer(),
+                          ),
+                        },
                       ),
                     ),
                   ),
@@ -188,8 +211,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         NavBarVisibilityNotification(true).dispatch(context);
                       });
                     },
-                    onDelivered: _onStopDelivered, // Pass the method
-                    onFailed: _onStopFailed, // Pass the method
+                    onDelivered: _onStopDelivered,
+                    onFailed: _onStopFailed,
                   ),
 
                   // 4. Lista de Paquetes (Overlay Inferior)

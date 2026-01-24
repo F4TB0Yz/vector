@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart';
 import 'package:vector/core/theme/app_colors.dart';
-import 'package:vector/features/packages/presentation/providers/filtered_stops_provider.dart';
+import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
 
-class FilterBar extends ConsumerWidget {
+class FilterBar extends StatelessWidget {
   const FilterBar({super.key});
 
   final List<String> _filters = const ["TODAS", "PENDIENTE", "ENTREGADO", "FALLIDO"];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final selectedIndex = ref.watch(packageFilterIndexProvider);
+  Widget build(BuildContext context) {
+    final selectedIndex = context.watch<RoutesProvider>().stopFilterIndex;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -22,7 +22,7 @@ class FilterBar extends ConsumerWidget {
             padding: const EdgeInsets.only(right: 12.0),
             child: GestureDetector(
               onTap: () {
-                ref.read(packageFilterIndexProvider.notifier).state = index;
+                context.read<RoutesProvider>().setStopFilter(index);
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),

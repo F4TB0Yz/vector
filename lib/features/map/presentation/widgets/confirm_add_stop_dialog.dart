@@ -1,23 +1,23 @@
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:vector/core/theme/app_colors.dart';
 import 'package:vector/features/map/presentation/providers/map_provider.dart';
+import 'package:vector/features/map/presentation/providers/map_state.dart';
 
-class ConfirmAddStopDialog extends ConsumerWidget {
+class ConfirmAddStopDialog extends StatelessWidget {
   final StopCreationRequest request;
 
   const ConfirmAddStopDialog({super.key, required this.request});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
     // Watch the provider to rebuild when geocoding finishes
-    final currentRequest = ref.watch(
-      mapProvider.select((state) => state.stopCreationRequest),
+    final currentRequest = context.select<MapProvider, StopCreationRequest?>(
+      (provider) => provider.state.stopCreationRequest,
     );
 
     // Use current request from provider if available, otherwise use the initial one
@@ -94,7 +94,7 @@ class ConfirmAddStopDialog extends ConsumerWidget {
                       // Cancel button
                       TextButton(
                         onPressed: () {
-                          ref.read(mapProvider.notifier).cancelStopCreation();
+                          context.read<MapProvider>().cancelStopCreation();
                         },
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
@@ -136,8 +136,8 @@ class ConfirmAddStopDialog extends ConsumerWidget {
                             onTap: displayRequest.isGeocoding
                                 ? null
                                 : () {
-                                    ref
-                                        .read(mapProvider.notifier)
+                                    context
+                                        .read<MapProvider>()
                                         .confirmStopCreation();
                                   },
                             borderRadius: BorderRadius.circular(6),

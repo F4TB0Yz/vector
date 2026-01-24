@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vector/core/theme/app_colors.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:vector/features/packages/domain/entities/jt_package.dart';
 
-class AddPackageDetailsDialog extends ConsumerStatefulWidget {
+class AddPackageDetailsDialog extends StatefulWidget {
   final String trackingCode;
   final JTPackage? prefillData;
 
@@ -15,12 +14,12 @@ class AddPackageDetailsDialog extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<AddPackageDetailsDialog> createState() =>
+  State<AddPackageDetailsDialog> createState() =>
       _AddPackageDetailsDialogState();
 }
 
 class _AddPackageDetailsDialogState
-    extends ConsumerState<AddPackageDetailsDialog> {
+    extends State<AddPackageDetailsDialog> {
   late TextEditingController _nameController;
   late TextEditingController _addressController;
   late TextEditingController _phoneController;

@@ -1,30 +1,33 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:provider/provider.dart';
 import 'package:vector/features/home/presentation/widgets/floating_scan_button.dart';
-import 'package:vector/features/packages/presentation/providers/filtered_stops_provider.dart';
-import 'package:vector/features/packages/presentation/providers/packages_screen_notifier.dart';
 import 'package:vector/features/packages/presentation/widgets/add_package_details_dialog.dart';
 import 'package:vector/features/packages/presentation/widgets/filter_bar.dart';
 import 'package:vector/features/packages/presentation/widgets/packages_header.dart';
 import 'package:vector/features/packages/presentation/widgets/package_card.dart';
 import 'package:vector/features/packages/presentation/widgets/route_date_warning_banner.dart';
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
+import 'package:vector/features/packages/presentation/providers/jt_package_providers.dart';
+import 'package:vector/features/routes/domain/usecases/add_stop_to_route.dart';
 import 'package:vector/shared/presentation/screens/shared_scanner_screen.dart';
 import 'package:vector/shared/presentation/widgets/empty_state_widget.dart';
 import 'package:vector/shared/presentation/widgets/toasts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:vector/features/map/domain/entities/stop_entity.dart';
+import 'package:vector/features/packages/domain/entities/manual_package_entity.dart';
+import 'package:vector/features/packages/domain/entities/package_status.dart';
+import 'package:vector/features/packages/domain/entities/jt_package.dart';
 
-class PackagesScreen extends ConsumerStatefulWidget {
+class PackagesScreen extends StatefulWidget {
   const PackagesScreen({super.key});
 
   @override
-  ConsumerState<PackagesScreen> createState() => _PackagesScreenState();
+  State<PackagesScreen> createState() => _PackagesScreenState();
 }
 
-class _PackagesScreenState extends ConsumerState<PackagesScreen> {
+class _PackagesScreenState extends State<PackagesScreen> {
   Future<void> _openScanner(BuildContext context) async {
-    final selectedRoute = ref.read(selectedRouteProvider);
+    final selectedRoute = context.read<RoutesProvider>().selectedRoute;
     if (selectedRoute == null) {
       showAppToast(
         context,
@@ -47,8 +50,13 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
   }
 
   Future<void> _showDetailsDialog(BuildContext context, String code) async {
-    final packagesScreenNotifier = ref.read(packagesScreenNotifierProvider.notifier);
-    final prefillData = await packagesScreenNotifier.getPrefillData(code);
+    final jtPackages = context.read<PackagesProvider>().packages;
+    JTPackage? prefillData;
+     try {
+      prefillData = jtPackages.firstWhere((p) => p.waybillNo == code);
+    } catch (_) {
+      // Not found
+    }
 
     if (!context.mounted) return;
 
@@ -60,29 +68,53 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
     if (!mounted) return;
 
     if (result != null) {
-      await packagesScreenNotifier.handleSavePackage(
-        packageData: result,
-        showAppToast: (message, {required type}) => showAppToast(context, message, type: type),
-        onRouteNotSelected: () {
-          showAppToast(context, 'Error: No hay ruta seleccionada para guardar.', type: ToastType.error);
-        },
-        onOptimisticUpdate: (updatedRoute) {
-          ref.read(selectedRouteProvider.notifier).state = updatedRoute;
-        },
-        onRollback: (originalRoute) {
-          ref.read(selectedRouteProvider.notifier).state = originalRoute;
-        },
-        onInvalidateRoutes: () {
-          ref.invalidate(routesProvider);
-        },
-      );
+      _handleSavePackage(context, result);
+    }
+  }
+
+  Future<void> _handleSavePackage(BuildContext context, Map<String, String> packageData) async {
+    final routesProvider = context.read<RoutesProvider>();
+    final selectedRoute = routesProvider.selectedRoute;
+    final addStopUseCase = context.read<AddStopToRoute>();
+
+    if (selectedRoute == null) {
+      showAppToast(context, 'Error: No hay ruta seleccionada para guardar.', type: ToastType.error);
+      return;
+    }
+
+    final stop = StopEntity(
+      id: packageData['code']!,
+      routeId: selectedRoute.id,
+      package: ManualPackageEntity(
+        id: packageData['code']!,
+        receiverName: packageData['name']!,
+        address: packageData['address']!,
+        phone: packageData['phone']!,
+        notes: packageData['notes'],
+        status: PackageStatus.pending,
+        coordinates: null, // Forward geocoding TODO
+        updatedAt: DateTime.now(),
+      ),
+      stopOrder: (selectedRoute.stops.length + 1),
+    );
+
+    await routesProvider.addStop(stop, addStopUseCase);
+
+    if (mounted) {
+       if (routesProvider.error != null) {
+         showAppToast(context, "Error: ${routesProvider.error}", type: ToastType.error);
+       } else {
+         showAppToast(context, "Paquete agregado", type: ToastType.success);
+       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final selectedRoute = ref.watch(selectedRouteProvider);
-    final filteredStops = ref.watch(filteredStopsProvider);
+    // Watch routes provider for updates (selected route change, stops change, filter change)
+    final routesProvider = context.watch<RoutesProvider>();
+    final selectedRoute = routesProvider.selectedRoute;
+    final filteredStops = routesProvider.filteredStops;
 
     return Scaffold(
       backgroundColor: const Color(0xFF121212), // Neon Dark Theme Background
@@ -127,7 +159,7 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
         ),
       ),
       floatingActionButton: Padding(
-        padding: EdgeInsets.only(bottom: 80.0),
+        padding: const EdgeInsets.only(bottom: 80.0),
         child: FloatingScanButton(onTap: () => _openScanner(context)),
       ),
     );

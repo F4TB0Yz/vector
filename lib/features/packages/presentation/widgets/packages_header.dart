@@ -1,106 +1,95 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:vector/core/theme/app_colors.dart';
 import 'package:vector/features/auth/presentation/providers/auth_provider.dart';
 import 'package:vector/features/packages/presentation/providers/jt_package_providers.dart';
 import 'package:vector/features/routes/domain/entities/route_entity.dart';
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
+import 'package:vector/features/routes/domain/usecases/add_stop_to_route.dart';
 import 'package:vector/shared/presentation/widgets/toasts.dart';
-import 'package:vector/features/packages/domain/entities/jt_package.dart';
 
-class PackagesHeader extends ConsumerWidget {
+class PackagesHeader extends StatelessWidget {
   const PackagesHeader({super.key});
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final selectedRoute = ref.watch(selectedRouteProvider);
-    final authState = ref.watch(authProvider);
-    final jtPackagesState = ref.watch(jtPackagesProvider);
+  Future<void> _handleImportClick(BuildContext context) async {
+    final authProvider = context.read<AuthProvider>();
+    final routesProvider = context.read<RoutesProvider>();
+    final selectedRoute = routesProvider.selectedRoute;
+    final packagesProvider = context.read<PackagesProvider>();
 
-    final bool isSessionActive = authState.value?.isSome() ?? false;
-    final bool isLoading = jtPackagesState.isLoading;
-    final bool isDownloadEnabled = isSessionActive && !isLoading;
-
-    // Escuchar cambios en jtPackagesState para mostrar resultado de importación
-    ref.listen<AsyncValue<List<JTPackage>>>(jtPackagesProvider, (
-      previous,
-      next,
-    ) {
-      // Mostrar mensaje cuando comienza la importación
-      if (previous?.isLoading != true && next.isLoading) {
-        showAppToast(
-          context,
-          'Importando paquetes...',
-          type: ToastType.info,
-          duration: const Duration(
-            seconds: 1,
-          ), // Duración corta ya que el resultado vendrá pronto
-        );
-      }
-
-      // Mostrar resultado cuando termina la importación
-      if (previous?.isLoading == true && !next.isLoading) {
-        next.when(
-          data: (packages) {
-            if (packages.isNotEmpty && selectedRoute != null) {
-              showAppToast(
-                context,
-                '✅ ${packages.length} paquetes importados a ${selectedRoute.name}',
-                type: ToastType.success,
-              );
-            } else if (packages.isEmpty) {
-              showAppToast(
-                context,
-                'No se encontraron paquetes para importar',
-                type: ToastType.warning,
-              );
-            }
-          },
-          loading: () {},
-          error: (error, _) {
-            showAppToast(
-              context,
-              'Error al importar: $error',
-              type: ToastType.error,
-            );
-          },
-        );
-      }
-    });
-
-    void handleImportClick() {
-      if (isLoading) {
-        showAppToast(
-          context,
-          'Ya hay una importación en curso...',
-          type: ToastType.info,
-        );
-        return;
-      }
-
-      if (!isSessionActive) {
-        showAppToast(
-          context,
-          'Inicia sesión en J&T para importar paquetes',
-          type: ToastType.warning,
-        );
-        return;
-      }
-
-      if (selectedRoute == null) {
-        showAppToast(
-          context,
-          'Selecciona una ruta para importar los paquetes',
-          type: ToastType.warning,
-        );
-        return;
-      }
-
-      // Iniciar la importación sin bloquear
-      // El listener manejará los mensajes de éxito/error
-      ref.read(jtPackagesProvider.notifier).importPackages();
+    if (packagesProvider.isLoading) {
+      showAppToast(
+        context,
+        'Ya hay una importación en curso...',
+        type: ToastType.info,
+      );
+      return;
     }
+
+    if (!authProvider.isAuthenticated) {
+      showAppToast(
+        context,
+        'Inicia sesión en J&T para importar paquetes',
+        type: ToastType.warning,
+      );
+      return;
+    }
+
+    if (selectedRoute == null) {
+      showAppToast(
+        context,
+        'Selecciona una ruta para importar los paquetes',
+        type: ToastType.warning,
+      );
+      return;
+    }
+
+    showAppToast(
+      context,
+      'Importando paquetes...',
+      type: ToastType.info,
+      duration: const Duration(seconds: 1),
+    );
+
+    await packagesProvider.importPackages(
+      selectedRoute: selectedRoute,
+      addStopUseCase: context.read<AddStopToRoute>(),
+      onLogout: () {
+        authProvider.logout();
+      },
+      onRouteRefreshed: () {
+        routesProvider.loadRoutes();
+      },
+    );
+
+    if (context.mounted) {
+      if (packagesProvider.error != null) {
+         showAppToast(
+          context,
+          'Error al importar: ${packagesProvider.error}',
+          type: ToastType.error,
+        );
+      } else {
+         showAppToast(
+          context,
+          'Importación completada',
+          type: ToastType.success,
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final routesProvider = context.watch<RoutesProvider>();
+    final authProvider = context.watch<AuthProvider>();
+    final packagesProvider = context.watch<PackagesProvider>(); // Only need state for button (using watch below if needed for UI update)
+    final isLoading = context.watch<PackagesProvider>().isLoading; // Listen to loading
+
+    final selectedRoute = routesProvider.selectedRoute;
+    final bool isSessionActive = authProvider.isAuthenticated;
+    final bool isDownloadEnabled = isSessionActive && !isLoading;
 
     return Padding(
       padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0),
@@ -133,14 +122,14 @@ class PackagesHeader extends ConsumerWidget {
           ),
           Row(
             children: [
-              _RouteSelector(selectedRoute: selectedRoute),
+              _RouteSelector(),
               IconButton(
                 tooltip: !isSessionActive
                     ? 'Inicia sesión en J&T para importar'
                     : selectedRoute == null
                     ? 'Selecciona una ruta para importar'
                     : 'Importar Paquetes de J&T a ${selectedRoute.name}',
-                onPressed: handleImportClick,
+                onPressed: () => _handleImportClick(context),
                 icon: Icon(
                   LucideIcons.packageSearch,
                   color: isDownloadEnabled
@@ -156,49 +145,45 @@ class PackagesHeader extends ConsumerWidget {
   }
 }
 
-class _RouteSelector extends ConsumerWidget {
-  final RouteEntity? selectedRoute;
-
-  const _RouteSelector({required this.selectedRoute});
-
+class _RouteSelector extends StatelessWidget {
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final routesAsync = ref.watch(routesProvider);
+  Widget build(BuildContext context) {
+    final routesProvider = context.watch<RoutesProvider>();
+    final routes = routesProvider.routes;
+    final selectedRoute = routesProvider.selectedRoute;
+    final isLoading = routesProvider.isLoading;
 
-    return routesAsync.when(
-      data: (routes) {
-        final todayRoutes = routes
-            .where((route) => DateUtils.isSameDay(route.date, DateTime.now()))
-            .toList();
+    if (isLoading) return const SizedBox(width: 48);
+    // if error?
 
-        if (todayRoutes.isEmpty) return const SizedBox.shrink();
+    final todayRoutes = routes
+        .where((route) => DateUtils.isSameDay(route.date, DateTime.now()))
+        .toList();
 
-        return PopupMenuButton<RouteEntity>(
-          tooltip: selectedRoute?.name ?? 'Seleccionar Ruta',
-          icon: Icon(
-            LucideIcons.map,
-            color: selectedRoute != null ? AppColors.primary : Colors.grey,
-          ),
-          color: const Color(0xFF2C2C35),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          onSelected: (route) {
-            ref.read(selectedRouteProvider.notifier).state = route;
-            showAppToast(
-              context,
-              'Ruta: ${route.name}',
-              type: ToastType.success,
-            );
-          },
-          itemBuilder: (context) => todayRoutes.map((route) {
-            return PopupMenuItem<RouteEntity>(
-              value: route,
-              child: Text(route.name, style: TextStyle(color: Colors.white)),
-            );
-          }).toList(),
+    if (todayRoutes.isEmpty) return const SizedBox.shrink();
+
+    return PopupMenuButton<RouteEntity>(
+      tooltip: selectedRoute?.name ?? 'Seleccionar Ruta',
+      icon: Icon(
+        LucideIcons.map,
+        color: selectedRoute != null ? AppColors.primary : Colors.grey,
+      ),
+      color: const Color(0xFF2C2C35),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      onSelected: (route) {
+        context.read<RoutesProvider>().selectRoute(route);
+        showAppToast(
+          context,
+          'Ruta: ${route.name}',
+          type: ToastType.success,
         );
       },
-      loading: () => const SizedBox(width: 48),
-      error: (_, __) => const Icon(LucideIcons.alertCircle, color: Colors.red),
+      itemBuilder: (context) => todayRoutes.map((route) {
+        return PopupMenuItem<RouteEntity>(
+          value: route,
+          child: Text(route.name, style: TextStyle(color: Colors.white)),
+        );
+      }).toList(),
     );
   }
 }

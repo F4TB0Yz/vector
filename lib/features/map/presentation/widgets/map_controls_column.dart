@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:vector/core/theme/app_colors.dart';
 import 'package:vector/features/map/presentation/providers/map_provider.dart';
 
-class MapControlsColumn extends ConsumerWidget {
+class MapControlsColumn extends StatelessWidget {
   final bool showNextStopCard;
   final bool showPackageList;
   final VoidCallback onToggleNextStopCard;
@@ -19,7 +19,7 @@ class MapControlsColumn extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Column(
       children: [
         _MapControlButton(
@@ -37,21 +37,21 @@ class MapControlsColumn extends ConsumerWidget {
         _MapControlButton(
           icon: LucideIcons.crosshair,
           onTap: () {
-            ref.read(mapProvider.notifier).centerOnUserLocation();
+            context.read<MapProvider>().centerOnUserLocation();
           },
         ),
         const SizedBox(height: 8),
         _MapControlButton(
           icon: LucideIcons.plus,
           onTap: () {
-            ref.read(mapProvider.notifier).zoomIn();
+            context.read<MapProvider>().zoomIn();
           },
         ),
         const SizedBox(height: 8),
         _MapControlButton(
           icon: LucideIcons.minus,
           onTap: () {
-            ref.read(mapProvider.notifier).zoomOut();
+            context.read<MapProvider>().zoomOut();
           },
         ),
       ],

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart';
 import 'package:vector/core/theme/app_colors.dart';
 import 'package:vector/shared/presentation/notifications/navbar_notification.dart';
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
@@ -8,20 +8,24 @@ import 'package:vector/features/routes/presentation/widgets/route_card.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-class RoutesScreen extends ConsumerStatefulWidget {
+class RoutesScreen extends StatefulWidget {
   const RoutesScreen({super.key});
 
   @override
-  ConsumerState<RoutesScreen> createState() => _RoutesScreenState();
+  State<RoutesScreen> createState() => _RoutesScreenState();
 }
 
-class _RoutesScreenState extends ConsumerState<RoutesScreen> {
+class _RoutesScreenState extends State<RoutesScreen> {
   final List<String> _filters = ["TODAS", "ACTIVA", "EN ESPERA"];
 
   @override
   Widget build(BuildContext context) {
-    final groupedRoutesAsync = ref.watch(groupedRoutesProvider);
-    final selectedFilter = ref.watch(routeFilterProvider);
+    final routesProvider = context.watch<RoutesProvider>();
+    final groupedRoutes = routesProvider.groupedRoutes;
+    final selectedFilter = routesProvider.filterIndex;
+    final isLoading = routesProvider.isLoading;
+    final error = routesProvider.error;
+
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
       body: SafeArea(
@@ -101,7 +105,7 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
                     padding: const EdgeInsets.only(right: 12.0),
                     child: GestureDetector(
                       onTap: () {
-                        ref.read(routeFilterProvider.notifier).state = index;
+                        context.read<RoutesProvider>().setFilter(index);
                       },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
@@ -115,7 +119,7 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
                               : const Color(0xFF2C2C35),
                           borderRadius: BorderRadius.circular(
                             6,
-                          ), // Sharp corners as per SKILL
+                          ),
                           border: Border.all(
                             color: isSelected
                                 ? Colors.transparent
@@ -146,108 +150,116 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
             ),
 
             Expanded(
-              child: groupedRoutesAsync.when(
-                data: (groups) {
-                  if (groups.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            LucideIcons.map,
-                            size: 64,
-                            color: Colors.white.withValues(alpha: 0.2),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No se encontraron rutas',
-                            style: TextStyle(
-                              color: Colors.grey[400],
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          ElevatedButton(
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: (context) => const AddRouteDialog(),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.black,
-                            ),
-                            child: const Text('CREAR RUTA AHORA'),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  final sortedDates = groups.keys.toList()
-                    ..sort((a, b) => b.compareTo(a));
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.only(
-                      left: 16.0,
-                      right: 16.0,
-                      top: 16.0,
-                      bottom: 100.0,
-                    ),
-                    itemCount: sortedDates.length,
-                    itemBuilder: (context, dateIndex) {
-                      final date = sortedDates[dateIndex];
-                      final routes = groups[date]!;
-
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _DateHeader(date: date),
-                          const SizedBox(height: 12),
-                          ...routes.map((route) => Padding(
-                                padding: const EdgeInsets.only(bottom: 12.0),
-                                child: RouteCard(
-                                  routeId: route.name,
-                                  status: route.progress == 1.0
-                                      ? 'COMPLETED'
-                                      : route.progress > 0
-                                          ? 'ACTIVE'
-                                          : 'READY',
-                                  estTime: 'Calculando...',
-                                  stops: route.stops.length,
-                                  distance: 0.0,
-                                  isSelected:
-                                      ref.watch(selectedRouteProvider)?.id ==
-                                          route.id,
-                                  onSelect: () {
-                                    ref
-                                        .read(selectedRouteProvider.notifier)
-                                        .state = route;
-                                    const ChangeTabNotification(2)
-                                        .dispatch(context);
-                                  },
-                                ),
-                              )),
-                        ],
-                      );
-                    },
-                  );
-                },
-                loading: () => const Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
-                ),
-                error: (error, _) => Center(
-                  child: Text(
-                    'Error: $error',
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                ),
-              ),
+              child: _buildContent(isLoading, error, groupedRoutes),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildContent(
+    bool isLoading,
+    String? error,
+    Map<DateTime, dynamic> groups,
+  ) {
+    if (isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    }
+
+    if (error != null) {
+      return Center(
+        child: Text(
+          'Error: $error',
+          style: const TextStyle(color: Colors.red),
+        ),
+      );
+    }
+
+    if (groups.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              LucideIcons.map,
+              size: 64,
+              color: Colors.white.withValues(alpha: 0.2),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No se encontraron rutas',
+              style: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => const AddRouteDialog(),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.black,
+              ),
+              child: const Text('CREAR RUTA AHORA'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final sortedDates = groups.keys.toList()..sort((a, b) => b.compareTo(a));
+
+    return ListView.builder(
+      padding: const EdgeInsets.only(
+        left: 16.0,
+        right: 16.0,
+        top: 16.0,
+        bottom: 100.0,
+      ),
+      itemCount: sortedDates.length,
+      itemBuilder: (context, dateIndex) {
+        final date = sortedDates[dateIndex];
+        final routes = groups[date]!;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _DateHeader(date: date),
+            const SizedBox(height: 12),
+            ...routes.map(
+              (route) => Padding(
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: RouteCard(
+                  routeId: route.name,
+                  status: route.progress == 1.0
+                      ? 'COMPLETED'
+                      : route.progress > 0
+                          ? 'ACTIVE'
+                          : 'READY',
+                  estTime: 'Calculando...',
+                  stops: route.stops.length,
+                  distance: 0.0,
+                  isSelected:
+                      context.watch<RoutesProvider>().selectedRoute?.id ==
+                          route.id,
+                  onSelect: () {
+                    context.read<RoutesProvider>().selectRoute(route);
+                    const ChangeTabNotification(2).dispatch(context);
+                  },
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

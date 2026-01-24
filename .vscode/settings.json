@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^git commit -m \"feat\\(map\\): implement zoom, geocoding API, and fix gesture navigation\n- Added zoomIn and zoomOut methods to MapNotifier\\.\n- Integrated Mapbox Reverse Geocoding for real address lookup\\.\n- Fixed 0,0 coordinates bug for manually added stops\\.\n- Applied UI-Neon \\(Glassmorphism \\+ Neon Green\\) to confirm dialog\\.\n- Restored map pan/zoom gestures functionality\\.\"; git push origin master$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

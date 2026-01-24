@@ -7,6 +7,8 @@ description: Orquestador principal que determina qué skill especializada usar s
 
 Este es el orquestador principal de skills para el proyecto Vector. Su función es analizar la tarea solicitada y determinar qué skill(s) especializada(s) debe usar el agente. Siempre escribira todo la documentación en español y el código en inglés.
 
+Al implementar un nuevo feature, funcion o widget de UI, no debe cambiar codigo que sirva y no haya necesidad de cambiarlo.
+
 ## 🎯 Propósito
 
 El orquestador actúa como un **"router inteligente"** que:

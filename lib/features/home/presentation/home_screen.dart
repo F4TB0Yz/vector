@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart';
+import 'package:vector/features/home/presentation/providers/home_provider.dart';
 
 import 'package:vector/features/home/presentation/widgets/active_route_card.dart';
 import 'package:vector/features/home/presentation/widgets/home_action_buttons.dart';
@@ -9,26 +10,25 @@ import 'package:vector/features/packages/domain/entities/jt_package.dart';
 import 'package:vector/features/packages/presentation/providers/jt_package_providers.dart';
 import 'package:vector/features/packages/presentation/widgets/add_package_details_dialog.dart';
 import 'package:vector/features/routes/domain/entities/route_entity.dart';
-import 'package:vector/features/routes/domain/usecases/add_stop_to_route.dart';
+// import 'package:vector/features/routes/domain/usecases/add_stop_to_route.dart'; // Removed
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
 import 'package:vector/features/map/domain/entities/stop_entity.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mapbox;
 import 'package:vector/shared/presentation/screens/shared_scanner_screen.dart';
 import 'package:vector/features/routes/presentation/widgets/add_route_dialog.dart';
 import 'package:vector/shared/presentation/widgets/toasts.dart';
 import 'package:vector/features/packages/domain/entities/manual_package_entity.dart';
 import 'package:vector/features/packages/domain/entities/package_status.dart';
 
-class HomeScreen extends ConsumerStatefulWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> {
   void _openScanner(BuildContext context) {
-    final selectedRoute = ref.read(selectedRouteProvider);
+    final selectedRoute = context.read<RoutesProvider>().selectedRoute;
     if (selectedRoute == null) {
       showAppToast(
         context,
@@ -51,7 +51,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _showDetailsDialog(String code) async {
-    final jtPackages = ref.read(jtPackagesProvider).asData?.value ?? [];
+    final jtPackages = context.read<PackagesProvider>().packages;
     JTPackage? prefillData;
     try {
       prefillData = jtPackages.firstWhere((p) => p.waybillNo == code);
@@ -71,7 +71,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _handleSavePackage(Map<String, String> packageData) async {
-    final selectedRoute = ref.read(selectedRouteProvider);
+    final routesProvider = context.read<RoutesProvider>();
+    final selectedRoute = routesProvider.selectedRoute;
+    
     if (selectedRoute == null) {
       if (mounted) {
         showAppToast(
@@ -112,7 +114,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       stops: newStops,
     );
 
-    ref.read(selectedRouteProvider.notifier).state = optimisticallyUpdatedRoute;
+    // Update RoutesProvider state locally for immediate feedback
+    // Note: RoutesProvider.selectRoute updates the selected route.
+    // However, to update the route in the LIST, we might need a method in RoutesProvider.
+    // For now, updating selectedRoute is enough for UI.
+    routesProvider.selectRoute(optimisticallyUpdatedRoute);
 
     if (mounted) {
       showAppToast(
@@ -122,12 +128,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       );
     }
 
-    // --- 2. Background Persistence ---
+    // --- 2. Background Persistence via HomeProvider ---
     try {
-      final useCase = ref.read(addStopToRouteUseCaseProvider);
-      await useCase(AddStopParams(routeId: selectedRoute.id, stop: stop));
+      await context.read<HomeProvider>().savePackageToRoute(
+            routeId: selectedRoute.id,
+            stop: stop,
+          );
 
-      ref.invalidate(routesProvider);
+      // Invalidate/Refresh routes
+      if (mounted) {
+         context.read<RoutesProvider>().loadRoutes();
+      }
     } catch (e) {
       // --- 3. Rollback on Error ---
       if (mounted) {
@@ -136,8 +147,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           "Error al guardar paquete: $e",
           type: ToastType.error,
         );
+         context.read<RoutesProvider>().selectRoute(selectedRoute);
       }
-      ref.read(selectedRouteProvider.notifier).state = selectedRoute;
     }
   }
 

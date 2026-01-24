@@ -1,57 +1,49 @@
-import 'dart:async';
-import 'package:dio/dio.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 import '../../../../core/error/failures.dart';
-import '../../data/datasources/auth_local_datasource.dart';
-import '../../data/datasources/jt_auth_service.dart';
-import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/entities/user.dart';
+import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/save_credentials.dart';
-import '../../domain/usecases/get_saved_credentials.dart';
 
-// --- Dependencies ---
+class AuthProvider extends ChangeNotifier {
+  final AuthRepository _authRepository;
+  final LoginUseCase _loginUseCase;
+  final SaveCredentials _saveCredentialsUseCase;
 
-final dioProvider = Provider<Dio>((ref) {
-  return Dio();
-});
+  Option<User> _user = const Option.none();
+  bool _isLoading = false;
+  String? _error;
 
-final jtAuthServiceProvider = Provider<JtAuthService>((ref) {
-  return JtAuthService(ref.watch(dioProvider));
-});
+  // Getters
+  Option<User> get user => _user;
+  bool get isLoading => _isLoading;
+  String? get error => _error;
+  bool get isAuthenticated => _user.isSome();
 
-final authLocalDataSourceProvider = Provider<AuthLocalDataSource>((ref) {
-  return AuthLocalDataSource();
-});
+  AuthProvider({
+    required AuthRepository authRepository,
+    required LoginUseCase loginUseCase,
+    required SaveCredentials saveCredentialsUseCase,
+  })  : _authRepository = authRepository,
+        _loginUseCase = loginUseCase,
+        _saveCredentialsUseCase = saveCredentialsUseCase;
 
-final authRepositoryProvider = Provider<AuthRepositoryImpl>((ref) {
-  return AuthRepositoryImpl(
-    ref.watch(jtAuthServiceProvider),
-    ref.watch(authLocalDataSourceProvider),
-  );
-});
+  /// Check current auth status (e.g. on app start)
+  Future<void> checkAuthStatus() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
 
-final loginUseCaseProvider = Provider<LoginUseCase>((ref) {
-  return LoginUseCase(ref.watch(authRepositoryProvider));
-});
-
-final saveCredentialsProvider = Provider<SaveCredentials>((ref) {
-  return SaveCredentials(ref.watch(authRepositoryProvider));
-});
-
-final getSavedCredentialsProvider = Provider<GetSavedCredentials>((ref) {
-  return GetSavedCredentials(ref.watch(authRepositoryProvider));
-});
-
-// --- State ---
-
-class AuthNotifier extends AsyncNotifier<Option<User>> {
-  @override
-  Future<Option<User>> build() async {
-    // Load cached user on initialization
-    final repository = ref.watch(authRepositoryProvider);
-    return await repository.getCurrentUser();
+    try {
+      final result = await _authRepository.getCurrentUser();
+      _user = result;
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> login(
@@ -59,34 +51,42 @@ class AuthNotifier extends AsyncNotifier<Option<User>> {
     String password, {
     bool rememberMe = false,
   }) async {
-    state = const AsyncLoading();
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
 
-    final useCase = ref.read(loginUseCaseProvider);
-    final saveCredentialsUseCase = ref.read(saveCredentialsProvider);
+    final result = await _loginUseCase(account: account, password: password);
 
-    final result = await useCase(account: account, password: password);
-
-    state = result.fold(
-      (Failure failure) => AsyncError(failure.message, StackTrace.current),
+    result.fold(
+      (Failure failure) {
+        _error = failure.message;
+        _isLoading = false;
+        notifyListeners();
+      },
       (User user) {
+        _user = Some(user);
+        
         // Handle Remember Me
         if (rememberMe) {
-          saveCredentialsUseCase(account, password);
+          _saveCredentialsUseCase(account, password);
         } else {
-          saveCredentialsUseCase.clear();
+          _saveCredentialsUseCase.clear();
         }
-        return AsyncData(Some(user));
+
+        _isLoading = false;
+        notifyListeners();
       },
     );
   }
 
   Future<void> logout() async {
-    final repository = ref.read(authRepositoryProvider);
-    await repository.logout();
-    state = const AsyncData(Option.none());
+    _isLoading = true;
+    notifyListeners();
+
+    await _authRepository.logout();
+    _user = const Option.none();
+    
+    _isLoading = false;
+    notifyListeners();
   }
 }
-
-final authProvider = AsyncNotifierProvider<AuthNotifier, Option<User>>(
-  () => AuthNotifier(),
-);

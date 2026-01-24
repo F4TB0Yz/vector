@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:vector/features/packages/presentation/providers/is_route_for_today_provider.dart';
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
 
-class RouteDateWarningBanner extends ConsumerWidget {
+class RouteDateWarningBanner extends StatelessWidget {
   const RouteDateWarningBanner({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final selectedRoute = ref.watch(selectedRouteProvider);
-    final isRouteForToday = ref.watch(isRouteForTodayProvider);
+  Widget build(BuildContext context) {
+    final selectedRoute = context.watch<RoutesProvider>().selectedRoute;
+    final isRouteForToday = selectedRoute != null && DateUtils.isSameDay(selectedRoute.date, DateTime.now());
 
     if (selectedRoute == null || isRouteForToday) {
       return const SizedBox.shrink();

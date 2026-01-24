@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:vector/core/presentation/widgets/custom_card.dart';
 import 'package:vector/core/theme/app_colors.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:vector/features/home/presentation/widgets/next_stop_info.dart';
 import 'package:vector/features/home/presentation/widgets/route_progress.dart';
+import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
 
 class ActiveRouteCard extends StatelessWidget {
   final String? routeId;
@@ -20,10 +22,12 @@ class ActiveRouteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final selectedRoute = context.watch<RoutesProvider>().selectedRoute;
+    
     // Si no hay routeId, usamos la fecha como fallback (requerimiento previo)
     final displayId =
         routeId ??
-        DateFormat('MMMM d', 'es').format(DateTime.now()).toUpperCase();
+        (selectedRoute?.name ?? DateFormat('MMMM d', 'es').format(DateTime.now()).toUpperCase());
 
     return CustomCard(
       width: double.infinity,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:vector/core/database/database_service.dart';
 import 'package:vector/core/database/seed_data.dart';
@@ -86,10 +86,10 @@ class HomeHeader extends StatelessWidget {
   }
 }
 
-class _StatusSelector extends ConsumerWidget {
+class _StatusSelector extends StatelessWidget {
   const _StatusSelector();
 
-  void _handleTap(BuildContext context, WidgetRef ref, bool isAuthenticated) {
+  void _handleTap(BuildContext context, bool isAuthenticated) {
     if (!isAuthenticated) {
       showDialog(
         context: context,
@@ -125,7 +125,7 @@ class _StatusSelector extends ConsumerWidget {
                 style: TextStyle(color: Colors.white),
               ),
               onTap: () {
-                ref.read(authProvider.notifier).logout();
+                context.read<AuthProvider>().logout();
                 Navigator.pop(context);
               },
             ),
@@ -137,14 +137,9 @@ class _StatusSelector extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authProvider);
-
-    final bool isAuthenticated = authState.when(
-      data: (option) => option.isSome(),
-      error: (_, __) => false,
-      loading: () => false,
-    );
+  Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    final isAuthenticated = authProvider.isAuthenticated;
 
     // Definir colores según estado
     final statusColor = isAuthenticated
@@ -155,7 +150,7 @@ class _StatusSelector extends ConsumerWidget {
     final text = isAuthenticated ? 'J&T LINKED' : 'OFFLINE';
 
     return GestureDetector(
-      onTap: () => _handleTap(context, ref, isAuthenticated),
+      onTap: () => _handleTap(context, isAuthenticated),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
