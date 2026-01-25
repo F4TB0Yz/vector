@@ -33,6 +33,7 @@ class _MapScreenState extends State<MapScreen> {
   String? _previousError;
   StopCreationRequest? _previousStopCreationRequest;
   RouteEntity? _previousSelectedRoute;
+  bool _previousIsOptimizing = false;
 
   @override
   void initState() {
@@ -44,7 +45,7 @@ class _MapScreenState extends State<MapScreen> {
       context.read<MapProvider>().init();
       context.read<MapProvider>().addListener(_onMapProviderChanged);
       context.read<RoutesProvider>().addListener(_onRoutesProviderChanged);
-       // Initial check
+      // Initial check
       _onRoutesProviderChanged();
     });
   }
@@ -62,11 +63,11 @@ class _MapScreenState extends State<MapScreen> {
     final selectedRoute = context.read<RoutesProvider>().selectedRoute;
 
     if (selectedRoute?.id != _previousSelectedRoute?.id) {
-        // Route changed
-        if (selectedRoute != null) {
-            context.read<MapProvider>().loadRouteById(selectedRoute.id);
-        }
-        _previousSelectedRoute = selectedRoute;
+      // Route changed
+      if (selectedRoute != null) {
+        context.read<MapProvider>().loadRouteById(selectedRoute.id);
+      }
+      _previousSelectedRoute = selectedRoute;
     }
   }
 
@@ -79,6 +80,20 @@ class _MapScreenState extends State<MapScreen> {
       showAppToast(context, mapState.error!, type: ToastType.error);
     }
     _previousError = mapState.error;
+
+    // Optimization Feedback
+    if (mapState.isOptimizing && !_previousIsOptimizing) {
+      showAppToast(context, 'Optimizando ruta...', type: ToastType.info);
+    } else if (!mapState.isOptimizing &&
+        _previousIsOptimizing &&
+        mapState.error == null) {
+      showAppToast(
+        context,
+        '¡Ruta optimizada con éxito!',
+        type: ToastType.success,
+      );
+    }
+    _previousIsOptimizing = mapState.isOptimizing;
 
     // Stop Creation Dialog
     final nextRequest = mapState.stopCreationRequest;
@@ -117,15 +132,17 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _onStopDelivered(StopEntity stop) {
-    context
-        .read<MapProvider>()
-        .updatePackageStatus(stop.package.id, PackageStatus.delivered);
+    context.read<MapProvider>().updatePackageStatus(
+      stop.package.id,
+      PackageStatus.delivered,
+    );
   }
 
   void _onStopFailed(StopEntity stop) {
-    context
-        .read<MapProvider>()
-        .updatePackageStatus(stop.package.id, PackageStatus.failed);
+    context.read<MapProvider>().updatePackageStatus(
+      stop.package.id,
+      PackageStatus.failed,
+    );
   }
 
   @override
@@ -154,19 +171,19 @@ class _MapScreenState extends State<MapScreen> {
                         styleUri: MapboxStyles.DARK,
                         gestureRecognizers:
                             <Factory<OneSequenceGestureRecognizer>>{
-                          Factory<PanGestureRecognizer>(
-                            () => PanGestureRecognizer(),
-                          ),
-                          Factory<ScaleGestureRecognizer>(
-                            () => ScaleGestureRecognizer(),
-                          ),
-                          Factory<TapGestureRecognizer>(
-                            () => TapGestureRecognizer(),
-                          ),
-                          Factory<LongPressGestureRecognizer>(
-                            () => LongPressGestureRecognizer(),
-                          ),
-                        },
+                              Factory<PanGestureRecognizer>(
+                                () => PanGestureRecognizer(),
+                              ),
+                              Factory<ScaleGestureRecognizer>(
+                                () => ScaleGestureRecognizer(),
+                              ),
+                              Factory<TapGestureRecognizer>(
+                                () => TapGestureRecognizer(),
+                              ),
+                              Factory<LongPressGestureRecognizer>(
+                                () => LongPressGestureRecognizer(),
+                              ),
+                            },
                       ),
                     ),
                   ),

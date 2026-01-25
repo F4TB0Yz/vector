@@ -38,6 +38,10 @@ class MapState {
 
   final RouteEntity? activeRoute;
   final bool isLoadingRoute;
+  final bool isOptimizing;
+
+  final bool returnToStart;
+  final Point? customEndLocation;
 
   final StopCreationRequest? stopCreationRequest;
 
@@ -51,6 +55,9 @@ class MapState {
     this.locationPermission,
     this.activeRoute,
     this.isLoadingRoute = false,
+    this.isOptimizing = false,
+    this.returnToStart = false,
+    this.customEndLocation,
     this.stopCreationRequest,
     this.error,
   });
@@ -63,8 +70,12 @@ class MapState {
     geo.LocationPermission? locationPermission,
     RouteEntity? activeRoute,
     bool? isLoadingRoute,
+    bool? isOptimizing,
+    bool? returnToStart,
+    Point? customEndLocation,
     StopCreationRequest? stopCreationRequest, // Nullable to allow updates
     bool clearStopCreationRequest = false,
+    bool clearCustomEndLocation = false,
     String? error,
     bool clearError = false,
   }) {
@@ -76,6 +87,11 @@ class MapState {
       locationPermission: locationPermission ?? this.locationPermission,
       activeRoute: activeRoute ?? this.activeRoute,
       isLoadingRoute: isLoadingRoute ?? this.isLoadingRoute,
+      isOptimizing: isOptimizing ?? this.isOptimizing,
+      returnToStart: returnToStart ?? this.returnToStart,
+      customEndLocation: clearCustomEndLocation
+          ? null
+          : (customEndLocation ?? this.customEndLocation),
       stopCreationRequest: clearStopCreationRequest
           ? null
           : (stopCreationRequest ?? this.stopCreationRequest),

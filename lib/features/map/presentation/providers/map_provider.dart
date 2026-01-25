@@ -10,6 +10,7 @@ import 'package:vector/features/map/domain/entities/route_entity.dart';
 import 'package:vector/features/map/domain/entities/stop_entity.dart';
 import 'package:vector/features/map/domain/repositories/map_repository.dart';
 import 'package:vector/features/map/domain/usecases/create_stop_from_coordinates.dart';
+import 'package:vector/features/map/domain/usecases/optimize_route.dart';
 import 'package:vector/features/map/domain/usecases/reverse_geocode_coordinates.dart';
 import 'package:vector/features/packages/domain/entities/package_status.dart';
 import 'package:vector/features/map/presentation/providers/map_state.dart';
@@ -18,6 +19,7 @@ class MapProvider extends ChangeNotifier {
   final MapRepository _mapRepository;
   final ReverseGeocodeCoordinates _reverseGeocodeCoordinatesUseCase;
   final CreateStopFromCoordinates _createStopFromCoordinatesUseCase;
+  final OptimizeRoute _optimizeRouteUseCase;
 
   MapState _mapState = const MapState();
   MapState get state => _mapState;
@@ -31,9 +33,11 @@ class MapProvider extends ChangeNotifier {
     required MapRepository mapRepository,
     required ReverseGeocodeCoordinates reverseGeocodeCoordinatesUseCase,
     required CreateStopFromCoordinates createStopFromCoordinatesUseCase,
-  })  : _mapRepository = mapRepository,
-        _reverseGeocodeCoordinatesUseCase = reverseGeocodeCoordinatesUseCase,
-        _createStopFromCoordinatesUseCase = createStopFromCoordinatesUseCase;
+    required OptimizeRoute optimizeRouteUseCase,
+  }) : _mapRepository = mapRepository,
+       _reverseGeocodeCoordinatesUseCase = reverseGeocodeCoordinatesUseCase,
+       _createStopFromCoordinatesUseCase = createStopFromCoordinatesUseCase,
+       _optimizeRouteUseCase = optimizeRouteUseCase;
 
   @override
   void dispose() {
@@ -47,7 +51,8 @@ class MapProvider extends ChangeNotifier {
   }
 
   Future<void> init() async {
-    final geo.LocationPermission permission = await PermissionHandler.checkLocationPermission();
+    final geo.LocationPermission permission =
+        await PermissionHandler.checkLocationPermission();
     _updateState(state.copyWith(locationPermission: permission));
 
     if (permission == geo.LocationPermission.always ||
@@ -103,28 +108,33 @@ class MapProvider extends ChangeNotifier {
     if (state.isTracking) return;
     final geo.LocationSettings locationSettings = geo.LocationSettings(
       accuracy: geo.LocationAccuracy.high,
-      distanceFilter: 10,
+      distanceFilter: 5,
     );
-    _locationSubscription = geo.Geolocator.getPositionStream(
-      locationSettings: locationSettings,
-    ).listen(
-      (geo.Position position) {
-        final bool firstLocation = state.userLocation == null;
-        _updateState(state.copyWith(userLocation: position, isTracking: true));
-        if (firstLocation) {
-          centerOnUserLocation();
-        }
+    _locationSubscription =
+        geo.Geolocator.getPositionStream(
+          locationSettings: locationSettings,
+        ).listen(
+          (geo.Position position) {
+            final bool firstLocation = state.userLocation == null;
+            _updateState(
+              state.copyWith(userLocation: position, isTracking: true),
+            );
+            if (firstLocation) {
+              centerOnUserLocation();
+            }
 
-        // Update route progress in real-time
-        _updateRouteProgress(position);
-      },
-      onError: (Object e) {
-        _updateState(state.copyWith(
-          error: "Error en stream de ubicación: $e",
-          isTracking: false,
-        ));
-      },
-    );
+            // Update route progress in real-time
+            _updateRouteProgress(position);
+          },
+          onError: (Object e) {
+            _updateState(
+              state.copyWith(
+                error: "Error en stream de ubicación: $e",
+                isTracking: false,
+              ),
+            );
+          },
+        );
   }
 
   void stopTracking() {
@@ -137,7 +147,9 @@ class MapProvider extends ChangeNotifier {
     final result = await _mapRepository.getActiveRoute();
 
     result.fold(
-      (failure) => _updateState(state.copyWith(error: failure.message, isLoadingRoute: false)),
+      (failure) => _updateState(
+        state.copyWith(error: failure.message, isLoadingRoute: false),
+      ),
       (route) async {
         _updateState(state.copyWith(activeRoute: route, isLoadingRoute: false));
         // If map is already ready, update map data.
@@ -153,7 +165,9 @@ class MapProvider extends ChangeNotifier {
     final result = await _mapRepository.getRouteById(id);
 
     result.fold(
-      (failure) => _updateState(state.copyWith(error: failure.message, isLoadingRoute: false)),
+      (failure) => _updateState(
+        state.copyWith(error: failure.message, isLoadingRoute: false),
+      ),
       (route) async {
         _updateState(state.copyWith(activeRoute: route, isLoadingRoute: false));
         if (state.isMapReady) {
@@ -312,9 +326,12 @@ class MapProvider extends ChangeNotifier {
       jsonEncode([
         'match',
         ['get', 'status'],
-        'pending', '#FF9800',
-        'completed', '#4CAF50',
-        'failed', '#F44336',
+        'pending',
+        '#FF9800',
+        'completed',
+        '#4CAF50',
+        'failed',
+        '#F44336',
         '#9E9E9E',
       ]),
     );
@@ -335,7 +352,6 @@ class MapProvider extends ChangeNotifier {
       );
     }
   }
-
 
   Future<void> _zoomToRoute(RouteEntity route) async {
     if (route.polyline.isEmpty || !state.isMapReady) return;
@@ -392,12 +408,14 @@ class MapProvider extends ChangeNotifier {
 
   Future<void> onMapLongClick(Point point) async {
     // 1. Set initial state to show a loading indicator in the dialog
-    _updateState(state.copyWith(
-      stopCreationRequest: StopCreationRequest(
-        coordinates: point,
-        isGeocoding: true,
+    _updateState(
+      state.copyWith(
+        stopCreationRequest: StopCreationRequest(
+          coordinates: point,
+          isGeocoding: true,
+        ),
       ),
-    ));
+    );
 
     // 2. Call reverse geocoding use case
     final result = await _reverseGeocodeCoordinatesUseCase(point.coordinates);
@@ -412,24 +430,28 @@ class MapProvider extends ChangeNotifier {
         // Check if the user hasn't cancelled the dialog while geocoding
         if (state.stopCreationRequest?.coordinates.coordinates.toString() ==
             point.coordinates.toString()) {
-          _updateState(state.copyWith(
-            stopCreationRequest: state.stopCreationRequest!.copyWith(
-              suggestedAddress: fallbackAddress,
-              isGeocoding: false,
+          _updateState(
+            state.copyWith(
+              stopCreationRequest: state.stopCreationRequest!.copyWith(
+                suggestedAddress: fallbackAddress,
+                isGeocoding: false,
+              ),
             ),
-          ));
+          );
         }
       },
       (address) {
         // Success: show the geocoded address
         if (state.stopCreationRequest?.coordinates.coordinates.toString() ==
             point.coordinates.toString()) {
-          _updateState(state.copyWith(
-            stopCreationRequest: state.stopCreationRequest!.copyWith(
-              suggestedAddress: address.placeName,
-              isGeocoding: false,
+          _updateState(
+            state.copyWith(
+              stopCreationRequest: state.stopCreationRequest!.copyWith(
+                suggestedAddress: address.placeName,
+                isGeocoding: false,
+              ),
             ),
-          ));
+          );
         }
       },
     );
@@ -446,10 +468,9 @@ class MapProvider extends ChangeNotifier {
     final RouteEntity route = state.activeRoute!;
 
     // Clear the request from the state to hide the dialog immediately
-    _updateState(state.copyWith(
-      clearStopCreationRequest: true,
-      isLoadingRoute: true,
-    ));
+    _updateState(
+      state.copyWith(clearStopCreationRequest: true, isLoadingRoute: true),
+    );
 
     // Call the use case
     final result = await _createStopFromCoordinatesUseCase(
@@ -460,20 +481,22 @@ class MapProvider extends ChangeNotifier {
 
     result.fold(
       (failure) {
-        _updateState(state.copyWith(
-          error: 'Error al crear la parada: ${failure.message}',
-          isLoadingRoute: false,
-        ));
+        _updateState(
+          state.copyWith(
+            error: 'Error al crear la parada: ${failure.message}',
+            isLoadingRoute: false,
+          ),
+        );
       },
       (newStop) {
         // Success! Now, update the route in the state
-        final List<StopEntity> updatedStops = List<StopEntity>.from(route.stops)..add(newStop);
+        final List<StopEntity> updatedStops = List<StopEntity>.from(route.stops)
+          ..add(newStop);
         final RouteEntity updatedRoute = route.copyWith(stops: updatedStops);
 
-        _updateState(state.copyWith(
-          activeRoute: updatedRoute,
-          isLoadingRoute: false,
-        ));
+        _updateState(
+          state.copyWith(activeRoute: updatedRoute, isLoadingRoute: false),
+        );
 
         // And refresh the map visuals (without zooming)
         _updateMapData(updatedRoute, shouldZoom: false);
@@ -484,7 +507,8 @@ class MapProvider extends ChangeNotifier {
   Future<void> zoomIn() async {
     if (!state.isMapReady || state.mapController == null) return;
     try {
-      final CameraState currentCamera = await state.mapController!.getCameraState();
+      final CameraState currentCamera = await state.mapController!
+          .getCameraState();
       final double currentZoom = currentCamera.zoom;
 
       await state.mapController!.easeTo(
@@ -499,7 +523,8 @@ class MapProvider extends ChangeNotifier {
   Future<void> zoomOut() async {
     if (!state.isMapReady || state.mapController == null) return;
     try {
-      final CameraState currentCamera = await state.mapController!.getCameraState();
+      final CameraState currentCamera = await state.mapController!
+          .getCameraState();
       final double currentZoom = currentCamera.zoom;
 
       await state.mapController!.easeTo(
@@ -509,6 +534,72 @@ class MapProvider extends ChangeNotifier {
     } catch (e) {
       _updateState(state.copyWith(error: "Error al hacer zoom out: $e"));
     }
+  }
+
+  void toggleReturnToStart(bool value) {
+    _updateState(state.copyWith(returnToStart: value));
+  }
+
+  void selectCustomEndLocation(Point point) {
+    _updateState(state.copyWith(customEndLocation: point));
+  }
+
+  void clearCustomEndLocation() {
+    _updateState(state.copyWith(clearCustomEndLocation: true));
+  }
+
+  Future<void> optimizeCurrentRoute() async {
+    if (state.activeRoute == null || state.userLocation == null) {
+      _updateState(state.copyWith(error: 'No hay ruta activa o ubicación GPS'));
+      return;
+    }
+
+    _logInfo('🎬 Optimization triggered by user');
+    _updateState(state.copyWith(isOptimizing: true, error: null));
+
+    final Position userPos = Position(
+      state.userLocation!.longitude,
+      state.userLocation!.latitude,
+    );
+
+    final result = await _optimizeRouteUseCase(
+      routeId: state.activeRoute!.id,
+      startPoint: userPos,
+      returnToStart: state.returnToStart,
+      endPoint: state.customEndLocation?.coordinates,
+    );
+
+    result.fold(
+      (failure) {
+        _logError('❌ Provider optimization error: ${failure.message}');
+        _updateState(
+          state.copyWith(
+            isOptimizing: false,
+            error: 'Optimización fallida: ${failure.message}',
+          ),
+        );
+      },
+      (optimizedRoute) async {
+        _logInfo('✅ Provider received optimized route. Updating state...');
+        _updateState(
+          state.copyWith(activeRoute: optimizedRoute, isOptimizing: false),
+        );
+
+        // Refresh map visuals
+        await _updateMapData(optimizedRoute, shouldZoom: false);
+        _logInfo('🗺️ Map visuals refreshed with optimized route');
+      },
+    );
+  }
+
+  void _logInfo(String message) {
+    // ignore: avoid_print
+    print('\x1B[35m[MapProvider] $message\x1B[0m');
+  }
+
+  void _logError(String message) {
+    // ignore: avoid_print
+    print('\x1B[31m[MapProvider] $message\x1B[0m');
   }
 
   void updatePackageStatus(String packageId, PackageStatus newStatus) {
@@ -522,7 +613,9 @@ class MapProvider extends ChangeNotifier {
       return stop;
     }).toList();
 
-    final RouteEntity updatedRoute = state.activeRoute!.copyWith(stops: updatedStops);
+    final RouteEntity updatedRoute = state.activeRoute!.copyWith(
+      stops: updatedStops,
+    );
     _updateState(state.copyWith(activeRoute: updatedRoute));
 
     // Trigger map update to reflect the new status (e.g., stop marker color change)
@@ -538,12 +631,17 @@ class MapProvider extends ChangeNotifier {
     }
 
     try {
-      final turf.Feature<turf.Point> sliced = _getNearestPointOnRoute(userLocation);
+      final turf.Feature<turf.Point> sliced = _getNearestPointOnRoute(
+        userLocation,
+      );
       final int? index = sliced.properties?['index'] as int?;
       if (index == null) return;
 
-      final List<List<turf.Position>> segments = _splitRouteAtPoint(index, sliced);
-      
+      final List<List<turf.Position>> segments = _splitRouteAtPoint(
+        index,
+        sliced,
+      );
+
       await _updateLayerSource('route-passed-source', segments[0]);
       await _updateLayerSource('route-active-source', segments[1]);
     } catch (e) {
@@ -553,28 +651,47 @@ class MapProvider extends ChangeNotifier {
 
   turf.Feature<turf.Point> _getNearestPointOnRoute(geo.Position userLocation) {
     final List<turf.Position> routeCoordinates = state.activeRoute!.polyline
-        .map((p) => turf.Position.named(lat: p.lat.toDouble(), lng: p.lng.toDouble()))
+        .map(
+          (p) =>
+              turf.Position.named(lat: p.lat.toDouble(), lng: p.lng.toDouble()),
+        )
         .toList();
-    final turf.LineString routeLine = turf.LineString(coordinates: routeCoordinates);
+    final turf.LineString routeLine = turf.LineString(
+      coordinates: routeCoordinates,
+    );
     final turf.Point userPoint = turf.Point(
-      coordinates: turf.Position.named(lat: userLocation.latitude, lng: userLocation.longitude),
+      coordinates: turf.Position.named(
+        lat: userLocation.latitude,
+        lng: userLocation.longitude,
+      ),
     );
     return turf.nearestPointOnLine(routeLine, userPoint);
   }
 
-  List<List<turf.Position>> _splitRouteAtPoint(int splitIndex, turf.Feature<turf.Point> sliced) {
-     final List<turf.Position> routeCoordinates = state.activeRoute!.polyline
-        .map((p) => turf.Position.named(lat: p.lat.toDouble(), lng: p.lng.toDouble()))
+  List<List<turf.Position>> _splitRouteAtPoint(
+    int splitIndex,
+    turf.Feature<turf.Point> sliced,
+  ) {
+    final List<turf.Position> routeCoordinates = state.activeRoute!.polyline
+        .map(
+          (p) =>
+              turf.Position.named(lat: p.lat.toDouble(), lng: p.lng.toDouble()),
+        )
         .toList();
 
     // PAST
-    final List<turf.Position> pastCoords = routeCoordinates.sublist(0, splitIndex + 1);
+    final List<turf.Position> pastCoords = routeCoordinates.sublist(
+      0,
+      splitIndex + 1,
+    );
     pastCoords.add(sliced.geometry!.coordinates);
 
     // FUTURE
-    final List<turf.Position> futureCoords = <turf.Position>[sliced.geometry!.coordinates];
+    final List<turf.Position> futureCoords = <turf.Position>[
+      sliced.geometry!.coordinates,
+    ];
     futureCoords.addAll(routeCoordinates.sublist(splitIndex + 1));
-    
+
     return [pastCoords, futureCoords];
   }
 
@@ -611,7 +728,11 @@ class MapProvider extends ChangeNotifier {
     };
   }
 
-  Future<void> _initializeSource(MapboxMap mapboxMap, String sourceId, Map<String, dynamic> geoJSON) async {
+  Future<void> _initializeSource(
+    MapboxMap mapboxMap,
+    String sourceId,
+    Map<String, dynamic> geoJSON,
+  ) async {
     if (!await mapboxMap.style.styleSourceExists(sourceId)) {
       await mapboxMap.style.addSource(
         GeoJsonSource(id: sourceId, data: jsonEncode(geoJSON)),
@@ -622,7 +743,11 @@ class MapProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _updateSourceData(MapboxMap mapboxMap, String sourceId, Map<String, dynamic> geoJSON) async {
+  Future<void> _updateSourceData(
+    MapboxMap mapboxMap,
+    String sourceId,
+    Map<String, dynamic> geoJSON,
+  ) async {
     await mapboxMap.style.setStyleSourceProperty(
       sourceId,
       'data',

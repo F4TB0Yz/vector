@@ -20,6 +20,9 @@ class MapControlsColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final mapState = context.watch<MapProvider>().state;
+    final isOptimizing = mapState.isOptimizing;
+
     return Column(
       children: [
         _MapControlButton(
@@ -34,6 +37,28 @@ class MapControlsColumn extends StatelessWidget {
           isActive: showPackageList,
         ),
         const SizedBox(height: 8),
+        _MapControlButton(
+          icon: LucideIcons.zap,
+          onTap: isOptimizing
+              ? null
+              : () {
+                  context.read<MapProvider>().optimizeCurrentRoute();
+                },
+          isActive: isOptimizing,
+          color: isOptimizing ? Colors.orange : AppColors.primary,
+        ),
+        const SizedBox(height: 8),
+        _MapControlButton(
+          icon: LucideIcons.rotateCcw,
+          onTap: () {
+            context.read<MapProvider>().toggleReturnToStart(
+              !mapState.returnToStart,
+            );
+          },
+          isActive: mapState.returnToStart,
+          color: mapState.returnToStart ? Colors.green : null,
+        ),
+        const SizedBox(height: 24),
         _MapControlButton(
           icon: LucideIcons.crosshair,
           onTap: () {
@@ -63,11 +88,13 @@ class _MapControlButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onTap;
   final bool isActive;
+  final Color? color;
 
   const _MapControlButton({
     required this.icon,
     this.onTap,
     this.isActive = false,
+    this.color,
   });
 
   @override
@@ -81,7 +108,9 @@ class _MapControlButton extends StatelessWidget {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: isActive ? AppColors.primary : const Color(0xFF1E1E1E),
+            color: isActive
+                ? (color ?? AppColors.primary)
+                : const Color(0xFF1E1E1E),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.white.withAlpha(25)),
             boxShadow: [

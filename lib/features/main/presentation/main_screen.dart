@@ -5,6 +5,7 @@ import 'package:vector/features/auth/domain/repositories/auth_repository.dart';
 import 'package:vector/features/auth/domain/usecases/login_usecase.dart';
 import 'package:vector/features/auth/domain/usecases/save_credentials.dart';
 import 'package:vector/features/home/presentation/home_screen.dart';
+import 'package:vector/features/map/domain/usecases/optimize_route.dart';
 import 'package:vector/shared/presentation/widgets/floating_nav_bar.dart';
 import 'package:vector/features/routes/presentation/routes_screen.dart';
 import 'package:vector/features/packages/presentation/packages_screen.dart';
@@ -41,16 +42,14 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     _pages = [
       provider.ChangeNotifierProvider(
-        create: (context) => HomeProvider(
-          addStopToRouteUseCase: sl<AddStopToRoute>(),
-        ),
+        create: (context) =>
+            HomeProvider(addStopToRouteUseCase: sl<AddStopToRoute>()),
         child: const HomeScreen(),
       ),
       const RoutesScreen(),
       provider.ChangeNotifierProvider(
-        create: (context) => PackagesProvider(
-          repository: sl<JTPackageRepository>(),
-        ),
+        create: (context) =>
+            PackagesProvider(repository: sl<JTPackageRepository>()),
         child: const PackagesScreen(),
       ),
       provider.ChangeNotifierProvider(
@@ -58,6 +57,7 @@ class _MainScreenState extends State<MainScreen> {
           mapRepository: sl<MapRepository>(),
           reverseGeocodeCoordinatesUseCase: sl<ReverseGeocodeCoordinates>(),
           createStopFromCoordinatesUseCase: sl<CreateStopFromCoordinates>(),
+          optimizeRouteUseCase: sl<OptimizeRoute>(),
         ),
         child: const MapScreen(),
       ),
@@ -76,9 +76,7 @@ class _MainScreenState extends State<MainScreen> {
 
     return provider.MultiProvider(
       providers: [
-        provider.Provider<AddStopToRoute>(
-          create: (_) => sl<AddStopToRoute>(),
-        ),
+        provider.Provider<AddStopToRoute>(create: (_) => sl<AddStopToRoute>()),
         provider.ChangeNotifierProvider(
           create: (context) => AuthProvider(
             authRepository: sl<AuthRepository>(),

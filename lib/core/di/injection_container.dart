@@ -14,6 +14,7 @@ import 'package:vector/features/auth/domain/usecases/save_credentials.dart';
 // Map
 import 'package:vector/features/map/data/datasources/geocoding_remote_datasource.dart';
 import 'package:vector/features/map/data/datasources/map_datasource.dart';
+import 'package:vector/features/map/data/datasources/optimization_remote_datasource.dart';
 import 'package:vector/features/map/data/datasources/route_remote_datasource.dart';
 import 'package:vector/features/map/data/datasources/stop_local_datasource.dart';
 import 'package:vector/features/map/data/repositories/geocoding_repository_impl.dart';
@@ -26,6 +27,7 @@ import 'package:vector/features/map/domain/usecases/create_stop.dart';
 import 'package:vector/features/map/domain/usecases/create_stop_from_coordinates.dart';
 import 'package:vector/features/map/domain/usecases/delete_stop.dart';
 import 'package:vector/features/map/domain/usecases/get_stops_by_route.dart';
+import 'package:vector/features/map/domain/usecases/optimize_route.dart';
 import 'package:vector/features/map/domain/usecases/reorder_stops.dart';
 import 'package:vector/features/map/domain/usecases/reverse_geocode_coordinates.dart';
 import 'package:vector/features/map/domain/usecases/update_stop.dart';
@@ -70,10 +72,15 @@ Future<void> init() async {
   sl.registerLazySingleton(() => ReorderStops(sl()));
   sl.registerLazySingleton(() => CreateStopFromCoordinates(sl()));
   sl.registerLazySingleton(() => ReverseGeocodeCoordinates(sl()));
+  sl.registerLazySingleton(() => OptimizeRoute(sl()));
 
   // Repository
   sl.registerLazySingleton<MapRepository>(
-    () => MapRepositoryImpl(remoteDataSource: sl(), routeRemoteDataSource: sl()),
+    () => MapRepositoryImpl(
+      remoteDataSource: sl(),
+      routeRemoteDataSource: sl(),
+      optimizationRemoteDataSource: sl(),
+    ),
   );
   sl.registerLazySingleton<StopRepository>(
     () => StopRepositoryImpl(localDataSource: sl()),
@@ -83,12 +90,11 @@ Future<void> init() async {
   );
 
   // DataSources
-  sl.registerLazySingleton<MapDataSource>(
-    () => MapLocalDataSourceImpl(sl()),
-  );
+  sl.registerLazySingleton<MapDataSource>(() => MapLocalDataSourceImpl(sl()));
   sl.registerLazySingleton(() => RouteRemoteDataSource());
   sl.registerLazySingleton(() => GeocodingRemoteDataSource());
   sl.registerLazySingleton(() => StopLocalDataSource(sl()));
+  sl.registerLazySingleton(() => OptimizationRemoteDataSource(dio: sl()));
 
   // ! Features - Routes
   // UseCases
@@ -97,9 +103,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => AddStopToRoute(sl()));
 
   // Repository
-  sl.registerLazySingleton<RoutesRepository>(
-    () => RoutesRepositoryImpl(sl()),
-  );
+  sl.registerLazySingleton<RoutesRepository>(() => RoutesRepositoryImpl(sl()));
 
   // DataSources
   sl.registerLazySingleton<RoutesLocalDataSource>(

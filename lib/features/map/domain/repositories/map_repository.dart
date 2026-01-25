@@ -1,4 +1,5 @@
 import 'package:fpdart/fpdart.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:vector/core/error/failures.dart';
 import 'package:vector/features/map/domain/entities/route_entity.dart';
 
@@ -8,6 +9,14 @@ abstract class MapRepository {
   Future<Either<Failure, RouteEntity>> getActiveRoute();
 
   Future<Either<Failure, RouteEntity>> getRouteById(String id);
+
+  /// Optimizes the route order using OR-Tools (Python API)
+  Future<Either<Failure, RouteEntity>> optimizeRoute({
+    required String routeId,
+    required Position startPoint,
+    Position? endPoint,
+    bool returnToStart = false,
+  });
 
   // Other methods like getRouteHistory, updateStopStatus, etc. could be added here.
 }
