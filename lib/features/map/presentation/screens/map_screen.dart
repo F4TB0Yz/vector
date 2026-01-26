@@ -16,8 +16,10 @@ import 'package:vector/shared/presentation/notifications/navbar_notification.dar
 import 'package:vector/features/map/domain/entities/stop_entity.dart';
 import 'package:vector/features/packages/domain/entities/package_status.dart';
 import 'package:vector/features/map/presentation/widgets/confirm_add_stop_dialog.dart';
+import 'package:vector/features/map/presentation/widgets/package_details_dialog.dart';
 
 class MapScreen extends StatefulWidget {
+
   const MapScreen({super.key});
 
   @override
@@ -32,8 +34,13 @@ class _MapScreenState extends State<MapScreen> {
   // Track previous state for side effects
   String? _previousError;
   StopCreationRequest? _previousStopCreationRequest;
+  StopEntity? _previousSelectedStop;
   RouteEntity? _previousSelectedRoute;
   bool _previousIsOptimizing = false;
+
+  bool _isStopDialogShowing = false;
+  bool _isPackageDialogShowing = false;
+
 
   @override
   void initState() {
@@ -42,6 +49,7 @@ class _MapScreenState extends State<MapScreen> {
 
     // Iniciar el proveedor de mapa
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       context.read<MapProvider>().init();
       context.read<MapProvider>().addListener(_onMapProviderChanged);
       context.read<RoutesProvider>().addListener(_onRoutesProviderChanged);
@@ -52,8 +60,16 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   void dispose() {
-    context.read<MapProvider>().removeListener(_onMapProviderChanged);
-    context.read<RoutesProvider>().removeListener(_onRoutesProviderChanged);
+    // Es posible que el contexto ya no sea válido aquí si el widget se desmonta
+    // pero guardamos referencia previa para limpiar listeners correctamente si es posible
+    // Sin embargo, en dispose usualmente usamos el contexto del widget.
+    // Una mejor práctica es guardar los providers en variables en initState.
+    // Por simplicidad en este fix:
+    try {
+      context.read<MapProvider>().removeListener(_onMapProviderChanged);
+      context.read<RoutesProvider>().removeListener(_onRoutesProviderChanged);
+    } catch (_) {}
+    
     _pageController.dispose();
     super.dispose();
   }
@@ -100,34 +116,76 @@ class _MapScreenState extends State<MapScreen> {
     if (nextRequest != _previousStopCreationRequest) {
       if (nextRequest != null && _previousStopCreationRequest == null) {
         // Open Dialog
+        _isStopDialogShowing = true;
+        final mapProvider = context.read<MapProvider>();
+        final routesProvider = context.read<RoutesProvider>();
         showDialog(
           context: context,
           barrierDismissible: false,
           builder: (BuildContext dialogContext) {
-            return ConfirmAddStopDialog(request: nextRequest);
+            return MultiProvider(
+              providers: [
+                ChangeNotifierProvider.value(value: mapProvider),
+                ChangeNotifierProvider.value(value: routesProvider),
+              ],
+              child: ConfirmAddStopDialog(request: nextRequest),
+            );
           },
-        );
-      } else if (nextRequest == null && _previousStopCreationRequest != null) {
-        // Close Dialog
+        ).then((_) => _isStopDialogShowing = false);
+      } else if (nextRequest == null &&
+          _previousStopCreationRequest != null &&
+          _isStopDialogShowing) {
+        // Close Dialog programmatically only if it's still showing
         Navigator.of(context, rootNavigator: true).pop();
+        _isStopDialogShowing = false;
       }
       _previousStopCreationRequest = nextRequest;
     }
+
+    // Package Details Dialog
+    final selectedStop = mapState.selectedStop;
+    if (selectedStop != _previousSelectedStop) {
+      if (selectedStop != null && _previousSelectedStop == null) {
+        _isPackageDialogShowing = true;
+        showDialog(
+          context: context,
+          builder: (BuildContext dialogContext) {
+            return PackageDetailsDialog(stop: selectedStop);
+          },
+        ).then((_) {
+          _isPackageDialogShowing = false;
+          // When dialog is closed by user (tap outside or close button),
+          // clear the selection in the provider.
+          if (mounted) {
+            context.read<MapProvider>().clearSelectedStop();
+          }
+        });
+      } else if (selectedStop == null &&
+          _previousSelectedStop != null &&
+          _isPackageDialogShowing) {
+        // If state cleared externally, close dialog programmatically
+        Navigator.of(context, rootNavigator: true).pop();
+        _isPackageDialogShowing = false;
+      }
+      _previousSelectedStop = selectedStop;
+    }
+
   }
 
   void _onMapCreated(MapboxMap mapboxMap) {
     context.read<MapProvider>().onMapCreated(mapboxMap);
   }
 
+  // Handles the tap gesture on the map.
+  void _onMapTap(MapContentGestureContext context) {
+    this.context.read<MapProvider>().onMapTap(context.touchPosition);
+  }
+
+
   // Handles the long tap gesture on the map.
   void _onMapLongClick(MapContentGestureContext context) {
     final selectedRoute = this.context.read<RoutesProvider>().selectedRoute;
     if (selectedRoute == null) return;
-
-    // Delegate the logic to the map provider
-    // Note: 'context' here is MapContentGestureContext, avoiding conflict with BuildContext by implicit lookup or renaming if needed.
-    // However, we need BuildContext to access provider.
-    // The method argument shadows 'context'. Let's rename argument or use 'this.context'.
     this.context.read<MapProvider>().onMapLongClick(context.point);
   }
 
@@ -165,9 +223,19 @@ class _MapScreenState extends State<MapScreen> {
                   // 1. Capa de Mapa Real
                   Positioned.fill(
                     child: RepaintBoundary(
-                      child: MapWidget(
-                        onMapCreated: _onMapCreated,
-                        onLongTapListener: _onMapLongClick,
+                        child: MapWidget(
+                          cameraOptions: CameraOptions(
+                            center: Point(
+                              coordinates: Position(-74.3638, 4.3361),
+                            ),
+                            zoom: 12.0,
+                          ),
+                          onMapCreated: _onMapCreated,
+                          onTapListener: _onMapTap,
+                          onLongTapListener: _onMapLongClick,
+                          onCameraChangeListener: (_) {
+                            context.read<MapProvider>().disableFollowMode();
+                          },
                         styleUri: MapboxStyles.DARK,
                         gestureRecognizers:
                             <Factory<OneSequenceGestureRecognizer>>{

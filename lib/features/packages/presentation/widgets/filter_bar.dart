@@ -14,33 +14,35 @@ class FilterBar extends StatelessWidget {
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Row(
         children: List.generate(_filters.length, (index) {
           final isSelected = selectedIndex == index;
           return Padding(
-            padding: const EdgeInsets.only(right: 12.0),
+            padding: const EdgeInsets.only(right: 8.0),
             child: GestureDetector(
               onTap: () {
                 context.read<RoutesProvider>().setStopFilter(index);
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primary : const Color(0xFF2C2C35),
-                  borderRadius: BorderRadius.circular(6), // 6px radius for sharp/tech look
+                  color: isSelected
+                      ? AppColors.primary.withValues(alpha: 0.2)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(4),
                   border: Border.all(
-                    color: isSelected ? Colors.transparent : Colors.white.withValues(alpha: 0.1),
+                    color: isSelected
+                        ? AppColors.primary
+                        : Colors.white.withValues(alpha: 0.05),
                   ),
                 ),
                 child: Text(
                   _filters[index],
                   style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.grey[400],
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    letterSpacing: 0.5,
+                    color: isSelected ? Colors.white : Colors.grey[600],
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 12,
                   ),
                 ),
               ),

@@ -32,7 +32,7 @@ Future<void> main() async {
   await DatabaseService.instance.database;
   debugPrint('Database initialized successfully');
 
-  // Bypass SSL verification for Google Fonts in dev/emulator
+  // Bypass SSL verification1 for Google Fonts in dev/emulator
   HttpOverrides.global = MyHttpOverrides();
 
   runApp(const MainApp());

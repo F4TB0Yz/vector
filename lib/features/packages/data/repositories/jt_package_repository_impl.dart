@@ -1,4 +1,5 @@
 import 'package:fpdart/fpdart.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:vector/core/error/failures.dart';
 import 'package:vector/features/auth/data/datasources/auth_local_datasource.dart';
 import 'package:vector/features/packages/data/datasources/jt_packages_datasource.dart';
@@ -24,6 +25,19 @@ class JTPackageRepositoryImpl implements JTPackageRepository {
 
       final packages = await dataSource.getPackages(token);
       return Right(packages);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> updatePackageCoordinates(
+    String waybillNo,
+    Position coordinates,
+  ) async {
+    try {
+      await dataSource.updatePackageCoordinates(waybillNo, coordinates);
+      return const Right(null);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }

@@ -19,6 +19,9 @@ class CreateStopFromCoordinates {
     required Point coordinates,
     required RouteEntity activeRoute,
     String? address,
+    String? customerName,
+    String? phone,
+    String? notes,
   }) async {
     // Convert Point to Position
     final position = coordinates.coordinates;
@@ -26,10 +29,10 @@ class CreateStopFromCoordinates {
     // 1. Crear un paquete por defecto
     final newPackage = ManualPackageEntity(
       id: _uuid.v4(),
-      receiverName: 'Nuevo Paquete',
+      receiverName: customerName ?? 'Nuevo Paquete',
       address: address ?? 'Dirección no disponible',
-      notes: 'Notas no disponibles',
-      phone: '3132451121',
+      notes: notes ?? 'Notas no disponibles',
+      phone: phone ?? '3132451121',
       coordinates: position,
       status: PackageStatus.pending,
       updatedAt: DateTime.now(),

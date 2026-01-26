@@ -84,7 +84,7 @@ class PackageListOverlay extends StatelessWidget {
                       const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final stop = selectedRoute.stops[index];
-                    return PackageCard(package: stop.package);
+                    return PackageCard(stop: stop);
                   },
                 ),
               ),

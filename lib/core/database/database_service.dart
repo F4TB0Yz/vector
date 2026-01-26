@@ -24,12 +24,34 @@ class DatabaseService {
     final databasesPath = await getDatabasesPath();
     final path = join(databasesPath, 'vector.db');
 
-    return await openDatabase(
+    final db = await openDatabase(
       path,
       version: 4,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
+
+    // Corregir datos existentes si es necesario (Indices en 0)
+    await _sanitizeStopsOrder(db);
+
+    return db;
+  }
+
+  /// Corrige las paradas que tienen índice 0, cambiándolas a 1.
+  /// Esto es una medida de seguridad para datos antiguos o errores de importación.
+  Future<void> _sanitizeStopsOrder(Database db) async {
+    try {
+      final count = await db.rawUpdate(
+        'UPDATE stops SET stop_order = stop_order + 1 WHERE stop_order = 0',
+      );
+      if (count > 0) {
+        // ignore: avoid_print
+        print('DatabaseService: Se corrigieron $count paradas con índice 0.');
+      }
+    } catch (e) {
+      // ignore: avoid_print
+      print('DatabaseService Error sanitizing stops: $e');
+    }
   }
 
   /// Crea las tablas iniciales de la base de datos.

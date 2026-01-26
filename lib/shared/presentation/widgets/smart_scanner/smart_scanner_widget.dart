@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:vector/core/utils/permission_handler.dart';
 import 'package:vector/shared/presentation/widgets/smart_scanner/ar_scanner_painter.dart';
 import 'package:vector/shared/presentation/widgets/smart_scanner/detection_confirmation_dialog.dart';
 import 'package:vector/shared/presentation/widgets/smart_scanner/scanner_overlay.dart';
@@ -22,11 +23,24 @@ class _SmartScannerWidgetState extends State<SmartScannerWidget>
   late MobileScannerController _controller;
   final ValueNotifier<BarcodeCapture?> _captureNotifier = ValueNotifier(null);
   final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _hasPermission = false;
+  bool _isCheckingPermission = true;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _initializeScanner();
+  }
+
+  Future<void> _initializeScanner() async {
+    final granted = await PermissionHandler.checkCameraPermission();
+    if (mounted) {
+      setState(() {
+        _hasPermission = granted;
+        _isCheckingPermission = false;
+      });
+    }
 
     _controller = MobileScannerController(
       detectionSpeed: DetectionSpeed.normal,
@@ -46,12 +60,25 @@ class _SmartScannerWidgetState extends State<SmartScannerWidget>
       facing: CameraFacing.back,
       torchEnabled: false,
       returnImage: true,
+      autoStart: granted,
     );
+  }
+
+  Future<void> _requestPermission() async {
+    final granted = await PermissionHandler.requestCameraPermission();
+    if (mounted) {
+      setState(() {
+        _hasPermission = granted;
+      });
+      if (granted) {
+        _controller.start();
+      }
+    }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!_controller.value.isInitialized) return;
+    if (!_controller.value.isInitialized || !_hasPermission) return;
 
     switch (state) {
       case AppLifecycleState.detached:
@@ -131,6 +158,40 @@ class _SmartScannerWidgetState extends State<SmartScannerWidget>
 
   @override
   Widget build(BuildContext context) {
+    if (_isCheckingPermission) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (!_hasPermission) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.camera_alt, color: Colors.white, size: 64),
+              const SizedBox(height: 16),
+              const Text(
+                'Se requiere permiso de cámara',
+                style: TextStyle(color: Colors.white, fontSize: 18),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _requestPermission,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF9800),
+                ),
+                child: const Text('Habilitar Cámara'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
         return Stack(

@@ -10,18 +10,20 @@ import 'package:vector/features/map/data/models/route_model.dart';
 import 'package:vector/features/map/data/models/stop_model.dart';
 import 'package:vector/features/map/domain/entities/route_entity.dart';
 import 'package:vector/features/map/domain/repositories/map_repository.dart';
+import 'package:vector/features/map/domain/repositories/stop_repository.dart';
 
 // Repository Implementation
 class MapRepositoryImpl implements MapRepository {
   final MapDataSource remoteDataSource;
   final RouteRemoteDataSource routeRemoteDataSource;
   final OptimizationRemoteDataSource optimizationRemoteDataSource;
-  // final NetworkInfo networkInfo; // To check for connectivity
+  final StopRepository stopRepository;
 
   MapRepositoryImpl({
     required this.remoteDataSource,
     required this.routeRemoteDataSource,
     required this.optimizationRemoteDataSource,
+    required this.stopRepository,
   });
 
   @override
@@ -128,9 +130,18 @@ class MapRepositoryImpl implements MapRepository {
       final reorderedStops = optimizedIndices
           .map((index) => route.stops[index])
           .toList();
-      _logInfo('📦 Reordering ${reorderedStops.length} stops...');
+      _logInfo('📦 Reordering ${reorderedStops.length} stops in database...');
 
-      // Update stopOrder field
+      // Persist to database
+      final orderedStopIds = reorderedStops.map((s) => s.id).toList();
+      final reorderResult = await stopRepository.reorderStops(routeId, orderedStopIds);
+      
+      if (reorderResult.isLeft()) {
+        _logError('❌ Failed to persist optimized order to database');
+        // We continue anyway to show it on map, but log the error
+      }
+
+      // Update stopOrder field for the current entity
       final updatedStops = [];
       for (int i = 0; i < reorderedStops.length; i++) {
         updatedStops.add(reorderedStops[i].copyWith(stopOrder: i + 1));

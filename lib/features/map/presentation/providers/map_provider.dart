@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart' as geo;
+
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
-import 'package:turf/turf.dart' as turf;
 import 'package:vector/core/utils/permission_handler.dart';
 import 'package:vector/features/map/domain/entities/route_entity.dart';
 import 'package:vector/features/map/domain/entities/stop_entity.dart';
@@ -14,6 +16,7 @@ import 'package:vector/features/map/domain/usecases/optimize_route.dart';
 import 'package:vector/features/map/domain/usecases/reverse_geocode_coordinates.dart';
 import 'package:vector/features/packages/domain/entities/package_status.dart';
 import 'package:vector/features/map/presentation/providers/map_state.dart';
+import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
 
 class MapProvider extends ChangeNotifier {
   final MapRepository _mapRepository;
@@ -27,7 +30,6 @@ class MapProvider extends ChangeNotifier {
   StreamSubscription<geo.Position>? _locationSubscription;
   bool _isUpdatingMapData = false;
   bool _sourcesInitialized = false;
-  bool _routeProgressSourcesInitialized = false;
 
   MapProvider({
     required MapRepository mapRepository,
@@ -61,13 +63,49 @@ class MapProvider extends ChangeNotifier {
     }
   }
 
+  /// Ensures location permission is granted before executing an action.
+  /// If permission is denied, it requests it.
+  /// If permanently denied, it notifies the state.
+  Future<bool> ensureLocationPermission() async {
+    geo.LocationPermission permission =
+        await PermissionHandler.checkLocationPermission();
+
+    if (permission == geo.LocationPermission.denied) {
+      permission = await PermissionHandler.requestLocationPermission();
+    }
+
+    _updateState(state.copyWith(locationPermission: permission));
+
+    if (permission == geo.LocationPermission.deniedForever) {
+      _updateState(
+        state.copyWith(
+          error:
+              'Permiso de ubicación denegado permanentemente. Por favor, actívalo en ajustes.',
+        ),
+      );
+      return false;
+    }
+
+    final granted =
+        permission == geo.LocationPermission.always ||
+        permission == geo.LocationPermission.whileInUse;
+
+    if (granted && !state.isTracking) {
+      startTracking();
+    }
+
+    return granted;
+  }
+
   Future<void> onMapCreated(MapboxMap mapboxMap) async {
     _updateState(state.copyWith(mapController: mapboxMap, isMapReady: true));
 
     _configureMap(mapboxMap);
     await _enableLocationPuck();
+    await _loadMarkerIcons(mapboxMap);
 
     // Workaround for style loading issue: wait a bit before drawing.
+
     await Future.delayed(const Duration(milliseconds: 500));
 
     if (state.activeRoute != null) {
@@ -121,10 +159,9 @@ class MapProvider extends ChangeNotifier {
             );
             if (firstLocation) {
               centerOnUserLocation();
+            } else if (state.isFollowMode) {
+              _moveCameraToUserLocation();
             }
-
-            // Update route progress in real-time
-            _updateRouteProgress(position);
           },
           onError: (Object e) {
             _updateState(
@@ -143,7 +180,9 @@ class MapProvider extends ChangeNotifier {
   }
 
   Future<void> loadActiveRoute() async {
-    _updateState(state.copyWith(isLoadingRoute: true));
+    _updateState(
+      state.copyWith(isLoadingRoute: true, showRoutePolyline: true),
+    );
     final result = await _mapRepository.getActiveRoute();
 
     result.fold(
@@ -161,7 +200,9 @@ class MapProvider extends ChangeNotifier {
   }
 
   Future<void> loadRouteById(String id) async {
-    _updateState(state.copyWith(isLoadingRoute: true));
+    _updateState(
+      state.copyWith(isLoadingRoute: true, showRoutePolyline: true),
+    );
     final result = await _mapRepository.getRouteById(id);
 
     result.fold(
@@ -195,12 +236,60 @@ class MapProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> _loadMarkerIcons(MapboxMap mapboxMap) async {
+    final ui.PictureRecorder recorder = ui.PictureRecorder();
+    final Canvas canvas = Canvas(recorder);
+    const double size = 100.0;
+    const double halfSize = size / 2;
+
+    // Draw a Pin shape
+    final Paint paint = Paint()..color = Colors.white;
+    final Path path = Path();
+    path.moveTo(halfSize, size); // Bottom tip
+    path.quadraticBezierTo(size * 0.8, size * 0.6, size, halfSize);
+    path.arcToPoint(
+      const Offset(0, halfSize),
+      radius: const Radius.circular(halfSize),
+    );
+    path.quadraticBezierTo(size * 0.2, size * 0.6, halfSize, size);
+    path.close();
+
+    canvas.drawPath(path, paint);
+
+    final ui.Image image = await recorder.endRecording().toImage(
+      size.toInt(),
+      size.toInt(),
+    );
+    final ByteData? byteData = await image.toByteData(
+      format: ui.ImageByteFormat.png,
+    );
+
+    if (byteData != null) {
+      await mapboxMap.style.addStyleImage(
+        'pin-marker',
+        2.0, // Scale
+        MbxImage(
+          width: size.toInt(),
+          height: size.toInt(),
+          data: byteData.buffer.asUint8List(),
+        ),
+        true, // sdf: true allows us to recolor the icon using icon-color
+        [],
+        [],
+        null,
+      );
+    }
+  }
+
   Future<void> _performMapDataUpdate(
+
     RouteEntity route, {
     bool shouldZoom = true,
   }) async {
     final MapboxMap mapboxMap = state.mapController!;
-    final Map<String, dynamic> routeGeoJSON = _buildRouteGeoJSON(route);
+    final Map<String, dynamic> routeGeoJSON = state.showRoutePolyline
+        ? _buildRouteGeoJSON(route)
+        : _buildEmptyLineStringGeoJSON();
     final Map<String, dynamic> stopsGeoJSON = _buildStopsGeoJSON(route);
 
     await _updateMapSources(mapboxMap, routeGeoJSON, stopsGeoJSON);
@@ -219,12 +308,23 @@ class MapProvider extends ChangeNotifier {
     };
   }
 
+  /// Returns a GeoJSON LineString feature with an empty coordinates list.
+  /// Used to clear the route polyline from the map.
+  Map<String, dynamic> _buildEmptyLineStringGeoJSON() {
+    return {
+      'type': 'Feature',
+      'properties': const <String, dynamic>{},
+      'geometry': LineString(coordinates: []).toJson(),
+    };
+  }
+
   Map<String, dynamic> _buildStopsGeoJSON(RouteEntity route) {
     final List<Map<String, dynamic>> features = route.stops.map((stop) {
       return {
         'type': 'Feature',
-        'id': stop.id,
+        'id': stop.id, // Feature ID is used for querying
         'properties': {
+          'id': stop.id, // Also keep it in properties for redundancy
           'stopOrder': stop.stopOrder.toString(),
           'status': stop.status.name,
           'customer': stop.name,
@@ -236,6 +336,7 @@ class MapProvider extends ChangeNotifier {
 
     return {'type': 'FeatureCollection', 'features': features};
   }
+
 
   Future<void> _updateMapSources(
     MapboxMap mapboxMap,
@@ -265,39 +366,22 @@ class MapProvider extends ChangeNotifier {
   }
 
   Future<void> _buildLayers(MapboxMap mapboxMap) async {
-    await _addRoutePassedLayer(mapboxMap);
-    await _addRouteActiveLayer(mapboxMap);
+    await _addRouteLayer(mapboxMap);
     await _addStopsLayer(mapboxMap);
-    await _addStopsLabelsLayer(mapboxMap);
-  }
+    // Remove _addStopsLabelsLayer since we'll integrate it into _addStopsLayer SymbolLayer
+  } 
 
-  Future<void> _addRoutePassedLayer(MapboxMap mapboxMap) async {
-    if (!await mapboxMap.style.styleLayerExists('route-passed-layer')) {
+  Future<void> _addRouteLayer(MapboxMap mapboxMap) async {
+    if (!await mapboxMap.style.styleLayerExists('route-layer')) {
       await mapboxMap.style.addLayer(
         LineLayer(
-          id: 'route-passed-layer',
-          sourceId: 'route-passed-source',
-          lineColor: Colors.grey[800]!.toARGB32(),
-          lineWidth: 4.0,
-          lineOpacity: 0.5,
-          lineCap: LineCap.ROUND,
-          lineJoin: LineJoin.ROUND,
-        ),
-      );
-    }
-  }
-
-  Future<void> _addRouteActiveLayer(MapboxMap mapboxMap) async {
-    if (!await mapboxMap.style.styleLayerExists('route-active-layer')) {
-      await mapboxMap.style.addLayer(
-        LineLayer(
-          id: 'route-active-layer',
-          sourceId: 'route-active-source',
-          lineColor: const Color(0xFF00FFFF).toARGB32(),
-          lineWidth: 6.0,
+          id: 'route-layer',
+          sourceId: 'route-source',
+          lineColor: const ui.Color.fromARGB(255, 17, 142, 156).toARGB32(),
+          lineWidth: 3.0,
           lineOpacity: 1.0,
-          lineCap: LineCap.ROUND,
-          lineJoin: LineJoin.ROUND,
+          lineCap: LineCap.SQUARE,
+          lineJoin: LineJoin.BEVEL,
         ),
       );
     }
@@ -305,14 +389,26 @@ class MapProvider extends ChangeNotifier {
 
   Future<void> _addStopsLayer(MapboxMap mapboxMap) async {
     if (!await mapboxMap.style.styleLayerExists('stops-layer')) {
+      // Create a SymbolLayer for markers
       await mapboxMap.style.addLayer(
-        CircleLayer(
+        SymbolLayer(
           id: 'stops-layer',
           sourceId: 'stops-source',
-          circleRadius: 12.0,
-          circleColor: Colors.orange.toARGB32(),
-          circleStrokeColor: Colors.white.toARGB32(),
-          circleStrokeWidth: 2.0,
+          iconImage: 'pin-marker',
+          iconAnchor: IconAnchor.BOTTOM,
+          iconSize: 0.5,
+          iconAllowOverlap: true,
+          iconPadding: 10, // Increase hit area
+          textField: '{stopOrder}',
+          textSize: 13.0,
+          textColor: Colors.white.toARGB32(),
+          textHaloColor: Colors.black.toARGB32(),
+          textHaloWidth: 1.5,
+          textFont: ['DIN Offc Pro Bold', 'Arial Unicode MS Bold'],
+          textAnchor: TextAnchor.CENTER,
+          textOffset: [0, -1.3],
+          textIgnorePlacement: true,
+          textAllowOverlap: true,
         ),
       );
       await _applyStopsLayerStyle(mapboxMap);
@@ -320,9 +416,11 @@ class MapProvider extends ChangeNotifier {
   }
 
   Future<void> _applyStopsLayerStyle(MapboxMap mapboxMap) async {
+    // For SymbolLayer, we use icon-color if the icon is a template image
+    // or we can use different icons. For now, let's try icon-color.
     await mapboxMap.style.setStyleLayerProperty(
       'stops-layer',
-      'circle-color',
+      'icon-color',
       jsonEncode([
         'match',
         ['get', 'status'],
@@ -337,21 +435,47 @@ class MapProvider extends ChangeNotifier {
     );
   }
 
-  Future<void> _addStopsLabelsLayer(MapboxMap mapboxMap) async {
-    if (!await mapboxMap.style.styleLayerExists('stops-labels-layer')) {
-      await mapboxMap.style.addLayer(
-        SymbolLayer(
-          id: 'stops-labels-layer',
-          sourceId: 'stops-source',
-          textField: '{stopOrder}',
-          textSize: 12.0,
-          textColor: Colors.white.toARGB32(),
-          textHaloColor: Colors.black.toARGB32(),
-          textHaloWidth: 1.0,
-        ),
-      );
+  void selectStop(StopEntity stop) {
+    _updateState(state.copyWith(selectedStop: stop));
+  }
+
+  void clearSelectedStop() {
+    _updateState(state.copyWith(clearSelectedStop: true));
+  }
+
+  Future<void> onMapTap(ScreenCoordinate coordinate) async {
+    if (state.mapController == null) return;
+
+    final features = await state.mapController!.queryRenderedFeatures(
+      RenderedQueryGeometry.fromScreenCoordinate(coordinate),
+      RenderedQueryOptions(layerIds: ['stops-layer'], filter: null),
+    );
+
+    if (features.isNotEmpty) {
+      final feature = features.first;
+      if (feature?.queriedFeature.feature != null) {
+        final Map<String, dynamic> featureJson = Map<String, dynamic>.from(feature!.queriedFeature.feature);
+        final String? stopId = (featureJson['id'] ?? (featureJson['properties'] as Map?)?['id']) as String?;
+        
+        _logInfo('Feature tapped! stopId detected: $stopId');
+        
+        if (stopId != null && state.activeRoute != null) {
+          try {
+            final stop = state.activeRoute!.stops.firstWhere(
+              (s) => s.id == stopId,
+            );
+            _logInfo('Stop found in route: ${stop.name}');
+            selectStop(stop);
+          } catch (e) {
+            _logError('Stop not found in active route: $stopId. Available IDs: ${state.activeRoute!.stops.map((s) => s.id).join(', ')}');
+          }
+        }
+      }
+    } else {
+      clearSelectedStop();
     }
   }
+
 
   Future<void> _zoomToRoute(RouteEntity route) async {
     if (route.polyline.isEmpty || !state.isMapReady) return;
@@ -386,7 +510,24 @@ class MapProvider extends ChangeNotifier {
   }
 
   Future<void> centerOnUserLocation() async {
-    if (!state.isMapReady || state.userLocation == null) return;
+    if (!state.isMapReady) return;
+
+    if (state.userLocation == null) {
+      final hasPermission = await ensureLocationPermission();
+      if (!hasPermission) return;
+      // Wait a bit for the first location if we just started tracking
+      if (state.userLocation == null) {
+        _updateState(state.copyWith(error: "Obteniendo ubicación..."));
+        return;
+      }
+    }
+
+    _updateState(state.copyWith(isFollowMode: true));
+    await _moveCameraToUserLocation(duration: 1200);
+  }
+
+  Future<void> _moveCameraToUserLocation({int duration = 1000}) async {
+    if (state.mapController == null || state.userLocation == null) return;
     try {
       await state.mapController!.easeTo(
         CameraOptions(
@@ -399,10 +540,16 @@ class MapProvider extends ChangeNotifier {
           zoom: 16.0,
           pitch: 45.0,
         ),
-        MapAnimationOptions(duration: 1200),
+        MapAnimationOptions(duration: duration),
       );
     } catch (e) {
-      _updateState(state.copyWith(error: "Error al centrar la cámara: $e"));
+      _logError("Error moving camera: $e");
+    }
+  }
+
+  void disableFollowMode() {
+    if (state.isFollowMode) {
+      _updateState(state.copyWith(isFollowMode: false));
     }
   }
 
@@ -461,7 +608,13 @@ class MapProvider extends ChangeNotifier {
     _updateState(state.copyWith(clearStopCreationRequest: true));
   }
 
-  Future<void> confirmStopCreation() async {
+  Future<void> confirmStopCreation(
+    RoutesProvider routesProvider, {
+    String? customerName,
+    String? address,
+    String? phone,
+    String? notes,
+  }) async {
     if (state.stopCreationRequest == null || state.activeRoute == null) return;
 
     final StopCreationRequest request = state.stopCreationRequest!;
@@ -469,14 +622,21 @@ class MapProvider extends ChangeNotifier {
 
     // Clear the request from the state to hide the dialog immediately
     _updateState(
-      state.copyWith(clearStopCreationRequest: true, isLoadingRoute: true),
+      state.copyWith(
+        clearStopCreationRequest: true,
+        isLoadingRoute: true,
+        showRoutePolyline: state.showRoutePolyline,
+      ),
     );
 
     // Call the use case
     final result = await _createStopFromCoordinatesUseCase(
       coordinates: request.coordinates,
       activeRoute: route,
-      address: request.suggestedAddress,
+      address: address ?? request.suggestedAddress,
+      customerName: customerName,
+      phone: phone,
+      notes: notes,
     );
 
     result.fold(
@@ -497,6 +657,9 @@ class MapProvider extends ChangeNotifier {
         _updateState(
           state.copyWith(activeRoute: updatedRoute, isLoadingRoute: false),
         );
+
+        // SYNC: Update RoutesProvider to reflect changes in other screens (PackagesScreen, Route Summary)
+        routesProvider.updateRoute(updatedRoute);
 
         // And refresh the map visuals (without zooming)
         _updateMapData(updatedRoute, shouldZoom: false);
@@ -548,10 +711,19 @@ class MapProvider extends ChangeNotifier {
     _updateState(state.copyWith(clearCustomEndLocation: true));
   }
 
-  Future<void> optimizeCurrentRoute() async {
-    if (state.activeRoute == null || state.userLocation == null) {
-      _updateState(state.copyWith(error: 'No hay ruta activa o ubicación GPS'));
+  Future<void> optimizeCurrentRoute(RoutesProvider routesProvider) async {
+    if (state.activeRoute == null) {
+      _updateState(state.copyWith(error: 'No hay ruta activa'));
       return;
+    }
+
+    if (state.userLocation == null) {
+      final hasPermission = await ensureLocationPermission();
+      if (!hasPermission) return;
+      if (state.userLocation == null) {
+        _updateState(state.copyWith(error: 'Esperando señal GPS para optimizar...'));
+        return;
+      }
     }
 
     _logInfo('🎬 Optimization triggered by user');
@@ -582,8 +754,16 @@ class MapProvider extends ChangeNotifier {
       (optimizedRoute) async {
         _logInfo('✅ Provider received optimized route. Updating state...');
         _updateState(
-          state.copyWith(activeRoute: optimizedRoute, isOptimizing: false),
+          state.copyWith(
+            activeRoute: optimizedRoute,
+            isOptimizing: false,
+            showRoutePolyline: true,
+          ),
         );
+
+        // SYNC: Update RoutesProvider to reflect changes in other screens
+        routesProvider.updateRoute(optimizedRoute);
+        _logInfo('🔄 RoutesProvider synchronized with optimized route');
 
         // Refresh map visuals
         await _updateMapData(optimizedRoute, shouldZoom: false);
@@ -616,142 +796,14 @@ class MapProvider extends ChangeNotifier {
     final RouteEntity updatedRoute = state.activeRoute!.copyWith(
       stops: updatedStops,
     );
-    _updateState(state.copyWith(activeRoute: updatedRoute));
+    _updateState(
+      state.copyWith(
+        activeRoute: updatedRoute,
+        showRoutePolyline: state.showRoutePolyline,
+      ),
+    );
 
     // Trigger map update to reflect the new status (e.g., stop marker color change)
     _updateMapData(updatedRoute);
-  }
-
-  /// Updates route progress by splitting geometry into past and future segments
-  Future<void> _updateRouteProgress(geo.Position userLocation) async {
-    if (state.activeRoute == null ||
-        !state.isMapReady ||
-        state.activeRoute!.polyline.isEmpty) {
-      return;
-    }
-
-    try {
-      final turf.Feature<turf.Point> sliced = _getNearestPointOnRoute(
-        userLocation,
-      );
-      final int? index = sliced.properties?['index'] as int?;
-      if (index == null) return;
-
-      final List<List<turf.Position>> segments = _splitRouteAtPoint(
-        index,
-        sliced,
-      );
-
-      await _updateLayerSource('route-passed-source', segments[0]);
-      await _updateLayerSource('route-active-source', segments[1]);
-    } catch (e) {
-      // ignore: avoid_print
-    }
-  }
-
-  turf.Feature<turf.Point> _getNearestPointOnRoute(geo.Position userLocation) {
-    final List<turf.Position> routeCoordinates = state.activeRoute!.polyline
-        .map(
-          (p) =>
-              turf.Position.named(lat: p.lat.toDouble(), lng: p.lng.toDouble()),
-        )
-        .toList();
-    final turf.LineString routeLine = turf.LineString(
-      coordinates: routeCoordinates,
-    );
-    final turf.Point userPoint = turf.Point(
-      coordinates: turf.Position.named(
-        lat: userLocation.latitude,
-        lng: userLocation.longitude,
-      ),
-    );
-    return turf.nearestPointOnLine(routeLine, userPoint);
-  }
-
-  List<List<turf.Position>> _splitRouteAtPoint(
-    int splitIndex,
-    turf.Feature<turf.Point> sliced,
-  ) {
-    final List<turf.Position> routeCoordinates = state.activeRoute!.polyline
-        .map(
-          (p) =>
-              turf.Position.named(lat: p.lat.toDouble(), lng: p.lng.toDouble()),
-        )
-        .toList();
-
-    // PAST
-    final List<turf.Position> pastCoords = routeCoordinates.sublist(
-      0,
-      splitIndex + 1,
-    );
-    pastCoords.add(sliced.geometry!.coordinates);
-
-    // FUTURE
-    final List<turf.Position> futureCoords = <turf.Position>[
-      sliced.geometry!.coordinates,
-    ];
-    futureCoords.addAll(routeCoordinates.sublist(splitIndex + 1));
-
-    return [pastCoords, futureCoords];
-  }
-
-  /// Helper to update layer source without code duplication
-  Future<void> _updateLayerSource(
-    String sourceId,
-    List<turf.Position> coords,
-  ) async {
-    if (!state.isMapReady || state.mapController == null) return;
-
-    final MapboxMap mapboxMap = state.mapController!;
-    final Map<String, dynamic> geoJSON = _prepareGeoJSON(coords);
-
-    try {
-      if (!_routeProgressSourcesInitialized) {
-        await _initializeSource(mapboxMap, sourceId, geoJSON);
-      } else {
-        await _updateSourceData(mapboxMap, sourceId, geoJSON);
-      }
-    } catch (e) {
-      // ignore: avoid_print
-    }
-  }
-
-  Map<String, dynamic> _prepareGeoJSON(List<turf.Position> coords) {
-    final List<List<double>> coordinates = coords
-        .map((p) => [p.lng.toDouble(), p.lat.toDouble()])
-        .toList();
-
-    return {
-      'type': 'Feature',
-      'properties': <String, dynamic>{},
-      'geometry': {'type': 'LineString', 'coordinates': coordinates},
-    };
-  }
-
-  Future<void> _initializeSource(
-    MapboxMap mapboxMap,
-    String sourceId,
-    Map<String, dynamic> geoJSON,
-  ) async {
-    if (!await mapboxMap.style.styleSourceExists(sourceId)) {
-      await mapboxMap.style.addSource(
-        GeoJsonSource(id: sourceId, data: jsonEncode(geoJSON)),
-      );
-    }
-    if (sourceId == 'route-active-source') {
-      _routeProgressSourcesInitialized = true;
-    }
-  }
-
-  Future<void> _updateSourceData(
-    MapboxMap mapboxMap,
-    String sourceId,
-    Map<String, dynamic> geoJSON,
-  ) async {
-    await mapboxMap.style.setStyleSourceProperty(
-      sourceId,
-      'data',
-      jsonEncode(geoJSON),
-    );
   }
 }

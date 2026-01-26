@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:geolocator/geolocator.dart' as geo;
 import 'package:vector/core/theme/app_colors.dart';
+import 'package:vector/core/utils/permission_handler.dart';
 import 'package:vector/features/map/presentation/providers/map_provider.dart';
+import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
 
 class MapControlsColumn extends StatelessWidget {
   final bool showNextStopCard;
@@ -20,8 +23,10 @@ class MapControlsColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mapState = context.watch<MapProvider>().state;
+    final mapProvider = context.watch<MapProvider>();
+    final mapState = mapProvider.state;
     final isOptimizing = mapState.isOptimizing;
+    final isPermanentlyDenied = mapState.locationPermission == geo.LocationPermission.deniedForever;
 
     return Column(
       children: [
@@ -42,7 +47,8 @@ class MapControlsColumn extends StatelessWidget {
           onTap: isOptimizing
               ? null
               : () {
-                  context.read<MapProvider>().optimizeCurrentRoute();
+                  final routesProvider = context.read<RoutesProvider>();
+                  context.read<MapProvider>().optimizeCurrentRoute(routesProvider);
                 },
           isActive: isOptimizing,
           color: isOptimizing ? Colors.orange : AppColors.primary,
@@ -60,10 +66,13 @@ class MapControlsColumn extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         _MapControlButton(
-          icon: LucideIcons.crosshair,
-          onTap: () {
-            context.read<MapProvider>().centerOnUserLocation();
-          },
+          icon: isPermanentlyDenied ? LucideIcons.alertTriangle : LucideIcons.crosshair,
+          onTap: isPermanentlyDenied 
+              ? () => PermissionHandler.openSettings()
+              : () => context.read<MapProvider>().centerOnUserLocation(),
+          color: isPermanentlyDenied ? Colors.red : (mapState.isFollowMode ? AppColors.accent : null),
+          isActive: isPermanentlyDenied || mapState.isFollowMode,
+          showGlow: mapState.isFollowMode,
         ),
         const SizedBox(height: 8),
         _MapControlButton(
@@ -89,12 +98,14 @@ class _MapControlButton extends StatelessWidget {
   final VoidCallback? onTap;
   final bool isActive;
   final Color? color;
+  final bool showGlow;
 
   const _MapControlButton({
     required this.icon,
     this.onTap,
     this.isActive = false,
     this.color,
+    this.showGlow = false,
   });
 
   @override
@@ -112,12 +123,21 @@ class _MapControlButton extends StatelessWidget {
                 ? (color ?? AppColors.primary)
                 : const Color(0xFF1E1E1E),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.white.withAlpha(25)),
+            border: Border.all(
+              color: showGlow ? AppColors.accent : Colors.white.withAlpha(25),
+              width: showGlow ? 2 : 1,
+            ),
             boxShadow: [
+              if (showGlow)
+                BoxShadow(
+                  color: AppColors.accent.withValues(alpha: 0.5),
+                  blurRadius: 12,
+                  spreadRadius: 2,
+                ),
               BoxShadow(
                 color: Colors.black.withAlpha(76),
                 blurRadius: 8,
-                offset: Offset(0, 4),
+                offset: const Offset(0, 4),
               ),
             ],
           ),

@@ -15,33 +15,39 @@ class MetricItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.03),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Icon(icon, size: 14, color: AppColors.textSecondary),
+        ),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 12, color: AppColors.textSecondary),
-            const SizedBox(width: 4),
             Text(
-              label,
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              label.toUpperCase(),
               style: TextStyle(
                 color: AppColors.textSecondary,
-                fontSize: 9,
-                fontWeight: FontWeight.bold,
+                fontSize: 8,
+                fontWeight: FontWeight.w900,
                 letterSpacing: 0.5,
               ),
             ),
           ],
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
         ),
       ],
     );

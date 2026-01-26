@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:vector/core/theme/app_colors.dart';
 import 'package:vector/features/home/presentation/widgets/floating_scan_button.dart';
 import 'package:vector/features/packages/presentation/widgets/add_package_details_dialog.dart';
 import 'package:vector/features/packages/presentation/widgets/filter_bar.dart';
 import 'package:vector/features/packages/presentation/widgets/packages_header.dart';
 import 'package:vector/features/packages/presentation/widgets/package_card.dart';
+import 'package:vector/features/packages/presentation/widgets/package_card_compressed.dart';
 import 'package:vector/features/packages/presentation/widgets/route_date_warning_banner.dart';
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
 import 'package:vector/features/packages/presentation/providers/jt_package_providers.dart';
@@ -17,6 +19,7 @@ import 'package:vector/features/map/domain/entities/stop_entity.dart';
 import 'package:vector/features/packages/domain/entities/manual_package_entity.dart';
 import 'package:vector/features/packages/domain/entities/package_status.dart';
 import 'package:vector/features/packages/domain/entities/jt_package.dart';
+import 'package:vector/features/packages/presentation/helpers/coordinate_assignment_helpers.dart';
 
 class PackagesScreen extends StatefulWidget {
   const PackagesScreen({super.key});
@@ -26,6 +29,8 @@ class PackagesScreen extends StatefulWidget {
 }
 
 class _PackagesScreenState extends State<PackagesScreen> {
+  bool _isCompressedView = false;
+
   Future<void> _openScanner(BuildContext context) async {
     final selectedRoute = context.read<RoutesProvider>().selectedRoute;
     if (selectedRoute == null) {
@@ -123,12 +128,23 @@ class _PackagesScreenState extends State<PackagesScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const PackagesHeader(),
-            const SizedBox(height: 16),
             if (selectedRoute != null) ...[
-              const FilterBar(),
-              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
+                  children: [
+                    const Expanded(child: FilterBar()),
+                    const SizedBox(width: 8),
+                    _buildViewToggle(),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
             ],
-            Divider(height: 1, thickness: 1, color: Colors.white.withValues(alpha: 0.1)),
+            Divider(
+                height: 1,
+                thickness: 1,
+                color: Colors.white.withValues(alpha: 0.1)),
             const RouteDateWarningBanner(),
             Expanded(
               child: selectedRoute == null
@@ -146,12 +162,16 @@ class _PackagesScreenState extends State<PackagesScreen> {
                       : ListView.separated(
                           padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
                           itemCount: filteredStops.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 12),
+                          separatorBuilder: (_, __) =>
+                              SizedBox(height: _isCompressedView ? 8 : 12),
                           itemBuilder: (context, index) {
                             final stop = filteredStops[index];
-                            return PackageCard(
-                              package: stop.package,
-                            );
+                            return _isCompressedView
+                                ? PackageCardCompressed(stop: stop)
+                                : PackageCard(
+                                    stop: stop,
+                                    onAssignLocation: () => CoordinateAssignmentHelpers.openCoordinateAssignment(context),
+                                  );
                           },
                         ),
             ),
@@ -161,6 +181,28 @@ class _PackagesScreenState extends State<PackagesScreen> {
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 80.0),
         child: FloatingScanButton(onTap: () => _openScanner(context)),
+      ),
+    );
+  }
+
+  Widget _buildViewToggle() {
+    return Container(
+      height: 36, // Match FilterBar height roughly
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        visualDensity: VisualDensity.compact,
+        onPressed: () => setState(() => _isCompressedView = !_isCompressedView),
+        icon: Icon(
+          _isCompressedView ? LucideIcons.layoutList : LucideIcons.layoutGrid,
+          color: _isCompressedView ? AppColors.primary : Colors.white.withValues(alpha: 0.6),
+          size: 18,
+        ),
+        tooltip: _isCompressedView ? 'Vista Detallada' : 'Vista Comprimida',
       ),
     );
   }

@@ -1,29 +1,31 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vector/core/presentation/widgets/custom_card.dart';
 import 'package:vector/core/theme/app_colors.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:vector/features/packages/domain/entities/package_entity.dart';
+import 'package:vector/features/map/domain/entities/stop_entity.dart';
 import 'package:vector/features/packages/domain/entities/jt_package.dart';
 import 'package:vector/features/packages/domain/entities/package_status.dart';
-import 'package:vibration/vibration.dart'; // Import the vibration package
+import 'package:vibration/vibration.dart';
 
 class PackageCard extends StatelessWidget {
-  final PackageEntity package;
+  final StopEntity stop;
   final VoidCallback? onTap;
   final VoidCallback? onDelivered;
   final VoidCallback? onFailed;
+  final VoidCallback? onAssignLocation;
 
   const PackageCard({
     super.key,
-    required this.package,
+    required this.stop,
     this.onTap,
     this.onDelivered,
     this.onFailed,
+    this.onAssignLocation,
   });
 
   Color _getStatusColor() {
+    final package = stop.package;
     switch (package.status) {
       case PackageStatus.pending:
         return const Color(0xFFFFD740); // Amarillo neon
@@ -40,6 +42,7 @@ class PackageCard extends StatelessWidget {
   }
 
   Future<void> _makeCall() async {
+    final package = stop.package;
     final Uri launchUri = Uri(scheme: 'tel', path: package.phone);
     if (await canLaunchUrl(launchUri)) {
       await launchUrl(launchUri);
@@ -47,6 +50,7 @@ class PackageCard extends StatelessWidget {
   }
 
   Future<void> _sendWhatsApp() async {
+    final package = stop.package;
     // Remove non-numeric characters for WhatsApp link
     final cleanPhone = package.phone.replaceAll(RegExp(r'\D'), '');
     final Uri launchUri = Uri.parse("https://wa.me/$cleanPhone");
@@ -63,384 +67,195 @@ class PackageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final package = stop.package;
     final statusColor = _getStatusColor();
-    final updatedAtStr = package.updatedAt != null
-        ? DateFormat('HH:mm - dd/MM').format(package.updatedAt!)
-        : 'S/N';
 
     // Verificar si es un paquete agrupado
     final isGroupedPackage =
-        package is JTPackage && (package as JTPackage).isGrouped;
+        package is JTPackage && package.isGrouped;
 
     return CustomCard(
       onTap: onTap,
       padding: EdgeInsets.zero,
       backgroundColor: isGroupedPackage
-          ? const Color(
-              0xFF1A1F2E,
-            ) // Fondo ligeramente diferente para agrupados
-          : const Color(0xFF1E1E1E),
+          ? const Color(0xFF1A1F2E)
+          : const Color(0xFF1E1E24),
       showBorder: true,
       borderColor: isGroupedPackage
-          ? AppColors.primary.withValues(
-              alpha: 0.4,
-            ) // Borde azul neón para agrupados
-          : Colors.white.withValues(alpha: 0.1),
+          ? AppColors.primary.withValues(alpha: 0.4)
+          : Colors.white.withValues(alpha: 0.05),
       child: Stack(
         children: [
-          // Franja lateral para paquetes agrupados
-          if (isGroupedPackage)
-            Positioned(
-              left: 0,
-              top: 0,
-              bottom: 0,
-              child: Container(
-                width: 4,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      AppColors.primary,
-                      AppColors.primary.withValues(alpha: 0.5),
-                    ],
-                  ),
-                ),
-              ),
+          // Franja lateral de estado
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            child: Container(
+              width: 4,
+              color: statusColor,
             ),
+          ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Header: Tracking ID y Estado
+              // Header: Stop Order y Estado
               Padding(
-                padding: EdgeInsets.only(
-                  left: isGroupedPackage
-                      ? 20.0
-                      : 16.0, // Más padding si hay franja
-                  right: 16.0,
-                  top: 16.0,
-                  bottom: 16.0,
-                ),
+                padding: const EdgeInsets.all(16.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                'NÚMERO DE SEGUIMIENTO',
-                                style: Theme.of(context).textTheme.labelSmall
-                                    ?.copyWith(
-                                      color: Colors.grey[500],
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.0,
-                                      fontSize: 10,
-                                    ),
+                    Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: statusColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                                color: statusColor.withValues(alpha: 0.3)),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '${stop.stopOrder}',
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              package.id,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.5),
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
                               ),
-                              if (isGroupedPackage) ...[
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 3,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        AppColors.primary.withValues(
-                                          alpha: 0.3,
-                                        ),
-                                        AppColors.primary.withValues(
-                                          alpha: 0.15,
-                                        ),
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(
-                                      color: AppColors.primary.withValues(
-                                        alpha: 0.6,
-                                      ),
-                                      width: 1.5,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: AppColors.primary.withValues(
-                                          alpha: 0.3,
-                                        ),
-                                        blurRadius: 4,
-                                        spreadRadius: 0,
-                                      ),
-                                    ],
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        LucideIcons.package2,
-                                        size: 12,
-                                        color: AppColors.primary,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        'AGRUPADO',
-                                        style: TextStyle(
-                                          color: AppColors.primary,
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 9,
-                                          letterSpacing: 0.8,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                            ),
+                            if (isGroupedPackage)
+                              Text(
+                                'PAQUETE AGRUPADO',
+                                style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900,
                                 ),
-                              ],
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            package.id,
-                            style: Theme.of(context).textTheme.headlineMedium
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                ),
-                          ),
-                        ],
-                      ),
+                              ),
+                          ],
+                        ),
+                      ],
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
+                        horizontal: 8,
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
                         color: statusColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: statusColor.withValues(alpha: 0.5),
-                          width: 1,
+                      ),
+                      child: Text(
+                        package.status.toLocalizedString().toUpperCase(),
+                        style: TextStyle(
+                          color: statusColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
                         ),
                       ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: statusColor,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            package.status.toLocalizedString().toUpperCase(),
-                            style: TextStyle(
-                              color: statusColor,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 10,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
                   ],
                 ),
               ),
 
-              Divider(height: 1, color: Colors.white.withValues(alpha: 0.1)),
+              Divider(height: 1, color: Colors.white.withValues(alpha: 0.05)),
 
-              // Body: Dirección y Cliente
+              // Body: Dirección (Título) y Receptor (Subtítulo)
               Padding(
-                padding: EdgeInsets.only(
-                  left: isGroupedPackage ? 20.0 : 16.0,
-                  right: 16.0,
-                  top: 16.0,
-                  bottom: 16.0,
-                ),
-                child: Row(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(
-                      LucideIcons.mapPin,
-                      color: AppColors.primary,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            package.address,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Icon(
-                                LucideIcons.user,
-                                size: 14,
-                                color: Colors.grey[400],
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                package.receiverName,
-                                style: TextStyle(
-                                  color: Colors.grey[400],
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          // Acciones de contacto
-                          Row(
-                            children: [
-                              _ContactAction(
-                                icon: LucideIcons.phone,
-                                label: package.phone,
-                                onTap: _makeCall,
-                                color: Colors.blueAccent,
-                              ),
-                              const SizedBox(width: 12),
-                              _ContactAction(
-                                icon: LucideIcons.messageSquare,
-                                label: 'WhatsApp',
-                                onTap: _sendWhatsApp,
-                                color: const Color(0xFF25D366),
-                              ),
-                            ],
-                          ),
-                          if (package.notes != null &&
-                              package.notes!.isNotEmpty) ...[
-                            const SizedBox(height: 12),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.05),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.1),
-                                ),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Icon(
-                                    LucideIcons.fileText,
-                                    size: 14,
-                                    color: Colors.grey[400],
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      package.notes!,
-                                      style: TextStyle(
-                                        color: Colors.grey[300],
-                                        fontSize: 12,
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ],
+                    Text(
+                      package.address,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(LucideIcons.user,
+                            size: 14,
+                            color: Colors.white.withValues(alpha: 0.4)),
+                        const SizedBox(width: 6),
+                        Text(
+                          package.receiverName,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.4),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    // Acciones de contacto
+                    Row(
+                      children: [
+                        _ContactAction(
+                          icon: LucideIcons.phone,
+                          label: package.phone,
+                          onTap: _makeCall,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 12),
+                        _ContactAction(
+                          icon: LucideIcons.messageSquare,
+                          label: 'WhatsApp',
+                          onTap: _sendWhatsApp,
+                          color: const Color(0xFF25D366),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
 
-              // Action Buttons
-              if (package.status != PackageStatus.delivered &&
-                  package.status != PackageStatus.failed) ...[
-                Divider(height: 1, color: Colors.white.withValues(alpha: 0.1)),
+              if (package.status == PackageStatus.pending) ...[
+                Divider(height: 1, color: Colors.white.withValues(alpha: 0.05)),
                 Padding(
-                  padding: EdgeInsets.only(
-                    left: isGroupedPackage ? 20.0 : 16.0,
-                    right: 16.0,
-                    top: 16.0,
-                    bottom: 16.0,
-                  ),
+                  padding: const EdgeInsets.all(12.0),
                   child: Row(
                     children: [
                       Expanded(
-                        child: ElevatedButton(
+                        child: _buildActionButton(
+                          label: 'ENTREGADO',
+                          color: AppColors.accent,
                           onPressed: () {
                             _performVibration();
                             onDelivered?.call();
                           },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            foregroundColor: AppColors.accent,
-                            disabledBackgroundColor: Colors.transparent,
-                            disabledForegroundColor: AppColors.accent
-                                .withValues(alpha: 0.5),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6),
-                              side: const BorderSide(
-                                color: AppColors.accent,
-                                width: 1,
-                              ),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          child: const Text(
-                            'Entregado',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: ElevatedButton(
+                        child: _buildActionButton(
+                          label: 'FALLIDO',
+                          color: const Color(0xFFFF5252),
                           onPressed: () {
                             _performVibration();
                             onFailed?.call();
                           },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            foregroundColor: const Color(0xFFEF5350),
-                            disabledBackgroundColor: Colors.transparent,
-                            disabledForegroundColor: const Color(
-                              0xFFEF5350,
-                            ).withValues(alpha: 0.5),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6),
-                              side: const BorderSide(
-                                color: Color(0xFFEF5350),
-                                width: 1,
-                              ),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          child: const Text(
-                            'Fallido',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
                         ),
                       ),
                     ],
@@ -448,48 +263,64 @@ class PackageCard extends StatelessWidget {
                 ),
               ],
 
-              Divider(height: 1, color: Colors.white.withValues(alpha: 0.1)),
-
-              // Footer: Fecha Actualización y Chevron
-              Padding(
-                padding: EdgeInsets.only(
-                  left: isGroupedPackage ? 20.0 : 16.0,
-                  right: 16.0,
-                  top: 12.0,
-                  bottom: 12.0,
+              // Botón para asignar/editar coordenadas (siempre visible si hay callback)
+              if (onAssignLocation != null) ...[
+                Divider(height: 1, color: Colors.white.withValues(alpha: 0.05)),
+                Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: _buildActionButton(
+                    label: package.coordinates == null 
+                        ? 'ASIGNAR UBICACIÓN' 
+                        : 'EDITAR UBICACIÓN',
+                    icon: LucideIcons.mapPin,
+                    color: AppColors.primary,
+                    onPressed: () {
+                      _performVibration();
+                      onAssignLocation!();
+                    },
+                  ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          LucideIcons.calendar,
-                          size: 14,
-                          color: AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Actualizado: $updatedAtStr',
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Icon(
-                      LucideIcons.chevronRight,
-                      color: Colors.white.withValues(alpha: 0.3),
-                      size: 20,
-                    ),
-                  ],
-                ),
-              ),
+              ],
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required String label,
+    required Color color,
+    required VoidCallback onPressed,
+    IconData? icon,
+  }) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: color.withValues(alpha: 0.5)),
+        ),
+        alignment: Alignment.center,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: 8),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

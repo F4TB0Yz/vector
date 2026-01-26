@@ -20,6 +20,7 @@ import 'package:vector/features/routes/domain/usecases/get_routes.dart';
 import 'package:vector/features/packages/domain/repositories/jt_package_repository.dart';
 import 'package:vector/features/packages/presentation/providers/jt_package_providers.dart';
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
+import 'package:vector/features/routes/data/datasources/routes_preferences_datasource.dart';
 import 'package:vector/features/map/domain/repositories/map_repository.dart';
 import 'package:vector/features/map/domain/usecases/create_stop_from_coordinates.dart';
 import 'package:vector/features/map/domain/usecases/reverse_geocode_coordinates.dart';
@@ -52,15 +53,7 @@ class _MainScreenState extends State<MainScreen> {
             PackagesProvider(repository: sl<JTPackageRepository>()),
         child: const PackagesScreen(),
       ),
-      provider.ChangeNotifierProvider(
-        create: (context) => MapProvider(
-          mapRepository: sl<MapRepository>(),
-          reverseGeocodeCoordinatesUseCase: sl<ReverseGeocodeCoordinates>(),
-          createStopFromCoordinatesUseCase: sl<CreateStopFromCoordinates>(),
-          optimizeRouteUseCase: sl<OptimizeRoute>(),
-        ),
-        child: const MapScreen(),
-      ),
+      const MapScreen(),
     ];
   }
 
@@ -88,7 +81,16 @@ class _MainScreenState extends State<MainScreen> {
           create: (context) => RoutesProvider(
             getRoutesUseCase: sl<GetRoutes>(),
             createRouteUseCase: sl<CreateRoute>(),
+            prefsDataSource: sl<RoutesPreferencesDataSource>(),
           )..loadRoutes(),
+        ),
+        provider.ChangeNotifierProvider(
+          create: (context) => MapProvider(
+            mapRepository: sl<MapRepository>(),
+            reverseGeocodeCoordinatesUseCase: sl<ReverseGeocodeCoordinates>(),
+            createStopFromCoordinatesUseCase: sl<CreateStopFromCoordinates>(),
+            optimizeRouteUseCase: sl<OptimizeRoute>(),
+          ),
         ),
       ],
       child: Scaffold(

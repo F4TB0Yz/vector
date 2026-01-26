@@ -73,215 +73,219 @@ class NextStopCard extends StatelessWidget {
             ),
           ),
 
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header: Badge Stop y Tiempo
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Expanded(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Header: Badge Stop y Tiempo
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF00B0FF),
+                                borderRadius: BorderRadius.all(Radius.circular(4)),
+                              ),
+                              child: Text(
+                                stopNumberText.toUpperCase(), // Ej: STOP 04
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              timeAwayText.toUpperCase(), // Ej: 3 MIN AWAY
+                              style: TextStyle(
+                                color: Colors.grey[400],
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          onPressed: onClose,
+                          padding: const EdgeInsets.all(8),
+                          constraints: const BoxConstraints(
+                            minWidth: 40,
+                            minHeight: 40,
+                          ),
+                          icon: const Icon(
+                            LucideIcons.x,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ],
+                    ),
+                
+                    const SizedBox(height: 12),
+                  
+                    // Dirección Principal
+                    Text(
+                      addressText,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        height: 1.2,
+                      ),
+                    ),
+                  
+                    const SizedBox(height: 16),
+                  
+                    // Detalles del Paquete
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                        _DetailItem(icon: LucideIcons.package, text: packageTypeText),
+                        const SizedBox(width: 16),
+                        _DetailItem(icon: LucideIcons.scale, text: weightText),
+                      ],
+                    ),
+                  
+                    const SizedBox(height: 16),
+                  
+                    // Nota (si existe)
+                    if (noteText != null)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: const BoxDecoration(
+                          color: Color(0x0DFFFFFF),
+                          borderRadius: BorderRadius.all(Radius.circular(4)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              LucideIcons.info,
+                              color: Colors.grey[500],
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                noteText,
+                                style: TextStyle(
+                                  color: Colors.grey[300],
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  
+                    const SizedBox(height: 16),
+                  
+                    // Botón Escanear
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: onScan,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: accentColor,
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4),
                           ),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF00B0FF),
-                            borderRadius: BorderRadius.all(Radius.circular(4)),
-                          ),
-                          child: Text(
-                            stopNumberText.toUpperCase(), // Ej: STOP 04
-                            style: const TextStyle(
-                              color: Colors.black,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          elevation: 0,
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(LucideIcons.scanLine, size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              'ESCANEAR PAQUETE',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    
+                    // Entregado / Fallido buttons
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              _performVibration();
+                              onDelivered?.call(stop);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              foregroundColor: AppColors.accent,
+                              disabledBackgroundColor: Colors.transparent,
+                              disabledForegroundColor: AppColors.accent.withValues(alpha: 0.5),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
+                                side: const BorderSide(color: AppColors.accent, width: 1),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            child: const Text(
+                              'Entregado',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
                         const SizedBox(width: 12),
-                        Text(
-                          timeAwayText.toUpperCase(), // Ej: 3 MIN AWAY
-                          style: TextStyle(
-                            color: Colors.grey[400],
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                    IconButton(
-                      onPressed: onClose,
-                      padding: const EdgeInsets.all(8),
-                      constraints: const BoxConstraints(
-                        minWidth: 40,
-                        minHeight: 40,
-                      ),
-                      icon: const Icon(
-                        LucideIcons.x,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                  ],
-                ),
-            
-                const SizedBox(height: 12),
-              
-                // Dirección Principal
-                Text(
-                  addressText,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    height: 1.2,
-                  ),
-                ),
-              
-                const SizedBox(height: 16),
-              
-                // Detalles del Paquete
-                Row(
-                  children: [
-                    _DetailItem(icon: LucideIcons.package, text: packageTypeText),
-                    const SizedBox(width: 16),
-                    _DetailItem(icon: LucideIcons.scale, text: weightText),
-                  ],
-                ),
-              
-                const SizedBox(height: 16),
-              
-                // Nota (si existe)
-                if (noteText != null)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: const BoxDecoration(
-                      color: Color(0x0DFFFFFF),
-                      borderRadius: BorderRadius.all(Radius.circular(4)),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          LucideIcons.info,
-                          color: Colors.grey[500],
-                          size: 16,
-                        ),
-                        const SizedBox(width: 8),
                         Expanded(
-                          child: Text(
-                            noteText,
-                            style: TextStyle(
-                              color: Colors.grey[300],
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              _performVibration();
+                              onFailed?.call(stop);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              foregroundColor: const Color(0xFFEF5350),
+                              disabledBackgroundColor: Colors.transparent,
+                              disabledForegroundColor: const Color(0xFFEF5350).withValues(alpha: 0.5),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
+                                side: const BorderSide(color: Color(0xFFEF5350), width: 1),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            child: const Text(
+                              'Fallido',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-              
-                const SizedBox(height: 16),
-              
-                // Botón Escanear
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: onScan,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: accentColor,
-                      foregroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      elevation: 0,
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(LucideIcons.scanLine, size: 20),
-                        SizedBox(width: 8),
-                        Text(
-                          'ESCANEAR PAQUETE',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                
-                // Entregado / Fallido buttons
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          _performVibration();
-                          onDelivered?.call(stop);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          foregroundColor: AppColors.accent,
-                          disabledBackgroundColor: Colors.transparent,
-                          disabledForegroundColor: AppColors.accent.withValues(alpha: 0.5),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
-                            side: const BorderSide(color: AppColors.accent, width: 1),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        child: const Text(
-                          'Entregado',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          _performVibration();
-                          onFailed?.call(stop);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          foregroundColor: const Color(0xFFEF5350),
-                          disabledBackgroundColor: Colors.transparent,
-                          disabledForegroundColor: const Color(0xFFEF5350).withValues(alpha: 0.5),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
-                            side: const BorderSide(color: Color(0xFFEF5350), width: 1),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        child: const Text(
-                          'Fallido',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
         ],

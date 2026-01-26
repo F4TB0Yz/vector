@@ -30,7 +30,7 @@ class NextStopPageView extends StatelessWidget {
       left: 0,
       right: 0,
       bottom: showNextStopCard ? 30 : -500,
-      height: 350,
+      height: 400,
       child: IgnorePointer(
         ignoring: !showNextStopCard,
         child: PageView.builder(

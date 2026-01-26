@@ -1,3 +1,5 @@
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vector/features/routes/data/datasources/routes_preferences_datasource.dart';
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 import 'package:vector/core/database/database_service.dart';
@@ -44,6 +46,7 @@ import 'package:vector/features/routes/domain/usecases/get_routes.dart';
 import 'package:vector/features/packages/data/datasources/jt_packages_datasource.dart';
 import 'package:vector/features/packages/data/repositories/jt_package_repository_impl.dart';
 import 'package:vector/features/packages/domain/repositories/jt_package_repository.dart';
+import 'package:vector/features/packages/domain/usecases/update_package_coordinates.dart';
 
 final sl = GetIt.instance;
 
@@ -80,6 +83,7 @@ Future<void> init() async {
       remoteDataSource: sl(),
       routeRemoteDataSource: sl(),
       optimizationRemoteDataSource: sl(),
+      stopRepository: sl(),
     ),
   );
   sl.registerLazySingleton<StopRepository>(
@@ -109,8 +113,14 @@ Future<void> init() async {
   sl.registerLazySingleton<RoutesLocalDataSource>(
     () => RoutesLocalDataSourceImpl(sl()),
   );
+  sl.registerLazySingleton<RoutesPreferencesDataSource>(
+    () => RoutesPreferencesDataSource(sl()),
+  );
 
   // ! Features - Packages
+  // UseCases
+  sl.registerLazySingleton(() => UpdatePackageCoordinates(sl()));
+
   // Repository
   sl.registerLazySingleton<JTPackageRepository>(
     () => JTPackageRepositoryImpl(sl(), sl()),
@@ -123,5 +133,9 @@ Future<void> init() async {
 
   // ! Core
   sl.registerLazySingleton(() => DatabaseService.instance);
+
+  // ! External
+  final sharedPreferences = await SharedPreferences.getInstance();
+  sl.registerLazySingleton(() => sharedPreferences);
   sl.registerLazySingleton(() => Dio());
 }

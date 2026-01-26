@@ -1,10 +1,13 @@
 import 'package:dio/dio.dart';
 import 'dart:convert';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import '../../../../core/utils/device_utils.dart';
+import '../../../../core/database/database_service.dart';
 import '../models/jt_package_model.dart';
 
 abstract class JTPackagesDataSource {
   Future<List<JTPackageModel>> getPackages(String authToken);
+  Future<void> updatePackageCoordinates(String waybillNo, Position coordinates);
 }
 
 class JTPackagesDataSourceImpl implements JTPackagesDataSource {
@@ -221,6 +224,28 @@ class JTPackagesDataSourceImpl implements JTPackagesDataSource {
     }
 
     return packages;
+  }
+
+  @override
+  Future<void> updatePackageCoordinates(
+    String waybillNo,
+    Position coordinates,
+  ) async {
+    final db = await DatabaseService.instance.database;
+    
+    // Formatear lngLat como "lng,lat" para compatibilidad con J&T
+    final lngLat = '${coordinates.lng},${coordinates.lat}';
+    
+    // Actualizar en la tabla stops (donde se almacenan los paquetes)
+    // Buscamos por name que corresponde al tracking number
+    await db.rawUpdate(
+      '''
+      UPDATE stops 
+      SET latitude = ?, longitude = ?, notes = ?
+      WHERE name = ?
+      ''',
+      [coordinates.lat, coordinates.lng, lngLat, waybillNo],
+    );
   }
 
   void _debugLog(String message, {_AnsiColor color = _AnsiColor.white}) {

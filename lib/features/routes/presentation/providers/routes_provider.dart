@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:vector/features/map/domain/entities/stop_entity.dart';
 import 'package:vector/features/packages/domain/entities/package_status.dart';
 import 'package:vector/features/routes/domain/usecases/add_stop_to_route.dart';
+import 'package:vector/features/map/domain/entities/route_entity.dart' as map;
+import '../../data/datasources/routes_preferences_datasource.dart';
 import '../../domain/entities/route_entity.dart';
 import '../../domain/usecases/create_route.dart';
 import '../../domain/usecases/get_routes.dart';
@@ -9,6 +11,7 @@ import '../../domain/usecases/get_routes.dart';
 class RoutesProvider extends ChangeNotifier {
   final GetRoutes _getRoutesUseCase;
   final CreateRoute _createRouteUseCase;
+  final RoutesPreferencesDataSource _prefsDataSource;
 
   // State
   List<RouteEntity> _routes = [];
@@ -82,8 +85,10 @@ class RoutesProvider extends ChangeNotifier {
   RoutesProvider({
     required GetRoutes getRoutesUseCase,
     required CreateRoute createRouteUseCase,
+    required RoutesPreferencesDataSource prefsDataSource,
   })  : _getRoutesUseCase = getRoutesUseCase,
-        _createRouteUseCase = createRouteUseCase;
+        _createRouteUseCase = createRouteUseCase,
+        _prefsDataSource = prefsDataSource;
 
   Future<void> loadRoutes() async {
     _isLoading = true;
@@ -98,16 +103,43 @@ class RoutesProvider extends ChangeNotifier {
         notifyListeners();
       },
       (routes) {
-        _routes = routes;
-        // Optionally update selectedRoute if it exists in the new list to keep it fresh
-        if (_selectedRoute != null) {
+        _routes = List<RouteEntity>.from(routes);
+
+        // Lógica de Persistencia de Ruta Diaria
+        final savedRouteId = _prefsDataSource.getSelectedRouteId();
+        final savedDate = _prefsDataSource.getSelectedRouteDate();
+        final today = DateTime.now();
+        final todayDateOnly = DateTime(today.year, today.month, today.day);
+
+        if (savedRouteId != null && savedDate != null) {
+          final savedDateOnly =
+              DateTime(savedDate.year, savedDate.month, savedDate.day);
+
+          if (savedDateOnly.isAtSameMomentAs(todayDateOnly)) {
+            // Es de hoy, intentar restaurar
+            try {
+              _selectedRoute =
+                  _routes.firstWhere((r) => r.id == savedRouteId);
+            } catch (_) {
+              // No encontrada, limpiar
+              _prefsDataSource.clearSelectedRoute();
+              _selectedRoute = null;
+            }
+          } else {
+            // Es antigua, limpiar
+            _prefsDataSource.clearSelectedRoute();
+            _selectedRoute = null;
+          }
+        } else if (_selectedRoute != null) {
+          // Mantener selección actual si ya existe en memoria (después de una actualización)
           try {
-            _selectedRoute = _routes.firstWhere((r) => r.id == _selectedRoute!.id);
+            _selectedRoute =
+                _routes.firstWhere((r) => r.id == _selectedRoute!.id);
           } catch (_) {
-            // Selected route no longer exists
             _selectedRoute = null;
           }
         }
+
         _isLoading = false;
         notifyListeners();
       },
@@ -135,6 +167,11 @@ class RoutesProvider extends ChangeNotifier {
 
   void selectRoute(RouteEntity? route) {
     _selectedRoute = route;
+    if (route != null) {
+      _prefsDataSource.saveSelectedRoute(route.id, DateTime.now());
+    } else {
+      _prefsDataSource.clearSelectedRoute();
+    }
     notifyListeners();
   }
 
@@ -172,6 +209,30 @@ class RoutesProvider extends ChangeNotifier {
     _stopFilterIndex = index;
     notifyListeners();
   }
+
+  /// Updates a route in the list and selectedRoute if applicable.
+  /// Handles both RouteEntity types by matching IDs and updating stops.
+  void updateRoute(map.RouteEntity updatedRoute) {
+    // Update in the list
+    final index = _routes.indexWhere((r) => r.id == updatedRoute.id);
+    if (index != -1) {
+      _routes[index] = _routes[index].copyWith(
+        stops: updatedRoute.stops,
+        progress: updatedRoute.progress,
+      );
+    }
+
+    // Update selected route
+    if (_selectedRoute?.id == updatedRoute.id) {
+      _selectedRoute = _selectedRoute!.copyWith(
+        stops: updatedRoute.stops,
+        progress: updatedRoute.progress,
+      );
+    }
+    
+    notifyListeners();
+  }
+
   
   /// Helper to refresh state externally (e.g. after adding stops)
   void invalidate() {

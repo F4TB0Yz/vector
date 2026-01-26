@@ -1,10 +1,8 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:vector/core/theme/app_colors.dart';
 import 'package:vector/features/routes/presentation/widgets/metric_item.dart';
-import 'package:vector/features/routes/presentation/widgets/select_button.dart';
 import 'package:vector/features/routes/presentation/widgets/status_badge.dart';
 
 class RouteCard extends StatefulWidget {
@@ -98,167 +96,168 @@ class _RouteCardState extends State<RouteCard> with SingleTickerProviderStateMix
     final bool activeState = widget.isSelected || _isActivating;
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: activeState
-            ? [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.15),
-                  blurRadius: 20,
-                  spreadRadius: -5,
-                )
-              ]
-            : [],
+        color: const Color(0xFF1E1E24),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: activeState
+              ? AppColors.primary.withValues(alpha: 0.4)
+              : Colors.white.withValues(alpha: 0.05),
+          width: 1,
+        ),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Stack(
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 400),
-                decoration: BoxDecoration(
-                  color: activeState
-                      ? AppColors.primary.withValues(alpha: 0.08)
-                      : const Color(0xFF1E1E24).withValues(alpha: 0.7),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: activeState
-                        ? AppColors.primary.withValues(alpha: 0.5)
-                        : Colors.white.withValues(alpha: 0.08),
-                    width: 1.5,
+        borderRadius: BorderRadius.circular(4),
+        child: Stack(
+          children: [
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Status Neon Strip
+                  Container(
+                    width: 4,
+                    color: statusColor,
                   ),
-                ),
-                child: IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Status Neon Strip
-                      Container(
-                        width: 4,
-                        decoration: BoxDecoration(
-                          color: statusColor,
-                          boxShadow: [
-                            BoxShadow(
-                              color: statusColor.withValues(alpha: 0.5),
-                              blurRadius: 8,
-                              spreadRadius: 1,
-                            ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    StatusBadge(
+                                      label: _getDisplayStatus(),
+                                      color: statusColor,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      widget.routeId,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: -0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _buildActionIndicator(),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              MetricItem(
+                                icon: LucideIcons.clock,
+                                value: widget.estTime,
+                                label: 'ETA',
+                              ),
+                              MetricItem(
+                                icon: LucideIcons.mapPin,
+                                value: widget.stops.toString(),
+                                label: 'PARADAS',
+                              ),
+                              MetricItem(
+                                icon: LucideIcons.navigation,
+                                value: '${widget.distance.toStringAsFixed(1)} KM',
+                                label: 'DIST.',
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (_isActivating)
+              Positioned.fill(
+                child: AnimatedBuilder(
+                  animation: _sweepController,
+                  builder: (context, child) {
+                    return Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.transparent,
+                            AppColors.primary.withValues(alpha: 0.1),
+                            Colors.transparent,
+                          ],
+                          stops: [
+                            _sweepController.value - 0.2,
+                            _sweepController.value,
+                            _sweepController.value + 0.2,
                           ],
                         ),
                       ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'ID RUTA',
-                                          style: TextStyle(
-                                            color: AppColors.textSecondary,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                            letterSpacing: 1.2,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          widget.routeId,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.w900,
-                                            letterSpacing: -0.5,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  StatusBadge(
-                                    label: _getDisplayStatus(),
-                                    color: statusColor,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  MetricItem(
-                                    icon: LucideIcons.clock,
-                                    value: widget.estTime,
-                                    label: 'ETA',
-                                  ),
-                                  MetricItem(
-                                    icon: LucideIcons.mapPin,
-                                    value: widget.stops.toString(),
-                                    label: 'PARADAS',
-                                  ),
-                                  MetricItem(
-                                    icon: LucideIcons.navigation,
-                                    value: '${widget.distance.toStringAsFixed(1)} KM',
-                                    label: 'DIST.',
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-                              SelectButton(
-                                isSelected: widget.isSelected,
-                                isActivating: _isActivating,
-                                onTap: _handleTap,
-                                accentColor: widget.isSelected ? Colors.white : AppColors.primary,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
-              // Selection Sweep Animation (Neon Light bar passing through)
-              if (_isActivating)
-                Positioned.fill(
-                  child: AnimatedBuilder(
-                    animation: _sweepController,
-                    builder: (context, child) {
-                      return Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Colors.transparent,
-                              AppColors.primary.withValues(alpha: 0.05),
-                              AppColors.primary.withValues(alpha: 0.2),
-                              AppColors.primary.withValues(alpha: 0.05),
-                              Colors.transparent,
-                            ],
-                            stops: [
-                              _sweepController.value - 0.3,
-                              _sweepController.value - 0.15,
-                              _sweepController.value,
-                              _sweepController.value + 0.15,
-                              _sweepController.value + 0.3,
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionIndicator() {
+    final bool isHighlighted = widget.isSelected || _isActivating;
+
+    return GestureDetector(
+      onTap: _handleTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isHighlighted ? AppColors.primary : Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: isHighlighted ? Colors.transparent : AppColors.primary.withValues(alpha: 0.3),
           ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_isActivating)
+              const SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            else
+              Icon(
+                widget.isSelected ? LucideIcons.check : LucideIcons.play,
+                size: 14,
+                color: isHighlighted ? Colors.white : AppColors.primary,
+              ),
+            const SizedBox(width: 8),
+            Text(
+              _isActivating ? '...' : widget.isSelected ? 'ACTIVA' : 'INICIAR',
+              style: TextStyle(
+                color: isHighlighted ? Colors.white : AppColors.primary,
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
         ),
       ),
     );

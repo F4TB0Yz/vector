@@ -8,6 +8,9 @@ import 'package:vector/features/routes/domain/entities/route_entity.dart';
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
 import 'package:vector/features/routes/domain/usecases/add_stop_to_route.dart';
 import 'package:vector/shared/presentation/widgets/toasts.dart';
+import 'package:vector/features/packages/presentation/helpers/coordinate_assignment_helpers.dart';
+
+import 'package:vector/features/packages/domain/entities/package_status.dart';
 
 class PackagesHeader extends StatelessWidget {
   const PackagesHeader({super.key});
@@ -90,53 +93,122 @@ class PackagesHeader extends StatelessWidget {
     final bool isSessionActive = authProvider.isAuthenticated;
     final bool isDownloadEnabled = isSessionActive && !isLoading;
 
+    // Statistics
+    final int totalStops = selectedRoute?.stops.length ?? 0;
+    final int completedStops = selectedRoute?.stops
+            .where((s) => s.status == PackageStatus.delivered)
+            .length ??
+        0;
+
     return Padding(
       padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Flexible(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Paradas de la Ruta',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 24,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  selectedRoute?.name ?? 'Ninguna ruta seleccionada',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.text,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _RouteSelector(),
-              IconButton(
-                tooltip: !isSessionActive
-                    ? 'Inicia sesión en J&T para importar'
-                    : selectedRoute == null
-                    ? 'Selecciona una ruta para importar'
-                    : 'Importar Paquetes de J&T a ${selectedRoute.name}',
-                onPressed: () => _handleImportClick(context),
-                icon: Icon(
-                  LucideIcons.packageSearch,
-                  color: isDownloadEnabled
-                      ? AppColors.primary
-                      : AppColors.primary.withValues(alpha: 0.3),
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'Ruta:',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.5),
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        if (selectedRoute != null)
+                          _buildMiniStat(
+                            context,
+                            totalStops.toString(),
+                            LucideIcons.package,
+                            AppColors.primary,
+                          ),
+                        const SizedBox(width: 4),
+                        if (selectedRoute != null)
+                          _buildMiniStat(
+                            context,
+                            completedStops.toString(),
+                            LucideIcons.checkCircle2,
+                            AppColors.accent,
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      selectedRoute?.name ?? 'Ninguna ruta seleccionada',
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 22,
+                          ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
+              Row(
+                children: [
+                  // BOTÓN TEMPORAL PARA PRUEBAS
+                  IconButton(
+                    tooltip: 'Asignar Coordenadas (PRUEBA)',
+                    onPressed: () => CoordinateAssignmentHelpers.openCoordinateAssignment(context),
+                    icon: Icon(
+                      LucideIcons.mapPin,
+                      color: AppColors.accent,
+                    ),
+                  ),
+                  _RouteSelector(),
+                  IconButton(
+                    tooltip: !isSessionActive
+                        ? 'Inicia sesión en J&T para importar'
+                        : selectedRoute == null
+                            ? 'Selecciona una ruta para importar'
+                            : 'Importar Paquetes de J&T a ${selectedRoute.name}',
+                    onPressed: () => _handleImportClick(context),
+                    icon: Icon(
+                      LucideIcons.packageSearch,
+                      color: isDownloadEnabled
+                          ? AppColors.primary
+                          : AppColors.primary.withValues(alpha: 0.3),
+                    ),
+                  ),
+                ],
+              ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniStat(
+      BuildContext context, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 14),
+          const SizedBox(width: 6),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),

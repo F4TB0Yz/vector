@@ -53,42 +53,27 @@ class _RoutesScreenState extends State<RoutesScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Arma las ruta a tu manera',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: AppColors.textSecondary,
-                          letterSpacing: 1.5,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
                     ],
                   ),
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => const AddRouteDialog(),
-                          );
-                        },
-                        icon: const Icon(
-                          LucideIcons.plusCircle,
-                          color: AppColors.primary,
-                        ),
+                      Row(
+                        children: [
+                          IconButton(
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (dialogContext) => Provider.value(
+                                  value: context.read<RoutesProvider>(),
+                                  child: const AddRouteDialog(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(
+                              LucideIcons.plusCircle,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
                       ),
-                      IconButton(
-                        onPressed: () {
-                          // TODO: Implement filter functionality
-                        },
-                        icon: const Icon(
-                          LucideIcons.filter,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),
@@ -102,7 +87,7 @@ class _RoutesScreenState extends State<RoutesScreen> {
                 children: List.generate(_filters.length, (index) {
                   final isSelected = selectedFilter == index;
                   return Padding(
-                    padding: const EdgeInsets.only(right: 12.0),
+                    padding: const EdgeInsets.only(right: 8.0),
                     child: GestureDetector(
                       onTap: () {
                         context.read<RoutesProvider>().setFilter(index);
@@ -110,29 +95,26 @@ class _RoutesScreenState extends State<RoutesScreen> {
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 10,
+                          horizontal: 12,
+                          vertical: 6,
                         ),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? AppColors.primary
-                              : const Color(0xFF2C2C35),
-                          borderRadius: BorderRadius.circular(
-                            6,
-                          ),
+                              ? AppColors.primary.withValues(alpha: 0.2)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(4),
                           border: Border.all(
                             color: isSelected
-                                ? Colors.transparent
-                                : Colors.white.withValues(alpha: 0.1),
+                                ? AppColors.primary
+                                : Colors.white.withValues(alpha: 0.05),
                           ),
                         ),
                         child: Text(
                           _filters[index],
                           style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.grey[400],
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            letterSpacing: 0.5,
+                            color: isSelected ? Colors.white : Colors.grey[600],
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            fontSize: 12,
                           ),
                         ),
                       ),
@@ -141,8 +123,7 @@ class _RoutesScreenState extends State<RoutesScreen> {
                 }),
               ),
             ),
-
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             Divider(
               height: 1,
               thickness: 1,
@@ -201,7 +182,10 @@ class _RoutesScreenState extends State<RoutesScreen> {
               onPressed: () {
                 showDialog(
                   context: context,
-                  builder: (context) => const AddRouteDialog(),
+                  builder: (dialogContext) => Provider.value(
+                    value: context.read<RoutesProvider>(),
+                    child: const AddRouteDialog(),
+                  ),
                 );
               },
               style: ElevatedButton.styleFrom(

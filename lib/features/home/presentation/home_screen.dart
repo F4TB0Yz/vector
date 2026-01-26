@@ -185,7 +185,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 onNewRouteTap: () {
                   showDialog(
                     context: context,
-                    builder: (context) => const AddRouteDialog(),
+                    builder: (dialogContext) => Provider.value(
+                      value: context.read<RoutesProvider>(),
+                      child: const AddRouteDialog(),
+                    ),
                   );
                 },
               ),
