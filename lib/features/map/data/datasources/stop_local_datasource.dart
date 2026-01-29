@@ -95,7 +95,7 @@ class StopLocalDataSource {
           await txn.update(
             'stops',
             {
-              'stop_order': i,
+              'stop_order': i + 1, // Base 1 para consistencia con RouteEntity
               'updated_at': DateTime.now().millisecondsSinceEpoch,
             },
             where: 'id = ? AND route_id = ?',

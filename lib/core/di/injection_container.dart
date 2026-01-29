@@ -44,9 +44,14 @@ import 'package:vector/features/routes/domain/usecases/get_routes.dart';
 
 // Packages
 import 'package:vector/features/packages/data/datasources/jt_packages_datasource.dart';
+import 'package:vector/features/packages/data/datasources/package_local_datasource.dart';
+import 'package:vector/features/packages/data/datasources/package_local_datasource_impl.dart';
 import 'package:vector/features/packages/data/repositories/jt_package_repository_impl.dart';
+import 'package:vector/features/packages/data/repositories/package_repository_impl.dart';
 import 'package:vector/features/packages/domain/repositories/jt_package_repository.dart';
+import 'package:vector/features/packages/domain/repositories/package_repository.dart';
 import 'package:vector/features/packages/domain/usecases/update_package_coordinates.dart';
+import 'package:vector/features/packages/domain/usecases/update_package_status.dart';
 
 final sl = GetIt.instance;
 
@@ -120,15 +125,22 @@ Future<void> init() async {
   // ! Features - Packages
   // UseCases
   sl.registerLazySingleton(() => UpdatePackageCoordinates(sl()));
+  sl.registerLazySingleton(() => UpdatePackageStatus(sl()));
 
   // Repository
   sl.registerLazySingleton<JTPackageRepository>(
     () => JTPackageRepositoryImpl(sl(), sl()),
   );
+  sl.registerLazySingleton<PackageRepository>(
+    () => PackageRepositoryImpl(localDataSource: sl()),
+  );
 
   // DataSources
   sl.registerLazySingleton<JTPackagesDataSource>(
     () => JTPackagesDataSourceImpl(sl()),
+  );
+  sl.registerLazySingleton<PackageLocalDataSource>(
+    () => PackageLocalDataSourceImpl(databaseService: sl()),
   );
 
   // ! Core

@@ -91,10 +91,14 @@ class _StatusSelector extends StatelessWidget {
 
   void _handleTap(BuildContext context, bool isAuthenticated) {
     if (!isAuthenticated) {
+      final authProvider = context.read<AuthProvider>();
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const JtLoginDialog(),
+        builder: (context) => ChangeNotifierProvider.value(
+          value: authProvider,
+          child: const JtLoginDialog(),
+        ),
       );
     } else {
       // Show Menu for authenticated user

@@ -380,48 +380,4 @@ class _ConfirmAddStopDialogState extends State<ConfirmAddStopDialog> {
       ),
     );
   }
-
-  Widget _buildAddressContent(
-    TextTheme textTheme,
-    StopCreationRequest displayRequest,
-  ) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '¿Desea crear una nueva parada en esta ubicación?',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 15),
-        ),
-        const SizedBox(height: 20),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(
-              color: AppColors.accent.withValues(alpha: 0.2),
-              width: 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              const Icon(LucideIcons.mapPin, color: AppColors.accent, size: 20),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  displayRequest.suggestedAddress ??
-                      'No se pudo obtener la dirección.',
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.85),
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
 }

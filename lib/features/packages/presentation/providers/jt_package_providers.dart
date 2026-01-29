@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:vector/features/packages/domain/entities/jt_package.dart';
 import 'package:vector/features/packages/domain/repositories/jt_package_repository.dart';
@@ -86,7 +88,7 @@ class PackagesProvider extends ChangeNotifier {
         id: package.waybillNo,
         routeId: selectedRoute.id,
         package: package,
-        stopOrder: selectedRoute.stops.length + savedCount + 1,
+        stopOrder: _calculateNextStopOrder(selectedRoute.stops) + savedCount,
       );
 
       final result = await addStopUseCase(
@@ -105,5 +107,12 @@ class PackagesProvider extends ChangeNotifier {
 
     onRouteRefreshed();
     return savedCount;
+  }
+
+  /// Calcula el siguiente stopOrder basado en el máximo valor actual.
+  /// Esto previene problemas con valores desordenados.
+  int _calculateNextStopOrder(List<StopEntity> stops) {
+    if (stops.isEmpty) return 1;
+    return stops.map((s) => s.stopOrder).reduce(max) + 1;
   }
 }

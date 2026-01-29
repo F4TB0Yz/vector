@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vector/core/theme/app_colors.dart';
@@ -100,7 +102,7 @@ class _PackagesScreenState extends State<PackagesScreen> {
         coordinates: null, // Forward geocoding TODO
         updatedAt: DateTime.now(),
       ),
-      stopOrder: (selectedRoute.stops.length + 1),
+      stopOrder: _calculateNextStopOrder(selectedRoute.stops),
     );
 
     await routesProvider.addStop(stop, addStopUseCase);
@@ -171,6 +173,28 @@ class _PackagesScreenState extends State<PackagesScreen> {
                                 : PackageCard(
                                     stop: stop,
                                     onAssignLocation: () => CoordinateAssignmentHelpers.openCoordinateAssignment(context),
+                                    onDelivered: () {
+                                      context.read<RoutesProvider>().updatePackageStatus(
+                                            stop.package.id,
+                                            PackageStatus.delivered,
+                                          );
+                                      showAppToast(
+                                        context,
+                                        'Paquete marcado como Entregado',
+                                        type: ToastType.success,
+                                      );
+                                    },
+                                    onFailed: () {
+                                      context.read<RoutesProvider>().updatePackageStatus(
+                                            stop.package.id,
+                                            PackageStatus.failed,
+                                          );
+                                      showAppToast(
+                                        context,
+                                        'Paquete marcado como Fallido',
+                                        type: ToastType.error,
+                                      );
+                                    },
                                   );
                           },
                         ),
@@ -205,5 +229,12 @@ class _PackagesScreenState extends State<PackagesScreen> {
         tooltip: _isCompressedView ? 'Vista Detallada' : 'Vista Comprimida',
       ),
     );
+  }
+
+  /// Calcula el siguiente stopOrder basado en el máximo valor actual.
+  /// Esto previene problemas con valores desordenados.
+  int _calculateNextStopOrder(List<StopEntity> stops) {
+    if (stops.isEmpty) return 1;
+    return stops.map((s) => s.stopOrder).reduce(max) + 1;
   }
 }

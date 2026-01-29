@@ -6,28 +6,27 @@ import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:vector/features/home/presentation/widgets/next_stop_info.dart';
 import 'package:vector/features/home/presentation/widgets/route_progress.dart';
+import 'package:vector/features/packages/domain/entities/package_status.dart';
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
 
 class ActiveRouteCard extends StatelessWidget {
-  final String? routeId;
-  final int deliveredCount;
-  final int totalCount;
-
   const ActiveRouteCard({
     super.key,
-    this.routeId,
-    this.deliveredCount = 0,
-    this.totalCount = 1, // Avoid division by zero default
   });
 
   @override
   Widget build(BuildContext context) {
     final selectedRoute = context.watch<RoutesProvider>().selectedRoute;
+
+    final totalCount = selectedRoute?.stops.length ?? 0;
+    final deliveredCount = selectedRoute?.stops
+            .where((stop) => stop.status == PackageStatus.delivered)
+            .length ??
+        0;
     
     // Si no hay routeId, usamos la fecha como fallback (requerimiento previo)
     final displayId =
-        routeId ??
-        (selectedRoute?.name ?? DateFormat('MMMM d', 'es').format(DateTime.now()).toUpperCase());
+        selectedRoute?.name ?? DateFormat('MMMM d', 'es').format(DateTime.now()).toUpperCase();
 
     return CustomCard(
       width: double.infinity,

@@ -54,7 +54,7 @@ class CoordinateAssignmentHelpers {
 
     // Recargar rutas y actualizar mapa después de asignar coordenadas
     if (context.mounted) {
-      await routesProvider.loadRoutes();
+      routesProvider.loadRoutes();
       
       // Intentar actualizar el mapa principal solo si está disponible
       try {

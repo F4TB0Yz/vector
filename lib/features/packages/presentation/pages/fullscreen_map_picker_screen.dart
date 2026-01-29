@@ -7,7 +7,6 @@ import 'package:vector/core/theme/app_colors.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 /// Pantalla fullscreen para seleccionar coordenadas en el mapa

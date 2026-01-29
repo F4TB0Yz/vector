@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
-import 'dart:convert';
+import 'dart:io';
+import 'dart:isolate';
+
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import '../../../../core/utils/device_utils.dart';
 import '../../../../core/database/database_service.dart';
@@ -96,91 +98,22 @@ class JTPackagesDataSourceImpl implements JTPackagesDataSource {
           'Response Data Type: ${data.runtimeType}',
           color: _AnsiColor.cyan,
         );
+        _debugLog('🔍 RESPONSE DATA: $data', color: _AnsiColor.white);
 
-        // If data is String, try to decode it
-        if (data is String) {
-          try {
-            _debugLog(
-              'ℹ️ Response is String. Attempting to decode JSON...',
-              color: _AnsiColor.yellow,
-            );
-            data = jsonDecode(data);
-            _debugLog('✅ JSON Decoded successfully', color: _AnsiColor.green);
-          } catch (e) {
-            _debugLog(
-              '❌ Failed to decode JSON string: $e',
-              color: _AnsiColor.red,
-            );
-            throw Exception('Invalid JSON response from server');
-          }
-        }
+        _debugLog('✅ Raw response received. Offloading processing to isolate.', color: _AnsiColor.green);
 
-        // Log snippet after potential decoding
-        _debugLog(
-          'Response Data Snippet: ${data.toString().substring(0, data.toString().length > 200 ? 200 : data.toString().length)}...',
-          color: _AnsiColor.cyan,
+        // Offload processing to an isolate (data is already parsed by Dio)
+        // response.data is a Map/List which is sendable to Isolate
+        final responseData = response.data;
+        final packages = await Isolate.run(
+          () => _parseAndProcessPackages(responseData),
         );
 
-        if (data is Map) {
-          // Check for specific error codes
-          // 135010037 = "没有访问权限" (No access permission) -> Token expired or invalid
-          if (data['code'] == 135010037) {
-            _debugLog(
-              '❌ AUTH ERROR: Session expired/Invalid token (Code 135010037)',
-              color: _AnsiColor.red,
-            );
-            throw Exception(
-              'Sesión expirada. Por favor inicia sesión nuevamente.',
-            );
-          }
-
-          if (data['code'] == 1 && data['data'] != null) {
-            final dynamic innerData = data['data'];
-            List<dynamic> list = [];
-
-            if (innerData is List) {
-              _debugLog(
-                'ℹ️ data["data"] is a List. Using it directly.',
-                color: _AnsiColor.yellow,
-              );
-              list = innerData;
-            } else if (innerData is Map && innerData['list'] != null) {
-              _debugLog(
-                'ℹ️ data["data"] is a Map. Accessing ["list"].',
-                color: _AnsiColor.yellow,
-              );
-              list = innerData['list'];
-            }
-
-            if (list.isNotEmpty) {
-              // Data-Sync: Process and expand grouped packages
-              final packages = _processPackageList(list);
-
-              _debugLog(
-                '✅ PACKAGES FOUND: ${packages.length} (from ${list.length} items)',
-                color: _AnsiColor.green,
-              );
-              return packages;
-            }
-          }
-
-          // If we are here, it means success code but no list, or error code
-          if (data['code'] != 1) {
-            _debugLog('❌ API ERROR: ${data['msg']}', color: _AnsiColor.red);
-            throw Exception(data['msg'] ?? 'Unknown API error');
-          }
-          _debugLog(
-            '⚠️ NO PACKAGES FOUND (Empty List)',
-            color: _AnsiColor.yellow,
-          );
-          return [];
-        } else {
-          _debugLog(
-            '⚠️ Unexpected root structure: ${data.runtimeType}',
-            color: _AnsiColor.red,
-          );
-          return [];
-        }
+        _debugLog(
+          '✅ PACKAGES FOUND: ${packages.length}',
+          color: _AnsiColor.green,
+        );
+        return packages;
       } else {
         _debugLog(
           '❌ HTTP ERROR: ${response.statusCode}',
@@ -193,39 +126,6 @@ class JTPackagesDataSourceImpl implements JTPackagesDataSource {
       rethrow;
     }
   }
-
-  /// Data-Sync: Process package list and expand grouped packages
-  ///
-  /// J&T API returns grouped packages in a special format:
-  /// - ifMerge: true indicates a grouped package
-  /// - opsDeliverTaskAPIVOS: array containing individual packages
-  ///
-  /// This method expands grouped packages into individual ones and marks them accordingly.
-  List<JTPackageModel> _processPackageList(List<dynamic> list) {
-    final List<JTPackageModel> packages = [];
-
-    for (final item in list) {
-      // Check for grouped packages
-      if (item['ifMerge'] == true && item['opsDeliverTaskAPIVOS'] != null) {
-        final subList = item['opsDeliverTaskAPIVOS'] as List;
-        _debugLog(
-          '📦 Found grouped package with ${subList.length} items',
-          color: _AnsiColor.cyan,
-        );
-
-        // Extract and mark each package as grouped
-        for (final subItem in subList) {
-          packages.add(JTPackageModel.fromJson(subItem, isGrouped: true));
-        }
-      } else if (item['waybillNo'] != null) {
-        // Regular individual package
-        packages.add(JTPackageModel.fromJson(item, isGrouped: false));
-      }
-    }
-
-    return packages;
-  }
-
   @override
   Future<void> updatePackageCoordinates(
     String waybillNo,
@@ -272,3 +172,61 @@ class JTPackagesDataSourceImpl implements JTPackagesDataSource {
 }
 
 enum _AnsiColor { green, yellow, cyan, magenta, red, white }
+
+// Top-level function for package processing in an isolate
+// This function must be a top-level function or a static method to be run in an Isolate.
+Future<List<JTPackageModel>> _parseAndProcessPackages(dynamic data) async {
+  // data is already a Map/List, no need to jsonDecode
+  // Dio has already done the JSON parsing on the main thread (or implicitly)
+  // But moving the object mapping to Isolate saves UI frames if the list is huge.
+
+  if (data is Map) {
+    // Check for specific error codes
+    // 135010037 = "没有访问权限" (No access permission) -> Token expired or invalid
+    if (data['code'] == 135010037) {
+      throw Exception(
+        'Sesión expirada. Por favor inicia sesión nuevamente.',
+      );
+    }
+
+    if (data['code'] == 1 && data['data'] != null) {
+      final dynamic innerData = data['data'];
+      List<dynamic> list = [];
+
+      if (innerData is List) {
+        list = innerData;
+      } else if (innerData is Map && innerData['list'] != null) {
+        list = innerData['list'];
+      }
+
+      if (list.isNotEmpty) {
+        final List<JTPackageModel> packages = [];
+
+        for (final item in list) {
+          // Check for grouped packages
+          if (item['ifMerge'] == true && item['opsDeliverTaskAPIVOS'] != null) {
+            final subList = item['opsDeliverTaskAPIVOS'] as List;
+
+            // Extract and mark each package as grouped
+            for (final subItem in subList) {
+              packages.add(JTPackageModel.fromJson(subItem, isGrouped: true));
+            }
+          } else if (item['waybillNo'] != null) {
+            // Regular individual package
+            packages.add(JTPackageModel.fromJson(item, isGrouped: false));
+          }
+        }
+        return packages;
+      }
+    }
+
+    // If we are here, it means success code but no list, or error code
+    if (data['code'] != 1) {
+      throw Exception(data['msg'] ?? 'Unknown API error');
+    }
+    return []; // No packages found or other API error
+  } else {
+    throw Exception('Unexpected root structure of response data.');
+  }
+}
+

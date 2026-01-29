@@ -1,14 +1,15 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:vector/core/presentation/widgets/custom_card.dart';
 import 'package:vector/core/theme/app_colors.dart';
 import 'package:vector/features/home/presentation/widgets/price_input_dialog.dart';
+import 'package:vector/features/packages/domain/entities/package_status.dart';
+import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
 
 class HomeStatsWidget extends StatefulWidget {
-  final int deliveredCount;
-
-  const HomeStatsWidget({super.key, required this.deliveredCount});
+  const HomeStatsWidget({super.key});
 
   @override
   State<HomeStatsWidget> createState() => _HomeStatsWidgetState();
@@ -32,13 +33,19 @@ class _HomeStatsWidgetState extends State<HomeStatsWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final selectedRoute = context.watch<RoutesProvider>().selectedRoute;
+    final deliveredCount = selectedRoute?.stops
+            .where((stop) => stop.status == PackageStatus.delivered)
+            .length ??
+        0;
+
     final currencyFormat = NumberFormat.currency(
       locale: 'es_CO',
       symbol: '\$',
       decimalDigits: 0,
     );
 
-    final totalEarnings = _pricePerPackage * widget.deliveredCount;
+    final totalEarnings = _pricePerPackage * deliveredCount;
     final formattedEarnings = currencyFormat.format(totalEarnings);
 
     return Row(
@@ -115,7 +122,7 @@ class _RouteTimeCard extends StatefulWidget {
 
 class _RouteTimeCardState extends State<_RouteTimeCard> {
   Timer? _timer;
-  Duration _elapsed = const Duration(hours: 1, minutes: 24);
+  Duration _elapsed = Duration.zero;
 
   @override
   void initState() {
@@ -125,9 +132,10 @@ class _RouteTimeCardState extends State<_RouteTimeCard> {
 
   void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) {
+      final route = context.read<RoutesProvider>().selectedRoute;
+      if (mounted && route != null) {
         setState(() {
-          _elapsed += const Duration(seconds: 1);
+          _elapsed = DateTime.now().difference(route.createdAt);
         });
       }
     });
@@ -141,8 +149,12 @@ class _RouteTimeCardState extends State<_RouteTimeCard> {
 
   @override
   Widget build(BuildContext context) {
-    final hours = _elapsed.inHours.toString().padLeft(2, '0');
-    final minutes = (_elapsed.inMinutes % 60).toString().padLeft(2, '0');
+    final route = context.watch<RoutesProvider>().selectedRoute;
+    final duration =
+        route != null ? DateTime.now().difference(route.createdAt) : _elapsed;
+
+    final hours = duration.inHours.toString().padLeft(2, '0');
+    final minutes = (duration.inMinutes % 60).toString().padLeft(2, '0');
 
     return CustomCard(
       padding: const EdgeInsets.all(16),

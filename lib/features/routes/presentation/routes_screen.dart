@@ -61,7 +61,7 @@ class _RoutesScreenState extends State<RoutesScreen> {
                             onPressed: () {
                               showDialog(
                                 context: context,
-                                builder: (dialogContext) => Provider.value(
+                                builder: (dialogContext) => ChangeNotifierProvider.value(
                                   value: context.read<RoutesProvider>(),
                                   child: const AddRouteDialog(),
                                 ),
@@ -182,7 +182,7 @@ class _RoutesScreenState extends State<RoutesScreen> {
               onPressed: () {
                 showDialog(
                   context: context,
-                  builder: (dialogContext) => Provider.value(
+                  builder: (dialogContext) => ChangeNotifierProvider.value(
                     value: context.read<RoutesProvider>(),
                     child: const AddRouteDialog(),
                   ),

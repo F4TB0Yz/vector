@@ -17,6 +17,9 @@ import 'package:vector/features/map/domain/usecases/reverse_geocode_coordinates.
 import 'package:vector/features/packages/domain/entities/package_status.dart';
 import 'package:vector/features/map/presentation/providers/map_state.dart';
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
+import 'package:vector/features/routes/domain/entities/route_entity.dart' as routes_entity;
+
+
 
 class MapProvider extends ChangeNotifier {
   final MapRepository _mapRepository;
@@ -659,7 +662,24 @@ class MapProvider extends ChangeNotifier {
         );
 
         // SYNC: Update RoutesProvider to reflect changes in other screens (PackagesScreen, Route Summary)
-        routesProvider.updateRoute(updatedRoute);
+        // routesProvider.updateRoute(updatedRoute);
+        // FIXME: Type mismatch between Map RouteEntity and Routes RouteEntity. 
+        // We will just invalidate RoutesProvider to force reload for now as a safer sync method,
+        // or we could map it if we had all fields.
+        // Since Map RouteEntity lacks 'date', 'createdAt', 'updatedAt', we can't easily convert it back 
+        // to a full Routes RouteEntity without fetching those details or merging.
+        
+        // Strategy: Just tell RoutesProvider to reload the specific route from DB?
+        // Or better: Since we just added a stop, let's trust that RoutesProvider can re-fetch or we pass the new stop.
+        // Actually, for immediate UI update, we can assume the user wants to see the new stop in the list.
+        
+        // Temporary fix: Do not push full route object back to RoutesProvider if types mismatch.
+        // Instead, rely on re-fetching or independent state updates if feasible.
+        // But for "Add Stop", RoutesProvider usually handles the addition logic itself if called via its methods.
+        // Here, MapProvider is calling CreateStop usecase directly. 
+        
+        // Let's use invalidate() if available or just trigger a reload.
+        routesProvider.invalidate();
 
         // And refresh the map visuals (without zooming)
         _updateMapData(updatedRoute, shouldZoom: false);
@@ -762,7 +782,9 @@ class MapProvider extends ChangeNotifier {
         );
 
         // SYNC: Update RoutesProvider to reflect changes in other screens
-        routesProvider.updateRoute(optimizedRoute);
+        // routesProvider.updateRoute(optimizedRoute);
+        // Type Mismatch Fix: Invalidate to reload from source of truth (DB)
+        routesProvider.invalidate();
         _logInfo('🔄 RoutesProvider synchronized with optimized route');
 
         // Refresh map visuals
@@ -806,4 +828,41 @@ class MapProvider extends ChangeNotifier {
     // Trigger map update to reflect the new status (e.g., stop marker color change)
     _updateMapData(updatedRoute);
   }
+
+  /// Synchronizes the map with an externally updated route (e.g. from RoutesProvider).
+  /// This avoids re-fetching from the repository and ensures UI consistency.
+  Future<void> syncRoute(routes_entity.RouteEntity route) async {
+    if (state.activeRoute?.id != route.id) {
+       // If IDs mismatch, it might be a route switch, but we'll trust the caller
+       // or we could just update it.
+    }
+    
+    // Convert routes_entity.RouteEntity (Routes Domain) to RouteEntity (Map Domain)
+    // We map common fields. Map domain RouteEntity needs polyline, which Routes domain might not have fully populated
+    // or we assume it does if it comes from backend/DB.
+    // However, Routes RouteEntity DOES NOT have `polyline` property directly exposed in the file I read earlier?
+    // Let's re-read Routes RouteEntity to be sure. 
+    // Wait, I saw earlier Routes RouteEntity does NOT have polyline.
+    // Map RouteEntity HAS polyline.
+    // If we sync from Routes -> Map, we might LOSE the polyline if we just map simplistic fields?
+    // Actually, if we just want to update status of stops, we can keep existing polyline.
+    
+    final currentPolyline = state.activeRoute?.polyline ?? [];
+    
+    final mapRoute = RouteEntity(
+      id: route.id,
+      name: route.name,
+      polyline: currentPolyline, // Keep existing polyline to avoid losing map path
+      stops: route.stops, // These stops have the updated status!
+      progress: route.progress,
+    );
+    
+    _updateState(state.copyWith(activeRoute: mapRoute));
+    
+    // Refresh map sources
+    if (state.isMapReady) {
+      await _updateMapData(mapRoute, shouldZoom: false);
+    }
+  }
 }
+

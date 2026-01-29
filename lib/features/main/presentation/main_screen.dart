@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' as provider;
 import 'package:vector/core/di/injection_container.dart';
+import 'package:vector/core/database/database_service.dart';
+import 'package:vector/core/database/providers/migration_provider.dart';
 import 'package:vector/features/auth/domain/repositories/auth_repository.dart';
 import 'package:vector/features/auth/domain/usecases/login_usecase.dart';
 import 'package:vector/features/auth/domain/usecases/save_credentials.dart';
@@ -24,6 +26,7 @@ import 'package:vector/features/routes/data/datasources/routes_preferences_datas
 import 'package:vector/features/map/domain/repositories/map_repository.dart';
 import 'package:vector/features/map/domain/usecases/create_stop_from_coordinates.dart';
 import 'package:vector/features/map/domain/usecases/reverse_geocode_coordinates.dart';
+import 'package:vector/features/packages/domain/usecases/update_package_status.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -35,27 +38,6 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
   bool _isNavBarVisible = true; // Estado para controlar visibilidad
-
-  late List<Widget> _pages;
-
-  @override
-  void initState() {
-    super.initState();
-    _pages = [
-      provider.ChangeNotifierProvider(
-        create: (context) =>
-            HomeProvider(addStopToRouteUseCase: sl<AddStopToRoute>()),
-        child: const HomeScreen(),
-      ),
-      const RoutesScreen(),
-      provider.ChangeNotifierProvider(
-        create: (context) =>
-            PackagesProvider(repository: sl<JTPackageRepository>()),
-        child: const PackagesScreen(),
-      ),
-      const MapScreen(),
-    ];
-  }
 
   void _onTabTapped(int index) {
     setState(() {
@@ -71,6 +53,9 @@ class _MainScreenState extends State<MainScreen> {
       providers: [
         provider.Provider<AddStopToRoute>(create: (_) => sl<AddStopToRoute>()),
         provider.ChangeNotifierProvider(
+          create: (_) => MigrationProvider(sl<DatabaseService>()),
+        ),
+        provider.ChangeNotifierProvider(
           create: (context) => AuthProvider(
             authRepository: sl<AuthRepository>(),
             loginUseCase: sl<LoginUseCase>(),
@@ -82,6 +67,7 @@ class _MainScreenState extends State<MainScreen> {
             getRoutesUseCase: sl<GetRoutes>(),
             createRouteUseCase: sl<CreateRoute>(),
             prefsDataSource: sl<RoutesPreferencesDataSource>(),
+            updatePackageStatusUseCase: sl<UpdatePackageStatus>(),
           )..loadRoutes(),
         ),
         provider.ChangeNotifierProvider(
@@ -93,46 +79,66 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ),
       ],
-      child: Scaffold(
-        backgroundColor: Colors.black, // O el color de fondo de tu tema
-        body: NotificationListener<Notification>(
-          onNotification: (notification) {
-            if (notification is NavBarVisibilityNotification) {
-              setState(() {
-                _isNavBarVisible = notification.isVisible;
-              });
-              return true;
-            } else if (notification is ChangeTabNotification) {
-              setState(() {
-                _currentIndex = notification.targetIndex;
-              });
-              return true;
-            }
-            return false;
-          },
-          child: Stack(
-            children: [
-              // IndexedStack mantiene el estado de las páginas vivas
-              IndexedStack(index: _currentIndex, children: _pages),
-
-              // Floating Navy Bar ubicada en la parte inferior
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                left: 0,
-                right: 0,
-                // Si es visible, se posiciona arriba del padding del sistema + 16px de margen
-                // Si no, se esconde completamente (-150 px para asegurar)
-                bottom: _isNavBarVisible ? (bottomPadding + 16) : -150,
-                child: FloatingNavBar(
-                  currentIndex: _currentIndex,
-                  onTap: _onTabTapped,
-                ),
-              ),
-            ],
+      child: Builder(builder: (context) {
+        final pages = [
+          provider.ChangeNotifierProvider(
+            create: (context) =>
+                HomeProvider(addStopToRouteUseCase: sl<AddStopToRoute>()),
+            child: const HomeScreen(),
           ),
-        ),
-      ),
+          const RoutesScreen(),
+          provider.ChangeNotifierProvider(
+            create: (context) =>
+                PackagesProvider(repository: sl<JTPackageRepository>()),
+            child: const PackagesScreen(),
+          ),
+          provider.ChangeNotifierProvider.value(
+            value: provider.Provider.of<RoutesProvider>(context, listen: false),
+            child: const MapScreen(),
+          ),
+        ];
+
+        return Scaffold(
+          backgroundColor: Colors.black, // O el color de fondo de tu tema
+          body: NotificationListener<Notification>(
+            onNotification: (notification) {
+              if (notification is NavBarVisibilityNotification) {
+                setState(() {
+                  _isNavBarVisible = notification.isVisible;
+                });
+                return true;
+              } else if (notification is ChangeTabNotification) {
+                setState(() {
+                  _currentIndex = notification.targetIndex;
+                });
+                return true;
+              }
+              return false;
+            },
+            child: Stack(
+              children: [
+                // IndexedStack mantiene el estado de las páginas vivas
+                IndexedStack(index: _currentIndex, children: pages),
+
+                // Floating Navy Bar ubicada en la parte inferior
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  left: 0,
+                  right: 0,
+                  // Si es visible, se posiciona arriba del padding del sistema + 16px de margen
+                  // Si no, se esconde completamente (-150 px para asegurar)
+                  bottom: _isNavBarVisible ? (bottomPadding + 16) : -150,
+                  child: FloatingNavBar(
+                    currentIndex: _currentIndex,
+                    onTap: _onTabTapped,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }),
     );
   }
 }

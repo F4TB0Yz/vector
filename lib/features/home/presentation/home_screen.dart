@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vector/features/home/presentation/providers/home_provider.dart';
@@ -18,6 +20,8 @@ import 'package:vector/features/routes/presentation/widgets/add_route_dialog.dar
 import 'package:vector/shared/presentation/widgets/toasts.dart';
 import 'package:vector/features/packages/domain/entities/manual_package_entity.dart';
 import 'package:vector/features/packages/domain/entities/package_status.dart';
+import 'package:vector/core/database/widgets/stop_order_migration_dialog.dart';
+import 'package:vector/core/database/providers/migration_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -99,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
             null, // TODO: Implement forward geocoding (address → coordinates)
         updatedAt: DateTime.now(),
       ),
-      stopOrder: (selectedRoute.stops.length + 1),
+      stopOrder: _calculateNextStopOrder(selectedRoute.stops),
     );
 
     // --- 1. Optimistic UI Update ---
@@ -172,11 +176,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 24),
 
-              ActiveRouteCard(deliveredCount: 12, totalCount: 45),
+              const ActiveRouteCard(),
 
               const SizedBox(height: 20),
 
-              const HomeStatsWidget(deliveredCount: 12),
+              const HomeStatsWidget(),
 
               const SizedBox(height: 20),
 
@@ -185,17 +189,51 @@ class _HomeScreenState extends State<HomeScreen> {
                 onNewRouteTap: () {
                   showDialog(
                     context: context,
-                    builder: (dialogContext) => Provider.value(
+                    builder: (dialogContext) => ChangeNotifierProvider.value(
                       value: context.read<RoutesProvider>(),
                       child: const AddRouteDialog(),
                     ),
                   );
                 },
               ),
+
+              const SizedBox(height: 20),
+
+              // TODO: TEMPORAL - Botón para ejecutar migración de stopOrder
+              Center(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (dialogContext) => ChangeNotifierProvider.value(
+                        value: context.read<MigrationProvider>(),
+                        child: const StopOrderMigrationDialog(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.build, size: 18),
+                  label: const Text('Reparar Orden de Paradas'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  /// Calcula el siguiente stopOrder basado en el máximo valor actual.
+  /// Esto previene problemas con valores desordenados.
+  int _calculateNextStopOrder(List<StopEntity> stops) {
+    if (stops.isEmpty) return 1;
+    return stops.map((s) => s.stopOrder).reduce(max) + 1;
   }
 }

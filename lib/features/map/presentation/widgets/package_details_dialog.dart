@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:vector/features/map/domain/entities/stop_entity.dart';
 import 'package:vector/features/packages/domain/entities/package_status.dart';
+import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class PackageDetailsDialog extends StatelessWidget {
@@ -162,7 +164,7 @@ class PackageDetailsDialog extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(package.status).withOpacity(0.2),
+                    color: _getStatusColor(package.status).withAlpha((255 * 0.2).round()),
                     borderRadius: BorderRadius.circular(4),
                     border: Border.all(
                       color: _getStatusColor(package.status),
@@ -236,7 +238,7 @@ class PackageDetailsDialog extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
+                  color: Colors.white.withAlpha((255 * 0.05).round()),
                   borderRadius: const BorderRadius.only(
                     topRight: Radius.circular(4),
                     bottomRight: Radius.circular(4),
@@ -312,6 +314,40 @@ class PackageDetailsDialog extends StatelessWidget {
                 onTap: () => _showMessageTemplates(context, package.phone),
               ),
             ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: _ActionButton(
+                    icon: Icons.cancel_outlined,
+                    label: 'Marcar como Fallido',
+                    color: Colors.redAccent,
+                    onTap: () {
+                      context.read<RoutesProvider>().updatePackageStatus(
+                            package.id,
+                            PackageStatus.failed,
+                          );
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _ActionButton(
+                    icon: Icons.check_circle_outline,
+                    label: 'Marcar como Entregado',
+                    color: Colors.greenAccent,
+                    onTap: () {
+                      context.read<RoutesProvider>().updatePackageStatus(
+                            package.id,
+                            PackageStatus.delivered,
+                          );
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
@@ -358,7 +394,7 @@ class _ActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: color.withOpacity(0.15),
+      color: color.withAlpha((255 * 0.15).round()),
       borderRadius: BorderRadius.circular(6),
       child: InkWell(
         onTap: onTap,
@@ -366,7 +402,7 @@ class _ActionButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            border: Border.all(color: color.withOpacity(0.5)),
+            border: Border.all(color: color.withAlpha((255 * 0.5).round())),
             borderRadius: BorderRadius.circular(6),
           ),
           child: Column(

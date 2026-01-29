@@ -253,7 +253,7 @@ class _CompactMapPickerState extends State<CompactMapPicker> {
       PointAnnotationOptions(
         geometry: Point(coordinates: position),
         iconSize: 1.5,
-        iconColor: AppColors.primary.value,
+        iconColor: AppColors.primary.toARGB32(),
         iconOpacity: 1.0,
       ),
     );

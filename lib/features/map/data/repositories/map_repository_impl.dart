@@ -153,10 +153,11 @@ class MapRepositoryImpl implements MapRepository {
 
       // Polyline should go: START -> STOP 1 -> STOP 2 -> ... -> END
       final List<Position> fullPathPoints = [startPoint, ...newStopPositions];
-      if (returnToStart)
+      if (returnToStart) {
         fullPathPoints.add(startPoint);
-      else if (endPoint != null)
+      } else if (endPoint != null) {
         fullPathPoints.add(endPoint);
+      }
 
       final detailedPolyline = await routeRemoteDataSource.getRoutePolyline(
         fullPathPoints,

@@ -20,10 +20,9 @@ class _AddRouteDialogState extends State<AddRouteDialog> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController();
-    _dateController = TextEditingController(
-      text: DateFormat('yyyy-MM-dd').format(DateTime.now()),
-    );
+    final initialDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    _nameController = TextEditingController(text: initialDate);
+    _dateController = TextEditingController(text: initialDate);
   }
 
   @override

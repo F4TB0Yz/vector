@@ -7,10 +7,12 @@ import '../../data/datasources/routes_preferences_datasource.dart';
 import '../../domain/entities/route_entity.dart';
 import '../../domain/usecases/create_route.dart';
 import '../../domain/usecases/get_routes.dart';
+import 'package:vector/features/packages/domain/usecases/update_package_status.dart';
 
 class RoutesProvider extends ChangeNotifier {
   final GetRoutes _getRoutesUseCase;
   final CreateRoute _createRouteUseCase;
+  final UpdatePackageStatus _updatePackageStatusUseCase;
   final RoutesPreferencesDataSource _prefsDataSource;
 
   // State
@@ -85,9 +87,11 @@ class RoutesProvider extends ChangeNotifier {
   RoutesProvider({
     required GetRoutes getRoutesUseCase,
     required CreateRoute createRouteUseCase,
+    required UpdatePackageStatus updatePackageStatusUseCase,
     required RoutesPreferencesDataSource prefsDataSource,
   })  : _getRoutesUseCase = getRoutesUseCase,
         _createRouteUseCase = createRouteUseCase,
+        _updatePackageStatusUseCase = updatePackageStatusUseCase,
         _prefsDataSource = prefsDataSource;
 
   Future<void> loadRoutes() async {
@@ -212,7 +216,7 @@ class RoutesProvider extends ChangeNotifier {
 
   /// Updates a route in the list and selectedRoute if applicable.
   /// Handles both RouteEntity types by matching IDs and updating stops.
-  void updateRoute(map.RouteEntity updatedRoute) {
+  void updateRoute(RouteEntity updatedRoute) {
     // Update in the list
     final index = _routes.indexWhere((r) => r.id == updatedRoute.id);
     if (index != -1) {
@@ -237,5 +241,39 @@ class RoutesProvider extends ChangeNotifier {
   /// Helper to refresh state externally (e.g. after adding stops)
   void invalidate() {
     loadRoutes();
+  }
+
+  Future<void> updatePackageStatus(String packageId, PackageStatus status) async {
+    if (_selectedRoute == null) return;
+
+    final originalStops = List<StopEntity>.from(_selectedRoute!.stops);
+    final stopIndex = originalStops.indexWhere((s) => s.package.id == packageId);
+    if (stopIndex == -1) return;
+
+    // Optimistic UI update
+    final updatedStop = originalStops[stopIndex].package.copyWith(status: status);
+    final newStops = List<StopEntity>.from(originalStops);
+    newStops[stopIndex] = newStops[stopIndex].copyWith(package: updatedStop);
+
+    _selectedRoute = _selectedRoute!.copyWith(stops: newStops);
+    notifyListeners();
+
+    // Persist change
+    final result = await _updatePackageStatusUseCase(
+      UpdatePackageStatusParams(packageId: packageId, status: status),
+    );
+
+    result.fold(
+      (failure) {
+        // Rollback on error
+        _selectedRoute = _selectedRoute!.copyWith(stops: originalStops);
+        _error = failure.message;
+        notifyListeners();
+      },
+      (_) {
+        // On success, we can optionally reload the whole route to ensure consistency
+        loadRoutes();
+      },
+    );
   }
 }

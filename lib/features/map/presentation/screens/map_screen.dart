@@ -76,13 +76,22 @@ class _MapScreenState extends State<MapScreen> {
 
   void _onRoutesProviderChanged() {
     if (!mounted) return;
-    final selectedRoute = context.read<RoutesProvider>().selectedRoute;
+    final routesProvider = context.read<RoutesProvider>();
+    final selectedRoute = routesProvider.selectedRoute;
 
+    // 1. Handle Route Switching
     if (selectedRoute?.id != _previousSelectedRoute?.id) {
-      // Route changed
       if (selectedRoute != null) {
         context.read<MapProvider>().loadRouteById(selectedRoute.id);
       }
+      _previousSelectedRoute = selectedRoute;
+      return; 
+    }
+
+    // 2. Handle Same Route Updates (e.g. status changes from Package List)
+    // If the route object instance has changed but ID is same, sync it to map.
+    if (selectedRoute != null && selectedRoute != _previousSelectedRoute) {
+      context.read<MapProvider>().syncRoute(selectedRoute);
       _previousSelectedRoute = selectedRoute;
     }
   }
@@ -190,17 +199,36 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _onStopDelivered(StopEntity stop) {
+    // 1. Update in DB and List State (Single Source of Truth)
+    context.read<RoutesProvider>().updatePackageStatus(
+          stop.package.id,
+          PackageStatus.delivered,
+        );
+    
+    // 2. MapProvider listens to RoutesProvider via _onRoutesProviderChanged,
+    // but we also want immediate visual feedback on the map markers.
     context.read<MapProvider>().updatePackageStatus(
-      stop.package.id,
-      PackageStatus.delivered,
-    );
+          stop.package.id,
+          PackageStatus.delivered,
+        );
+        
+    showAppToast(context, 'Entregado', type: ToastType.success);
   }
 
   void _onStopFailed(StopEntity stop) {
+    // 1. Update in DB and List State
+    context.read<RoutesProvider>().updatePackageStatus(
+          stop.package.id,
+          PackageStatus.failed,
+        );
+
+    // 2. Update Map Visuals
     context.read<MapProvider>().updatePackageStatus(
-      stop.package.id,
-      PackageStatus.failed,
-    );
+          stop.package.id,
+          PackageStatus.failed,
+        );
+        
+    showAppToast(context, 'Fallido', type: ToastType.error);
   }
 
   @override
