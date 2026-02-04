@@ -28,37 +28,34 @@ class FloatingNavBar extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(35),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _NavBarItem(
-                icon: LucideIcons.home,
-                label: 'Inicio',
-                isSelected: currentIndex == 0,
-                onTap: () => onTap(0),
-              ),
-              _NavBarItem(
-                icon: LucideIcons.navigation,
-                label: 'Rutas',
-                isSelected: currentIndex == 1,
-                onTap: () => onTap(1),
-              ),
-              _NavBarItem(
-                icon: LucideIcons.package,
-                label: 'Paquetes',
-                isSelected: currentIndex == 2,
-                onTap: () => onTap(2),
-              ),
-              _NavBarItem(
-                icon: LucideIcons.map,
-                label: 'Mapa',
-                isSelected: currentIndex == 3,
-                onTap: () => onTap(3),
-              ),
-            ],
-          ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _NavBarItem(
+              icon: LucideIcons.home,
+              label: 'Inicio',
+              isSelected: currentIndex == 0,
+              onTap: () => onTap(0),
+            ),
+            _NavBarItem(
+              icon: LucideIcons.navigation,
+              label: 'Rutas',
+              isSelected: currentIndex == 1,
+              onTap: () => onTap(1),
+            ),
+            _NavBarItem(
+              icon: LucideIcons.package,
+              label: 'Paquetes',
+              isSelected: currentIndex == 2,
+              onTap: () => onTap(2),
+            ),
+            _NavBarItem(
+              icon: LucideIcons.map,
+              label: 'Mapa',
+              isSelected: currentIndex == 3,
+              onTap: () => onTap(3),
+            ),
+          ],
         ),
       ),
     );
@@ -104,7 +101,7 @@ class _NavBarItem extends StatelessWidget {
                 color: color,
                 fontSize: 10,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                fontFamily: 'Inter',
+                // fontFamily: 'Inter',
               ),
               child: Text(label),
             ),

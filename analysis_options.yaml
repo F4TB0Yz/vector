@@ -1,5 +1,16 @@
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  errors:
+    prefer_const_constructors: error
+    prefer_const_constructors_in_immutables: error
+    prefer_const_literals_to_create_immutables: error
+    prefer_const_declarations: error
+
 linter:
   rules:
+    - prefer_const_constructors
+    - prefer_const_constructors_in_immutables
+    - prefer_const_literals_to_create_immutables
+    - prefer_const_declarations
     - require_trailing_commas

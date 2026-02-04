@@ -13,7 +13,7 @@ class GetStopsByRoute {
   /// [routeId] ID de la ruta de la cual obtener las paradas.
   Future<Either<Failure, List<StopEntity>>> call(String routeId) async {
     if (routeId.isEmpty) {
-      return Left(ValidationFailure('Route ID cannot be empty'));
+      return const Left(ValidationFailure('Route ID cannot be empty'));
     }
 
     return await repository.getStopsByRoute(routeId);

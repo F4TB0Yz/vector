@@ -233,7 +233,7 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final mapState = context.watch<MapProvider>().state;
+    final isLoadingRoute = context.select<MapProvider, bool>((state) => state.state.isLoadingRoute);
     final selectedRoute = context.watch<RoutesProvider>().selectedRoute;
 
     return Scaffold(
@@ -241,7 +241,7 @@ class _MapScreenState extends State<MapScreen> {
       body: SafeArea(
         child: selectedRoute == null
             ? NoRouteSelectedPlaceholder(
-                isLoading: mapState.isLoadingRoute,
+                isLoading: isLoadingRoute,
                 onNavigateToRoutes: () {
                   const ChangeTabNotification(1).dispatch(context);
                 },
@@ -321,7 +321,7 @@ class _MapScreenState extends State<MapScreen> {
                     onCloseNextStopCard: () {
                       setState(() {
                         _showNextStopCard = false;
-                        NavBarVisibilityNotification(true).dispatch(context);
+                        const NavBarVisibilityNotification(true).dispatch(context);
                       });
                     },
                     onDelivered: _onStopDelivered,

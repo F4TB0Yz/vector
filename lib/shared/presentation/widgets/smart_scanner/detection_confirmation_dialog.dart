@@ -140,7 +140,7 @@ class DetectionConfirmationDialog extends StatelessWidget {
                     Text(
                       'CONFIRMAR Y PROCESAR',
                       style: TextStyle(
-                        fontFamily: 'Inter',
+                        // fontFamily: 'Inter',
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.5,

@@ -38,7 +38,7 @@ class AddressModel {
     final features = json['features'] as List<dynamic>?;
 
     if (features == null || features.isEmpty) {
-      throw FormatException('No features found in geocoding response');
+      throw const FormatException('No features found in geocoding response');
     }
 
     final feature = features.first as Map<String, dynamic>;

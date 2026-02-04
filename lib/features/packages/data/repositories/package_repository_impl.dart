@@ -17,7 +17,7 @@ class PackageRepositoryImpl implements PackageRepository {
       await localDataSource.updatePackageStatus(packageId, status);
       return const Right(null);
     } on CacheException {
-      return Left(CacheFailure('Failed to update package status'));
+      return const Left(CacheFailure('Failed to update package status'));
     }
   }
 }

@@ -147,7 +147,7 @@ class MapProvider extends ChangeNotifier {
 
   void startTracking() {
     if (state.isTracking) return;
-    final geo.LocationSettings locationSettings = geo.LocationSettings(
+    const geo.LocationSettings locationSettings = geo.LocationSettings(
       accuracy: geo.LocationAccuracy.high,
       distanceFilter: 5,
     );
@@ -407,7 +407,7 @@ class MapProvider extends ChangeNotifier {
           textColor: Colors.white.toARGB32(),
           textHaloColor: Colors.black.toARGB32(),
           textHaloWidth: 1.5,
-          textFont: ['DIN Offc Pro Bold', 'Arial Unicode MS Bold'],
+          textFont: ['Open Sans Bold', 'Arial Unicode MS Bold'],
           textAnchor: TextAnchor.CENTER,
           textOffset: [0, -1.3],
           textIgnorePlacement: true,

@@ -33,28 +33,27 @@ class CustomCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Determine background color
-    final bgColor =
-        backgroundColor ??
-        (isDarkBackground ? AppColors.surfaceDark : AppColors.surface);
-
-    // Determine final border color
-    final finalBorderColor =
-        borderColor ?? (showBorder ? AppColors.border : null);
-
-    final border = finalBorderColor != null
-        ? Border.all(color: finalBorderColor, width: 1)
-        : null;
-
+    final bgColor = backgroundColor ?? (isDarkBackground ? AppColors.surfaceDark : AppColors.surface);
+    final finalBorderColor = borderColor ?? (showBorder ? AppColors.border : Colors.transparent);
     final radius = BorderRadius.circular(borderRadius);
 
-    Widget content = Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: radius,
-        child: ClipRRect(
-          borderRadius: radius,
+    return Container(
+      width: width,
+      height: height,
+      margin: margin,
+      child: Material(
+        color: bgColor,
+        // ELIMINADO: borderRadius: radius, <--- Esto causaba el error
+        clipBehavior: Clip.antiAlias, 
+        shape: RoundedRectangleBorder(
+          borderRadius: radius, // El radio se define AQUÍ adentro
+          side: BorderSide(
+            color: finalBorderColor, 
+            width: showBorder ? 1 : 0,
+          ),
+        ),
+        child: InkWell(
+          onTap: onTap,
           child: Stack(
             children: [
               Padding(
@@ -63,28 +62,15 @@ class CustomCard extends StatelessWidget {
               ),
               if (leftStripColor != null)
                 Positioned(
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: 4,
-                  child: Container(color: leftStripColor),
+                  left: 0, top: 0, bottom: 0, width: 4,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(color: leftStripColor),
+                  ),
                 ),
             ],
           ),
         ),
       ),
-    );
-
-    return Container(
-      width: width,
-      height: height,
-      margin: margin,
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: radius,
-        border: border,
-      ),
-      child: content,
     );
   }
 }

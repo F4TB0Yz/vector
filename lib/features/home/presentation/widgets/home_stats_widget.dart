@@ -106,7 +106,12 @@ class _HomeStatsWidgetState extends State<HomeStatsWidget> {
         ),
         const SizedBox(width: 12),
         // Time Card - Isolated to prevent rebuilding the entire widget
-        const Expanded(child: _RouteTimeCard()),
+        // Time Card - Isolated to prevent rebuilding the entire widget
+        Expanded(
+          child: _RouteTimeCard(
+            startTime: selectedRoute?.createdAt,
+          ),
+        ),
       ],
     );
   }
@@ -114,7 +119,9 @@ class _HomeStatsWidgetState extends State<HomeStatsWidget> {
 
 /// Isolated widget to prevent Timer rebuilds from affecting parent
 class _RouteTimeCard extends StatefulWidget {
-  const _RouteTimeCard();
+  final DateTime? startTime;
+
+  const _RouteTimeCard({this.startTime});
 
   @override
   State<_RouteTimeCard> createState() => _RouteTimeCardState();
@@ -122,21 +129,43 @@ class _RouteTimeCard extends StatefulWidget {
 
 class _RouteTimeCardState extends State<_RouteTimeCard> {
   Timer? _timer;
-  Duration _elapsed = Duration.zero;
 
   @override
   void initState() {
     super.initState();
-    _startTimer();
+    _scheduleTick();
   }
 
-  void _startTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      final route = context.read<RoutesProvider>().selectedRoute;
-      if (mounted && route != null) {
-        setState(() {
-          _elapsed = DateTime.now().difference(route.createdAt);
-        });
+  @override
+  void didUpdateWidget(_RouteTimeCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.startTime != oldWidget.startTime) {
+      _scheduleTick();
+    }
+  }
+
+  void _scheduleTick() {
+    _timer?.cancel();
+    if (widget.startTime == null) return;
+
+    final now = DateTime.now();
+    final duration = now.difference(widget.startTime!);
+
+    int nextTickSeconds;
+    if (duration.inMinutes < 1) {
+      // Menos de 1 minuto: Actualizar cada segundo
+      nextTickSeconds = 1;
+    } else {
+      // Más de 1 minuto: Alinear al siguiente minuto
+      // Ejemplo: 1m 15s. Faltan 45s para 2m 00s.
+      nextTickSeconds = 60 - (duration.inSeconds % 60);
+      if (nextTickSeconds <= 0) nextTickSeconds = 60;
+    }
+
+    _timer = Timer(Duration(seconds: nextTickSeconds), () {
+      if (mounted) {
+        setState(() {}); // Rebuild to update UI
+        _scheduleTick(); // Schedule next
       }
     });
   }
@@ -149,44 +178,64 @@ class _RouteTimeCardState extends State<_RouteTimeCard> {
 
   @override
   Widget build(BuildContext context) {
-    final route = context.watch<RoutesProvider>().selectedRoute;
-    final duration =
-        route != null ? DateTime.now().difference(route.createdAt) : _elapsed;
+    final duration = widget.startTime != null
+        ? DateTime.now().difference(widget.startTime!)
+        : Duration.zero;
 
-    final hours = duration.inHours.toString().padLeft(2, '0');
-    final minutes = (duration.inMinutes % 60).toString().padLeft(2, '0');
+    String timeText;
+    String labelText;
 
-    return CustomCard(
-      padding: const EdgeInsets.all(16),
-      isDarkBackground: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(
-            Icons.timer_outlined,
-            color: AppColors.textSecondary,
-            size: 20,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '$hours h $minutes m',
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+    if (duration.inMinutes < 1) {
+      // Menos de 1 minuto: Mostrar segundos
+      final seconds = duration.inSeconds.toString().padLeft(2, '0');
+      timeText = '$seconds s';
+      labelText = 'TIEMPO INICIAL';
+    } else {
+      // Más de 1 minuto: Mostrar Horas y Minutos
+      final hours = duration.inHours.toString().padLeft(2, '0');
+      final minutes = (duration.inMinutes % 60).toString().padLeft(2, '0');
+      timeText = '$hours h $minutes m';
+      labelText = 'TIEMPO RUTA';
+    }
+    
+    // Si no hay ruta, mostrar estado por defecto
+    if (widget.startTime == null) {
+        timeText = '-- h -- m';
+    }
+
+    return RepaintBoundary(
+      child: CustomCard(
+        padding: const EdgeInsets.all(16),
+        isDarkBackground: true,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(
+              Icons.timer_outlined,
+              color: AppColors.textSecondary,
+              size: 20,
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'TIEMPO RUTA',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: Colors.white.withValues(alpha: 0.5),
-              letterSpacing: 1.2,
+            const SizedBox(height: 12),
+            Text(
+              timeText,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 4),
+            Text(
+              labelText,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Colors.white.withValues(alpha: 0.5),
+                letterSpacing: 1.2,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

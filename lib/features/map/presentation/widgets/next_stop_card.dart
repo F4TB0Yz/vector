@@ -30,10 +30,10 @@ class NextStopCard extends StatelessWidget {
   Widget build(BuildContext context) {
     // Helper variables for easier access
     final String stopNumberText = "PARADA ${stop.stopOrder}";
-    final String timeAwayText = "A 3 MIN"; // Placeholder, actual logic needed
+    const String timeAwayText = "A 3 MIN"; // Placeholder, actual logic needed
     final String addressText = stop.address;
-    final String packageTypeText = "Paquete"; // Placeholder (PackageEntity doesn't have packageType)
-    final String weightText = "N/A"; // Placeholder (PackageEntity doesn't have weight)
+    const String packageTypeText = "Paquete"; // Placeholder (PackageEntity doesn't have packageType)
+    const String weightText = "N/A"; // Placeholder (PackageEntity doesn't have weight)
     final String? noteText = stop.package.notes;
 
     // Color principal de la tarjeta (Cyan/Azul vibrante de la imagen)
@@ -148,10 +148,10 @@ class NextStopCard extends StatelessWidget {
                     const SizedBox(height: 16),
                   
                     // Detalles del Paquete
-                    Row(
+                    const Row(
                       children: [
                         _DetailItem(icon: LucideIcons.package, text: packageTypeText),
-                        const SizedBox(width: 16),
+                        SizedBox(width: 16),
                         _DetailItem(icon: LucideIcons.scale, text: weightText),
                       ],
                     ),

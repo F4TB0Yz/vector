@@ -159,7 +159,7 @@ class PackagesHeader extends StatelessWidget {
                   IconButton(
                     tooltip: 'Asignar Coordenadas (PRUEBA)',
                     onPressed: () => CoordinateAssignmentHelpers.openCoordinateAssignment(context),
-                    icon: Icon(
+                    icon: const Icon(
                       LucideIcons.mapPin,
                       color: AppColors.accent,
                     ),
@@ -252,7 +252,7 @@ class _RouteSelector extends StatelessWidget {
       itemBuilder: (context) => todayRoutes.map((route) {
         return PopupMenuItem<RouteEntity>(
           value: route,
-          child: Text(route.name, style: TextStyle(color: Colors.white)),
+          child: Text(route.name, style: const TextStyle(color: Colors.white)),
         );
       }).toList(),
     );

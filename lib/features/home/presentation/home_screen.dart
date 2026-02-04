@@ -172,15 +172,15 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const HomeHeader(),
+              const RepaintBoundary(child: HomeHeader()),
 
               const SizedBox(height: 24),
 
-              const ActiveRouteCard(),
+              const RepaintBoundary(child: ActiveRouteCard()),
 
               const SizedBox(height: 20),
 
-              const HomeStatsWidget(),
+              const RepaintBoundary(child: HomeStatsWidget()),
 
               const SizedBox(height: 20),
 

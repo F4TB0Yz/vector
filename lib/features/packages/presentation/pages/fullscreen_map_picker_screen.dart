@@ -185,8 +185,8 @@ class _FullscreenMapPickerScreenState extends State<FullscreenMapPickerScreen> {
                         child: InkWell(
                           onTap: () => Navigator.of(context).pop(),
                           borderRadius: BorderRadius.circular(8),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
+                          child: const Padding(
+                            padding: EdgeInsets.all(12),
                             child: Icon(
                               LucideIcons.x,
                               color: Colors.white,
@@ -197,7 +197,7 @@ class _FullscreenMapPickerScreenState extends State<FullscreenMapPickerScreen> {
                       ),
                       const SizedBox(width: 12),
                       // Título
-                      Expanded(
+                      const Expanded(
                         child: Text(
                           'Selecciona la ubicación en el mapa',
                           style: TextStyle(
@@ -227,7 +227,7 @@ class _FullscreenMapPickerScreenState extends State<FullscreenMapPickerScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      SizedBox(
+                      const SizedBox(
                         width: 12,
                         height: 12,
                         child: CircularProgressIndicator(
@@ -283,7 +283,7 @@ class _FullscreenMapPickerScreenState extends State<FullscreenMapPickerScreen> {
                           ),
                           child: Row(
                             children: [
-                              Icon(
+                              const Icon(
                                 LucideIcons.mapPin,
                                 size: 16,
                                 color: AppColors.accent,
@@ -292,7 +292,7 @@ class _FullscreenMapPickerScreenState extends State<FullscreenMapPickerScreen> {
                               Expanded(
                                 child: Text(
                                   '${_selectedCoordinates!.lat.toStringAsFixed(6)}, ${_selectedCoordinates!.lng.toStringAsFixed(6)}',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 12,
                                     fontFamily: 'monospace',
@@ -320,7 +320,7 @@ class _FullscreenMapPickerScreenState extends State<FullscreenMapPickerScreen> {
                             ),
                             elevation: 0,
                           ),
-                          child: Row(
+                          child: const Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
@@ -328,7 +328,7 @@ class _FullscreenMapPickerScreenState extends State<FullscreenMapPickerScreen> {
                                 size: 20,
                                 color: Colors.white,
                               ),
-                              const SizedBox(width: 8),
+                              SizedBox(width: 8),
                               Text(
                                 'CONFIRMAR UBICACIÓN',
                                 style: TextStyle(

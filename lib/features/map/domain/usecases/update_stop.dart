@@ -13,15 +13,15 @@ class UpdateStop {
   Future<Either<Failure, StopEntity>> call(StopEntity stop) async {
     // Validaciones
     if (stop.id.isEmpty) {
-      return Left(ValidationFailure('Stop ID cannot be empty'));
+      return const Left(ValidationFailure('Stop ID cannot be empty'));
     }
 
     if (stop.name.trim().isEmpty) {
-      return Left(ValidationFailure('Stop name cannot be empty'));
+      return const Left(ValidationFailure('Stop name cannot be empty'));
     }
 
     if (stop.address.trim().isEmpty) {
-      return Left(ValidationFailure('Stop address cannot be empty'));
+      return const Left(ValidationFailure('Stop address cannot be empty'));
     }
 
     return await repository.updateStop(stop);

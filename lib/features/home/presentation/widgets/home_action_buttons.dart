@@ -39,7 +39,7 @@ class HomeActionButtons extends StatelessWidget {
                   Text(
                     'ESCANEAR',
                     style: TextStyle(
-                      fontFamily: 'Inter',
+                      // fontFamily: 'Inter',
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.8,
@@ -86,7 +86,7 @@ class HomeActionButtons extends StatelessWidget {
                     Text(
                       'NUEVA RUTA',
                       style: TextStyle(
-                        fontFamily: 'Inter',
+                        // fontFamily: 'Inter',
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.8,

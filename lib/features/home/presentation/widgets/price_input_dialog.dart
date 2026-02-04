@@ -113,7 +113,7 @@ class _PriceInputDialogState extends State<PriceInputDialog> {
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  fontFamily: 'Inter',
+                  // fontFamily: 'Inter',
                 ),
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: const InputDecoration(
@@ -159,7 +159,7 @@ class _PriceInputDialogState extends State<PriceInputDialog> {
                 child: const Text(
                   'CONFIRMAR VALOR',
                   style: TextStyle(
-                    fontFamily: 'Inter',
+                    // fontFamily: 'Inter',
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.5,

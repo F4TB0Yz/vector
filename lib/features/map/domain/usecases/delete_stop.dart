@@ -11,7 +11,7 @@ class DeleteStop {
   /// Ejecuta el use case.
   Future<Either<Failure, void>> call(String stopId) async {
     if (stopId.isEmpty) {
-      return Left(ValidationFailure('Stop ID cannot be empty'));
+      return const Left(ValidationFailure('Stop ID cannot be empty'));
     }
 
     return await repository.deleteStop(stopId);

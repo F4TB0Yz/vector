@@ -62,12 +62,12 @@ class NextStopInfo extends StatelessWidget {
             ),
           ),
           if (nextStop != null)
-            CustomCard(
+            const CustomCard(
               showBorder: true,
               isDarkBackground: true,
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(8),
               borderRadius: 8,
-              child: const Icon(
+              child: Icon(
                 LucideIcons.navigation,
                 color: Colors.white,
                 size: 20,

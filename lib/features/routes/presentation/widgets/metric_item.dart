@@ -40,7 +40,7 @@ class MetricItem extends StatelessWidget {
             ),
             Text(
               label.toUpperCase(),
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.textSecondary,
                 fontSize: 8,
                 fontWeight: FontWeight.w900,

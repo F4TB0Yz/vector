@@ -28,8 +28,13 @@ import 'package:vector/features/map/domain/usecases/create_stop_from_coordinates
 import 'package:vector/features/map/domain/usecases/reverse_geocode_coordinates.dart';
 import 'package:vector/features/packages/domain/usecases/update_package_status.dart';
 
+import 'package:vector/shared/presentation/widgets/lazy_indexed_stack.dart';
+
+import 'package:vector/shared/presentation/widgets/shader_warmup_widget.dart';
+
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
+
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -117,23 +122,28 @@ class _MainScreenState extends State<MainScreen> {
             },
             child: Stack(
               children: [
-                // IndexedStack mantiene el estado de las páginas vivas
-                IndexedStack(index: _currentIndex, children: pages),
+                // Warmup shaders to avoid jank on Map tab
+                const ShaderWarmupWidget(),
+                
+                // LazyIndexedStack mantiene el estado de las páginas vivas pero las carga bajo demanda
+                LazyIndexedStack(index: _currentIndex, children: pages),
 
                 // Floating Navy Bar ubicada en la parte inferior
-                AnimatedPositioned(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                  left: 0,
-                  right: 0,
-                  // Si es visible, se posiciona arriba del padding del sistema + 16px de margen
-                  // Si no, se esconde completamente (-150 px para asegurar)
-                  bottom: _isNavBarVisible ? (bottomPadding + 16) : -150,
-                  child: FloatingNavBar(
-                    currentIndex: _currentIndex,
-                    onTap: _onTabTapped,
+                // Solo dibujamos la barra si el teclado ESTÁ CERRADO
+                if (MediaQuery.of(context).viewInsets.bottom == 0)
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    left: 0,
+                    right: 0,
+                    bottom: _isNavBarVisible ? (bottomPadding + 16) : -150,
+                    child: RepaintBoundary(
+                      child: FloatingNavBar(
+                        currentIndex: _currentIndex,
+                        onTap: _onTabTapped,
+                      ),
+                    ),
                   ),
-                ),
               ],
             ),
           ),

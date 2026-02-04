@@ -37,7 +37,7 @@ class HomeHeader extends StatelessWidget {
                 formattedDate,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
                 ),
               ),
@@ -194,7 +194,7 @@ class _StatusSelector extends StatelessWidget {
             Text(
               text,
               style: const TextStyle(
-                fontFamily: 'Inter', // Asegurar fuente técnica
+                // fontFamily: 'Inter', // Asegurar fuente técnica
                 color: Colors.white,
                 fontWeight: FontWeight.w700,
                 fontSize: 13,

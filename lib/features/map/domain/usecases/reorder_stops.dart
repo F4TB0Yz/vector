@@ -16,11 +16,11 @@ class ReorderStops {
     List<String> stopIds,
   ) async {
     if (routeId.isEmpty) {
-      return Left(ValidationFailure('Route ID cannot be empty'));
+      return const Left(ValidationFailure('Route ID cannot be empty'));
     }
 
     if (stopIds.isEmpty) {
-      return Left(ValidationFailure('Stop IDs list cannot be empty'));
+      return const Left(ValidationFailure('Stop IDs list cannot be empty'));
     }
 
     return await repository.reorderStops(routeId, stopIds);

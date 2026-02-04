@@ -79,14 +79,16 @@ class NextStopPageView extends StatelessWidget {
                   ),
                 );
               },
-              child: NextStopCard(
-                stop: stop, // Pass the StopEntity object
-                onClose: () {
-                  onCloseNextStopCard();
-                  const NavBarVisibilityNotification(true).dispatch(context);
-                },
-                onDelivered: onDelivered, // Pass the onDelivered callback
-                onFailed: onFailed, // Pass the onFailed callback
+              child: RepaintBoundary(
+                child: NextStopCard(
+                  stop: stop, // Pass the StopEntity object
+                  onClose: () {
+                    onCloseNextStopCard();
+                    const NavBarVisibilityNotification(true).dispatch(context);
+                  },
+                  onDelivered: onDelivered, // Pass the onDelivered callback
+                  onFailed: onFailed, // Pass the onFailed callback
+                ),
               ),
             );
           },

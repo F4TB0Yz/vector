@@ -24,9 +24,9 @@ class CoordinateAssignmentScreen extends StatelessWidget {
               icon: const Icon(LucideIcons.x, color: Colors.white),
               onPressed: () => Navigator.of(context).pop(),
             ),
-            title: Text(
+            title: const Text(
               'Asignar Ubicación',
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -48,7 +48,7 @@ class CoordinateAssignmentScreen extends StatelessWidget {
                     ),
                     child: Text(
                       '${provider.currentIndex + 1}/${provider.totalPackages}',
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.primary,
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -84,14 +84,14 @@ class CoordinateAssignmentScreen extends StatelessWidget {
                               color: AppColors.accent.withValues(alpha: 0.3),
                             ),
                           ),
-                          child: Row(
+                          child: const Row(
                             children: [
                               Icon(
                                 LucideIcons.info,
                                 size: 20,
                                 color: AppColors.accent,
                               ),
-                              const SizedBox(width: 12),
+                              SizedBox(width: 12),
                               Expanded(
                                 child: Text(
                                   'Toca el mapa para seleccionar la ubicación del paquete',
@@ -137,13 +137,13 @@ class CoordinateAssignmentScreen extends StatelessWidget {
                               ),
                               child: Column(
                                 children: [
-                                  Icon(
+                                  const Icon(
                                     LucideIcons.map,
                                     size: 48,
                                     color: AppColors.primary,
                                   ),
                                   const SizedBox(height: 12),
-                                  Text(
+                                  const Text(
                                     'ABRIR MAPA',
                                     style: TextStyle(
                                       color: AppColors.primary,
@@ -177,7 +177,7 @@ class CoordinateAssignmentScreen extends StatelessWidget {
                             ),
                             child: Row(
                               children: [
-                                Icon(
+                                const Icon(
                                   LucideIcons.checkCircle,
                                   size: 16,
                                   color: AppColors.primary,
@@ -186,7 +186,7 @@ class CoordinateAssignmentScreen extends StatelessWidget {
                                 Expanded(
                                   child: Text(
                                     'Ubicación seleccionada: ${provider.selectedCoordinates!.lat.toStringAsFixed(6)}, ${provider.selectedCoordinates!.lng.toStringAsFixed(6)}',
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       color: AppColors.primary,
                                       fontSize: 12,
                                     ),

@@ -54,6 +54,7 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      checkerboardOffscreenLayers: true,
       theme: AppTheme.darkTheme,
       home: const MainScreen(),
       localizationsDelegates: const [

@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import 'package:vector/core/theme/app_colors.dart';
 
 class AppTheme {
   static ThemeData get darkTheme {
-    final textTheme = GoogleFonts.spaceGroteskTextTheme(
-      ThemeData.dark().textTheme,
-    ).apply(bodyColor: AppColors.text, displayColor: AppColors.text);
+    final textTheme = ThemeData.dark().textTheme.apply(
+      fontFamily: 'SpaceGrotesk',
+      bodyColor: AppColors.text,
+      displayColor: AppColors.text,
+    );
 
-    final colorScheme = ColorScheme.dark(
+    const colorScheme = ColorScheme.dark(
       primary: AppColors.primary,
       surface: AppColors.surface,
       onSurface: AppColors.text,

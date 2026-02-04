@@ -166,7 +166,7 @@ class _CompactMapPickerState extends State<CompactMapPicker> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        SizedBox(
+                        const SizedBox(
                           width: 12,
                           height: 12,
                           child: CircularProgressIndicator(

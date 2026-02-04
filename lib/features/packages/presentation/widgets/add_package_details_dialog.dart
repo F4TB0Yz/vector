@@ -71,15 +71,15 @@ class _AddPackageDetailsDialogState
         borderRadius: BorderRadius.circular(12.0),
         side: BorderSide(color: AppColors.primary.withAlpha(50)),
       ),
-      title: Row(
+      title: const Row(
         children: [
-          const Icon(
+          Icon(
             LucideIcons.packagePlus,
             color: AppColors.primary,
             size: 24,
           ),
-          const SizedBox(width: 12),
-          const Text('Añadir Paquete', style: TextStyle(color: Colors.white)),
+          SizedBox(width: 12),
+          Text('Añadir Paquete', style: TextStyle(color: Colors.white)),
         ],
       ),
       content: Form(

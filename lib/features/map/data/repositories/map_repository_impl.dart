@@ -209,7 +209,7 @@ class MapLocalDataSourceImpl implements MapDataSource {
       );
 
       if (routeResults.isEmpty) {
-        throw ServerException('No active route found');
+        throw const ServerException('No active route found');
       }
 
       final routeMap = routeResults.first;
@@ -245,7 +245,7 @@ class MapLocalDataSourceImpl implements MapDataSource {
       );
 
       if (routeResults.isEmpty) {
-        throw ServerException('Route not found');
+        throw const ServerException('Route not found');
       }
 
       final routeMap = routeResults.first;

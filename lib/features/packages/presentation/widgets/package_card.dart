@@ -140,7 +140,7 @@ class PackageCard extends StatelessWidget {
                               ),
                             ),
                             if (isGroupedPackage)
-                              Text(
+                              const Text(
                                 'PAQUETE AGRUPADO',
                                 style: TextStyle(
                                   color: AppColors.primary,
