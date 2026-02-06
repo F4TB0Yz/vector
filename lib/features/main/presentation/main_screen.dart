@@ -18,21 +18,17 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
   bool _isNavBarVisible = true;
-  bool _canRender =
-      false; // Delayed rendering para evitar saturación en frame 0
+  bool _shadersWarmedUp = false; // Cambio semántico: indica si shaders están listos
 
   @override
   void initState() {
     super.initState();
-    // Usar addPostFrameCallback para renderizar contenido después del primer frame
-    // Esto permite que ShaderWarmupWidget compile shaders sin competir por recursos del GPU
+    // Permitir que los shaders se compilen en el primer frame
+    // Después del primer frame, marcamos como listo
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Esperar un frame adicional después del warmup
-      Future.delayed(const Duration(milliseconds: 16), () {
-        if (mounted) {
-          setState(() => _canRender = true);
-        }
-      });
+      if (mounted) {
+        setState(() => _shadersWarmedUp = true);
+      }
     });
   }
 
@@ -73,14 +69,13 @@ class _MainScreenState extends State<MainScreen> {
         },
         child: Stack(
           children: [
-            // Warmup shaders to avoid jank on Map tab
-            const ShaderWarmupWidget(),
-
-            // Delayed rendering para evitar saturación en frame 0
-            if (_canRender)
-              LazyIndexedStack(index: _currentIndex, children: pages)
+            // Warmup shaders solo en el primer frame
+            // Después se elimina del árbol de widgets para no desperdiciar recursos
+            if (!_shadersWarmedUp)
+              const ShaderWarmupWidget()
             else
-              const SizedBox.shrink(),
+              // Contenido principal - renderizado después del warmup
+              LazyIndexedStack(index: _currentIndex, children: pages),
 
             // Floating Nav Bar - Solo si el teclado está cerrado
             if (MediaQuery.of(context).viewInsets.bottom == 0)

@@ -31,11 +31,21 @@ import 'package:vector/core/theme/app_theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Inicializar dependencias críticas ANTES del primer frame
   await dotenv.load(fileName: '.env');
   await di.init();
 
+  // Configurar Mapbox
   MapboxOptions.setAccessToken(dotenv.env['MAPBOX_ACCESS_TOKEN']!);
   HttpOverrides.global = MyHttpOverrides();
+
+  // Inicializar DateFormatting ANTES del primer frame para evitar jank
+  await initializeDateFormatting('es');
+  Intl.defaultLocale = 'es';
+
+  // Inicializar base de datos ANTES del primer frame
+  // Esto evita que el primer frame espere por la DB
+  await DatabaseService.instance.database;
 
   runApp(const MainApp());
 }
@@ -122,16 +132,13 @@ class _InitProvidersWidgetState extends State<_InitProvidersWidget> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
+    // Inicializar providers después del primer frame
+    // Ya no necesitamos await porque DB y DateFormatting están inicializados
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _initialized) return;
       _initialized = true;
 
-      await initializeDateFormatting('es');
-      Intl.defaultLocale = 'es';
-
-      await DatabaseService.instance.database;
-
-      if (!mounted) return;
+      // Estas llamadas son rápidas y no bloquean porque la DB ya está lista
       context.read<AuthProvider>().checkAuthStatus();
       context.read<RoutesProvider>().loadRoutes();
     });

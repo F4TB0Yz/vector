@@ -17,15 +17,15 @@ class MainScaffold extends StatefulWidget {
 
 class _MainScaffoldState extends State<MainScaffold> {
   bool _isNavBarVisible = true;
-  bool _canRender = false;
+  bool _shadersWarmedUp = false;
 
   @override
   void initState() {
     super.initState();
-    // Delayed rendering para evitar saturación en frame 0
+    // Permitir que los shaders se compilen en el primer frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        setState(() => _canRender = true);
+        setState(() => _shadersWarmedUp = true);
       }
     });
   }
@@ -59,11 +59,12 @@ class _MainScaffoldState extends State<MainScaffold> {
           },
           child: Stack(
             children: [
-              // Shader warmup solo hasta que se complete
-              if (!_canRender) const ShaderWarmupWidget(),
-
-              // Delayed rendering para evitar saturación en frame 0
-              if (_canRender) RepaintBoundary(child: widget.navigationShell),
+              // Shader warmup solo en el primer frame
+              if (!_shadersWarmedUp)
+                const ShaderWarmupWidget()
+              else
+                // Contenido principal - renderizado después del warmup
+                RepaintBoundary(child: widget.navigationShell),
 
               // Floating Nav Bar - Solo si el teclado está cerrado
               // if (MediaQuery.of(context).viewInsets.bottom == 0)
