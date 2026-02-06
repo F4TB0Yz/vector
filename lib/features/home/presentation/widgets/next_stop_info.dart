@@ -5,6 +5,7 @@ import 'package:vector/core/presentation/widgets/custom_card.dart';
 import 'package:vector/core/theme/app_colors.dart';
 import 'package:vector/features/map/domain/entities/stop_entity.dart';
 import 'package:vector/features/packages/domain/entities/package_status.dart';
+import 'package:vector/features/routes/domain/entities/route_entity.dart';
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
 
 class NextStopInfo extends StatelessWidget {
@@ -12,7 +13,9 @@ class NextStopInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selectedRoute = context.watch<RoutesProvider>().selectedRoute;
+    final selectedRoute = context.select<RoutesProvider, RouteEntity?>(
+      (p) => p.selectedRoute,
+    );
     final stops = selectedRoute?.stops ?? [];
     final nextStop = _findNextStop(stops);
 
@@ -35,27 +38,27 @@ class NextStopInfo extends StatelessWidget {
                 Text(
                   nextStop != null ? "SIGUIENTE PARADA" : "LISTO",
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.0,
-                        fontSize: 10,
-                      ),
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.0,
+                    fontSize: 10,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   nextStop?.address ?? "Ruta completada",
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 if (nextStop != null) ...[
                   const SizedBox(height: 4),
                   Text(
                     nextStop.name,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ],
@@ -80,9 +83,7 @@ class NextStopInfo extends StatelessWidget {
 
   StopEntity? _findNextStop(List<StopEntity> stops) {
     try {
-      return stops.firstWhere(
-        (stop) => stop.status == PackageStatus.pending,
-      );
+      return stops.firstWhere((stop) => stop.status == PackageStatus.pending);
     } catch (e) {
       return null;
     }

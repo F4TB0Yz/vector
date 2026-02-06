@@ -2,6 +2,8 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:vector/core/di/injection_container.dart' as di;
+import 'package:vector/features/packages/domain/repositories/jt_package_repository.dart';
 import 'package:vector/core/theme/app_colors.dart';
 import 'package:vector/features/home/presentation/widgets/floating_scan_button.dart';
 import 'package:vector/features/packages/presentation/widgets/add_package_details_dialog.dart';
@@ -23,14 +25,26 @@ import 'package:vector/features/packages/domain/entities/package_status.dart';
 import 'package:vector/features/packages/domain/entities/jt_package.dart';
 import 'package:vector/features/packages/presentation/helpers/coordinate_assignment_helpers.dart';
 
-class PackagesScreen extends StatefulWidget {
+class PackagesScreen extends StatelessWidget {
   const PackagesScreen({super.key});
 
   @override
-  State<PackagesScreen> createState() => _PackagesScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => PackagesProvider(repository: di.sl<JTPackageRepository>()),
+      child: const _PackagesScreenContent(),
+    );
+  }
 }
 
-class _PackagesScreenState extends State<PackagesScreen> {
+class _PackagesScreenContent extends StatefulWidget {
+  const _PackagesScreenContent();
+
+  @override
+  State<_PackagesScreenContent> createState() => _PackagesScreenState();
+}
+
+class _PackagesScreenState extends State<_PackagesScreenContent> {
   bool _isCompressedView = false;
 
   Future<void> _openScanner(BuildContext context) async {
@@ -59,7 +73,7 @@ class _PackagesScreenState extends State<PackagesScreen> {
   Future<void> _showDetailsDialog(BuildContext context, String code) async {
     final jtPackages = context.read<PackagesProvider>().packages;
     JTPackage? prefillData;
-     try {
+    try {
       prefillData = jtPackages.firstWhere((p) => p.waybillNo == code);
     } catch (_) {
       // Not found
@@ -69,7 +83,8 @@ class _PackagesScreenState extends State<PackagesScreen> {
 
     final result = await showDialog<Map<String, String>>(
       context: context,
-      builder: (context) => AddPackageDetailsDialog(trackingCode: code, prefillData: prefillData),
+      builder: (context) =>
+          AddPackageDetailsDialog(trackingCode: code, prefillData: prefillData),
     );
 
     if (!context.mounted) return;
@@ -79,13 +94,20 @@ class _PackagesScreenState extends State<PackagesScreen> {
     }
   }
 
-  Future<void> _handleSavePackage(BuildContext context, Map<String, String> packageData) async {
+  Future<void> _handleSavePackage(
+    BuildContext context,
+    Map<String, String> packageData,
+  ) async {
     final routesProvider = context.read<RoutesProvider>();
     final selectedRoute = routesProvider.selectedRoute;
     final addStopUseCase = context.read<AddStopToRoute>();
 
     if (selectedRoute == null) {
-      showAppToast(context, 'Error: No hay ruta seleccionada para guardar.', type: ToastType.error);
+      showAppToast(
+        context,
+        'Error: No hay ruta seleccionada para guardar.',
+        type: ToastType.error,
+      );
       return;
     }
 
@@ -108,11 +130,15 @@ class _PackagesScreenState extends State<PackagesScreen> {
     await routesProvider.addStop(stop, addStopUseCase);
 
     if (context.mounted) {
-       if (routesProvider.error != null) {
-         showAppToast(context, "Error: ${routesProvider.error}", type: ToastType.error);
-       } else {
-         showAppToast(context, "Paquete agregado", type: ToastType.success);
-       }
+      if (routesProvider.error != null) {
+        showAppToast(
+          context,
+          "Error: ${routesProvider.error}",
+          type: ToastType.error,
+        );
+      } else {
+        showAppToast(context, "Paquete agregado", type: ToastType.success);
+      }
     }
   }
 
@@ -144,9 +170,10 @@ class _PackagesScreenState extends State<PackagesScreen> {
               const SizedBox(height: 8),
             ],
             Divider(
-                height: 1,
-                thickness: 1,
-                color: Colors.white.withValues(alpha: 0.1)),
+              height: 1,
+              thickness: 1,
+              color: Colors.white.withValues(alpha: 0.1),
+            ),
             const RouteDateWarningBanner(),
             Expanded(
               child: selectedRoute == null
@@ -156,48 +183,57 @@ class _PackagesScreenState extends State<PackagesScreen> {
                       subMessage: 'Usa el icono de mapa arriba a la derecha',
                     )
                   : filteredStops.isEmpty
-                      ? const EmptyStateWidget(
-                          icon: LucideIcons.package,
-                          message: 'No hay paradas',
-                          subMessage: 'Escanea paquetes para agregar',
-                        )
-                      : ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-                          itemCount: filteredStops.length,
-                          separatorBuilder: (_, __) =>
-                              SizedBox(height: _isCompressedView ? 8 : 12),
-                          itemBuilder: (context, index) {
-                            final stop = filteredStops[index];
-                            return _isCompressedView
-                                ? PackageCardCompressed(stop: stop)
-                                : PackageCard(
-                                    stop: stop,
-                                    onAssignLocation: () => CoordinateAssignmentHelpers.openCoordinateAssignment(context),
-                                    onDelivered: () {
-                                      context.read<RoutesProvider>().updatePackageStatus(
-                                            stop.package.id,
-                                            PackageStatus.delivered,
-                                          );
-                                      showAppToast(
+                  ? const EmptyStateWidget(
+                      icon: LucideIcons.package,
+                      message: 'No hay paradas',
+                      subMessage: 'Escanea paquetes para agregar',
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                      itemCount: filteredStops.length,
+                      separatorBuilder: (_, __) =>
+                          SizedBox(height: _isCompressedView ? 8 : 12),
+                      itemBuilder: (context, index) {
+                        final stop = filteredStops[index];
+                        return RepaintBoundary(
+                          child: _isCompressedView
+                              ? PackageCardCompressed(stop: stop)
+                              : PackageCard(
+                                  stop: stop,
+                                  onAssignLocation: () =>
+                                      CoordinateAssignmentHelpers.openCoordinateAssignment(
                                         context,
-                                        'Paquete marcado como Entregado',
-                                        type: ToastType.success,
-                                      );
-                                    },
-                                    onFailed: () {
-                                      context.read<RoutesProvider>().updatePackageStatus(
-                                            stop.package.id,
-                                            PackageStatus.failed,
-                                          );
-                                      showAppToast(
-                                        context,
-                                        'Paquete marcado como Fallido',
-                                        type: ToastType.error,
-                                      );
-                                    },
-                                  );
-                          },
-                        ),
+                                      ),
+                                  onDelivered: () {
+                                    context
+                                        .read<RoutesProvider>()
+                                        .updatePackageStatus(
+                                          stop.package.id,
+                                          PackageStatus.delivered,
+                                        );
+                                    showAppToast(
+                                      context,
+                                      'Paquete marcado como Entregado',
+                                      type: ToastType.success,
+                                    );
+                                  },
+                                  onFailed: () {
+                                    context
+                                        .read<RoutesProvider>()
+                                        .updatePackageStatus(
+                                          stop.package.id,
+                                          PackageStatus.failed,
+                                        );
+                                    showAppToast(
+                                      context,
+                                      'Paquete marcado como Fallido',
+                                      type: ToastType.error,
+                                    );
+                                  },
+                                ),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -223,7 +259,9 @@ class _PackagesScreenState extends State<PackagesScreen> {
         onPressed: () => setState(() => _isCompressedView = !_isCompressedView),
         icon: Icon(
           _isCompressedView ? LucideIcons.layoutList : LucideIcons.layoutGrid,
-          color: _isCompressedView ? AppColors.primary : Colors.white.withValues(alpha: 0.6),
+          color: _isCompressedView
+              ? AppColors.primary
+              : Colors.white.withValues(alpha: 0.6),
           size: 18,
         ),
         tooltip: _isCompressedView ? 'Vista Detallada' : 'Vista Comprimida',

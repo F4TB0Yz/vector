@@ -9,7 +9,7 @@ import 'package:vector/shared/presentation/widgets/toasts.dart';
 import 'package:vector/features/auth/presentation/providers/auth_provider.dart';
 import 'package:vector/features/auth/presentation/widgets/jt_login_dialog.dart';
 
-class HomeHeader extends StatelessWidget {
+class HomeHeader extends StatefulWidget {
   final String userName;
 
   const HomeHeader({
@@ -18,13 +18,24 @@ class HomeHeader extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  State<HomeHeader> createState() => _HomeHeaderState();
+}
+
+class _HomeHeaderState extends State<HomeHeader> {
+  late final formattedDate;
+
+  @override
+  void initState() {
+    super.initState();
     final date = DateTime.now();
-    final formattedDate = DateFormat(
+    formattedDate = DateFormat(
       'EEEE, MMMM d',
       'es',
     ).format(date).toUpperCase();
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -43,7 +54,7 @@ class HomeHeader extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                "Hola, $userName",
+                "Hola, ${widget.userName}",
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   color: AppColors.text,
                   fontWeight: FontWeight.bold,

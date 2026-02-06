@@ -1,40 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart' as provider;
-import 'package:vector/core/di/injection_container.dart';
-import 'package:vector/core/database/database_service.dart';
-import 'package:vector/core/database/providers/migration_provider.dart';
-import 'package:vector/features/auth/domain/repositories/auth_repository.dart';
-import 'package:vector/features/auth/domain/usecases/login_usecase.dart';
-import 'package:vector/features/auth/domain/usecases/save_credentials.dart';
 import 'package:vector/features/home/presentation/home_screen.dart';
-import 'package:vector/features/map/domain/usecases/optimize_route.dart';
 import 'package:vector/shared/presentation/widgets/floating_nav_bar.dart';
 import 'package:vector/features/routes/presentation/routes_screen.dart';
 import 'package:vector/features/packages/presentation/packages_screen.dart';
 import 'package:vector/features/map/presentation/screens/map_screen.dart';
 import 'package:vector/shared/presentation/notifications/navbar_notification.dart';
-import 'package:vector/features/map/presentation/providers/map_provider.dart';
-import 'package:vector/features/auth/presentation/providers/auth_provider.dart';
-import 'package:vector/features/home/presentation/providers/home_provider.dart';
-import 'package:vector/features/routes/domain/usecases/add_stop_to_route.dart';
-import 'package:vector/features/routes/domain/usecases/create_route.dart';
-import 'package:vector/features/routes/domain/usecases/get_routes.dart';
-import 'package:vector/features/packages/domain/repositories/jt_package_repository.dart';
-import 'package:vector/features/packages/presentation/providers/jt_package_providers.dart';
-import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
-import 'package:vector/features/routes/data/datasources/routes_preferences_datasource.dart';
-import 'package:vector/features/map/domain/repositories/map_repository.dart';
-import 'package:vector/features/map/domain/usecases/create_stop_from_coordinates.dart';
-import 'package:vector/features/map/domain/usecases/reverse_geocode_coordinates.dart';
-import 'package:vector/features/packages/domain/usecases/update_package_status.dart';
-
 import 'package:vector/shared/presentation/widgets/lazy_indexed_stack.dart';
-
 import 'package:vector/shared/presentation/widgets/shader_warmup_widget.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
-
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -42,7 +17,24 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
-  bool _isNavBarVisible = true; // Estado para controlar visibilidad
+  bool _isNavBarVisible = true;
+  bool _canRender =
+      false; // Delayed rendering para evitar saturación en frame 0
+
+  @override
+  void initState() {
+    super.initState();
+    // Usar addPostFrameCallback para renderizar contenido después del primer frame
+    // Esto permite que ShaderWarmupWidget compile shaders sin competir por recursos del GPU
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Esperar un frame adicional después del warmup
+      Future.delayed(const Duration(milliseconds: 16), () {
+        if (mounted) {
+          setState(() => _canRender = true);
+        }
+      });
+    });
+  }
 
   void _onTabTapped(int index) {
     setState(() {
@@ -54,101 +46,60 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).viewPadding.bottom;
 
-    return provider.MultiProvider(
-      providers: [
-        provider.Provider<AddStopToRoute>(create: (_) => sl<AddStopToRoute>()),
-        provider.ChangeNotifierProvider(
-          create: (_) => MigrationProvider(sl<DatabaseService>()),
-        ),
-        provider.ChangeNotifierProvider(
-          create: (context) => AuthProvider(
-            authRepository: sl<AuthRepository>(),
-            loginUseCase: sl<LoginUseCase>(),
-            saveCredentialsUseCase: sl<SaveCredentials>(),
-          )..checkAuthStatus(),
-        ),
-        provider.ChangeNotifierProvider(
-          create: (context) => RoutesProvider(
-            getRoutesUseCase: sl<GetRoutes>(),
-            createRouteUseCase: sl<CreateRoute>(),
-            prefsDataSource: sl<RoutesPreferencesDataSource>(),
-            updatePackageStatusUseCase: sl<UpdatePackageStatus>(),
-          )..loadRoutes(),
-        ),
-        provider.ChangeNotifierProvider(
-          create: (context) => MapProvider(
-            mapRepository: sl<MapRepository>(),
-            reverseGeocodeCoordinatesUseCase: sl<ReverseGeocodeCoordinates>(),
-            createStopFromCoordinatesUseCase: sl<CreateStopFromCoordinates>(),
-            optimizeRouteUseCase: sl<OptimizeRoute>(),
-          ),
-        ),
-      ],
-      child: Builder(builder: (context) {
-        final pages = [
-          provider.ChangeNotifierProvider(
-            create: (context) =>
-                HomeProvider(addStopToRouteUseCase: sl<AddStopToRoute>()),
-            child: const HomeScreen(),
-          ),
-          const RoutesScreen(),
-          provider.ChangeNotifierProvider(
-            create: (context) =>
-                PackagesProvider(repository: sl<JTPackageRepository>()),
-            child: const PackagesScreen(),
-          ),
-          provider.ChangeNotifierProvider.value(
-            value: provider.Provider.of<RoutesProvider>(context, listen: false),
-            child: const MapScreen(),
-          ),
-        ];
+    // Páginas
+    final pages = [
+      const HomeScreen(),
+      const RoutesScreen(),
+      const PackagesScreen(),
+      const MapScreen(),
+    ];
 
-        return Scaffold(
-          backgroundColor: Colors.black, // O el color de fondo de tu tema
-          body: NotificationListener<Notification>(
-            onNotification: (notification) {
-              if (notification is NavBarVisibilityNotification) {
-                setState(() {
-                  _isNavBarVisible = notification.isVisible;
-                });
-                return true;
-              } else if (notification is ChangeTabNotification) {
-                setState(() {
-                  _currentIndex = notification.targetIndex;
-                });
-                return true;
-              }
-              return false;
-            },
-            child: Stack(
-              children: [
-                // Warmup shaders to avoid jank on Map tab
-                const ShaderWarmupWidget(),
-                
-                // LazyIndexedStack mantiene el estado de las páginas vivas pero las carga bajo demanda
-                LazyIndexedStack(index: _currentIndex, children: pages),
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: NotificationListener<Notification>(
+        onNotification: (notification) {
+          if (notification is NavBarVisibilityNotification) {
+            setState(() {
+              _isNavBarVisible = notification.isVisible;
+            });
+            return true;
+          } else if (notification is ChangeTabNotification) {
+            setState(() {
+              _currentIndex = notification.targetIndex;
+            });
+            return true;
+          }
+          return false;
+        },
+        child: Stack(
+          children: [
+            // Warmup shaders to avoid jank on Map tab
+            const ShaderWarmupWidget(),
 
-                // Floating Navy Bar ubicada en la parte inferior
-                // Solo dibujamos la barra si el teclado ESTÁ CERRADO
-                if (MediaQuery.of(context).viewInsets.bottom == 0)
-                  AnimatedPositioned(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    left: 0,
-                    right: 0,
-                    bottom: _isNavBarVisible ? (bottomPadding + 16) : -150,
-                    child: RepaintBoundary(
-                      child: FloatingNavBar(
-                        currentIndex: _currentIndex,
-                        onTap: _onTabTapped,
-                      ),
-                    ),
+            // Delayed rendering para evitar saturación en frame 0
+            if (_canRender)
+              LazyIndexedStack(index: _currentIndex, children: pages)
+            else
+              const SizedBox.shrink(),
+
+            // Floating Nav Bar - Solo si el teclado está cerrado
+            if (MediaQuery.of(context).viewInsets.bottom == 0)
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut, // Curva más simple = menos carga
+                left: 0,
+                right: 0,
+                bottom: _isNavBarVisible ? (bottomPadding + 16) : -150,
+                child: RepaintBoundary(
+                  child: FloatingNavBar(
+                    currentIndex: _currentIndex,
+                    onTap: _onTabTapped,
                   ),
-              ],
-            ),
-          ),
-        );
-      }),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

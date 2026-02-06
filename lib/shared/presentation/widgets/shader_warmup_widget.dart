@@ -10,42 +10,39 @@ class ShaderWarmupWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IgnorePointer(
-      child: Opacity(
-        opacity: 0.01, // Invisible but rendered
-        child: Stack(
-          children: [
-            // Warmup NextStopCard Shadow (Blur 20)
-            Container(
-              width: 10,
-              height: 10,
-              decoration: const BoxDecoration(
-                color: Color(0xFF1E1E1E),
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0x80000000),
-                    blurRadius: 20,
-                    offset: Offset(0, 10),
-                  ),
-                ],
-              ),
+      child: Stack(
+        children: [
+          // Warmup NextStopCard Shadow (Blur 20)
+          Container(
+            width: 10,
+            height: 10,
+            decoration: const BoxDecoration(
+              color: Color(0xFF1E1E1E),
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0x80000000),
+                  blurRadius: 20,
+                  offset: Offset(0, 10),
+                ),
+              ],
             ),
-            // Warmup MapControls Glow (Blur 12, Spread 2)
-            Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.accent.withValues(alpha: 0.5),
-                    blurRadius: 12,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
+          ),
+          // Warmup MapControls Glow (Blur 12, Spread 2)
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E1E1E),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.accent.withValues(alpha: 0.5),
+                  blurRadius: 12,
+                  spreadRadius: 2,
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

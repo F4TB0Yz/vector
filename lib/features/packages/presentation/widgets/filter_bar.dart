@@ -6,11 +6,18 @@ import 'package:vector/features/routes/presentation/providers/routes_provider.da
 class FilterBar extends StatelessWidget {
   const FilterBar({super.key});
 
-  final List<String> _filters = const ["TODAS", "PENDIENTE", "ENTREGADO", "FALLIDO"];
+  final List<String> _filters = const [
+    "TODAS",
+    "PENDIENTE",
+    "ENTREGADO",
+    "FALLIDO",
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final selectedIndex = context.watch<RoutesProvider>().stopFilterIndex;
+    final selectedIndex = context.select<RoutesProvider, int>(
+      (p) => p.stopFilterIndex,
+    );
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -25,7 +32,10 @@ class FilterBar extends StatelessWidget {
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? AppColors.primary.withValues(alpha: 0.2)
@@ -41,7 +51,9 @@ class FilterBar extends StatelessWidget {
                   _filters[index],
                   style: TextStyle(
                     color: isSelected ? Colors.white : Colors.grey[600],
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                     fontSize: 12,
                   ),
                 ),

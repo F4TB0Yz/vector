@@ -6,6 +6,7 @@ import 'package:vector/core/presentation/widgets/custom_card.dart';
 import 'package:vector/core/theme/app_colors.dart';
 import 'package:vector/features/home/presentation/widgets/price_input_dialog.dart';
 import 'package:vector/features/packages/domain/entities/package_status.dart';
+import 'package:vector/features/routes/domain/entities/route_entity.dart';
 import 'package:vector/features/routes/presentation/providers/routes_provider.dart';
 
 class HomeStatsWidget extends StatefulWidget {
@@ -17,6 +18,17 @@ class HomeStatsWidget extends StatefulWidget {
 
 class _HomeStatsWidgetState extends State<HomeStatsWidget> {
   double _pricePerPackage = 0;
+  late NumberFormat currencyFormat;
+
+  @override
+  void initState() {
+    super.initState();
+    currencyFormat = NumberFormat.currency(
+      locale: 'es_CO',
+      symbol: '\$',
+      decimalDigits: 0,
+    );
+  }
 
   void _showPriceDialog() {
     showDialog(
@@ -33,18 +45,14 @@ class _HomeStatsWidgetState extends State<HomeStatsWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedRoute = context.watch<RoutesProvider>().selectedRoute;
-    final deliveredCount = selectedRoute?.stops
+    final selectedRoute = context.select<RoutesProvider, RouteEntity?>(
+      (p) => p.selectedRoute,
+    );
+    final deliveredCount =
+        selectedRoute?.stops
             .where((stop) => stop.status == PackageStatus.delivered)
             .length ??
         0;
-
-    final currencyFormat = NumberFormat.currency(
-      locale: 'es_CO',
-      symbol: '\$',
-      decimalDigits: 0,
-    );
-
     final totalEarnings = _pricePerPackage * deliveredCount;
     final formattedEarnings = currencyFormat.format(totalEarnings);
 
@@ -106,12 +114,7 @@ class _HomeStatsWidgetState extends State<HomeStatsWidget> {
         ),
         const SizedBox(width: 12),
         // Time Card - Isolated to prevent rebuilding the entire widget
-        // Time Card - Isolated to prevent rebuilding the entire widget
-        Expanded(
-          child: _RouteTimeCard(
-            startTime: selectedRoute?.createdAt,
-          ),
-        ),
+        Expanded(child: _RouteTimeCard(startTime: selectedRoute?.createdAt)),
       ],
     );
   }
@@ -197,10 +200,10 @@ class _RouteTimeCardState extends State<_RouteTimeCard> {
       timeText = '$hours h $minutes m';
       labelText = 'TIEMPO RUTA';
     }
-    
+
     // Si no hay ruta, mostrar estado por defecto
     if (widget.startTime == null) {
-        timeText = '-- h -- m';
+      timeText = '-- h -- m';
     }
 
     return RepaintBoundary(
